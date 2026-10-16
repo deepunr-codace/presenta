@@ -3,6 +3,8 @@ import { ReviseRequestSchema } from "@/lib/deck/schema";
 import { jsonError, jsonFailure, jsonOk, readJsonBody } from "../_lib/respond";
 
 export const runtime = "nodejs";
+/** Vercel function limit; one AI attempt may take up to 55 s plus one retry. */
+export const maxDuration = 120;
 
 export async function POST(request: Request) {
   const body = await readJsonBody(request, ReviseRequestSchema);
