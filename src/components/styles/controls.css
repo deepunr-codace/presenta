@@ -1,0 +1,273 @@
+/* Shared chrome controls used by the editor, review page, sidebar and dialogs.
+   Every colour, radius and shadow comes from the --ps-* tokens in globals.css (DESIGN.md §5). */
+
+/* ---------- Buttons: pills, 36 px (xs 32), Inter 14 / 500 ---------- */
+
+/* Outline pill by default: canvas fill, ink text, 1 px line-2 border. */
+.ps-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--ps-r-pill);
+  border: 1px solid var(--ps-line-2);
+  background: var(--ps-canvas);
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ps-ink);
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: border-color 120ms ease-out, background-color 120ms ease-out, color 120ms ease-out;
+}
+.ps-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+.ps-btn:hover:not(:disabled) { background: var(--ps-plate); border-color: var(--ps-ash); }
+.ps-btn:disabled { opacity: 0.45; cursor: default; }
+.ps-btn:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+.ps-btn[data-danger="true"] { color: var(--ps-danger); }
+.ps-btn[data-danger="true"]:hover:not(:disabled) { border-color: color-mix(in srgb, var(--ps-danger) 40%, transparent); background: color-mix(in srgb, var(--ps-danger) 8%, transparent); }
+/* Filled pill: ink fill, canvas text. */
+.ps-btn-primary { background: var(--ps-ink); border-color: var(--ps-ink); color: var(--ps-on-ink); }
+.ps-btn-primary:hover:not(:disabled) { background: var(--ps-graphite); border-color: var(--ps-graphite); }
+/* Ghost pill: transparent until hover (plate). */
+.ps-btn-ghost { border-color: transparent; background: transparent; color: var(--ps-smoke); }
+.ps-btn-ghost:hover:not(:disabled) { background: var(--ps-plate); border-color: transparent; color: var(--ps-ink); }
+.ps-btn-xs { height: 32px; padding: 0 14px; font-size: 13px; }
+.ps-btn-md { height: 40px; padding: 0 20px; }
+.ps-btn-block { width: 100%; }
+
+/* Icon button: 32 px ghost circle; outline variant adds the line-2 border on canvas. */
+.ps-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ps-r-pill);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ps-graphite);
+  cursor: pointer;
+  transition: background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
+}
+.ps-iconbtn svg { width: 16px; height: 16px; }
+.ps-iconbtn:hover:not(:disabled) { background: var(--ps-plate); color: var(--ps-ink); }
+.ps-iconbtn[aria-pressed="true"] { background: var(--ps-ink-soft); color: var(--ps-ink); }
+.ps-iconbtn:disabled { opacity: 0.4; cursor: default; }
+.ps-iconbtn[data-danger="true"]:hover:not(:disabled) { color: var(--ps-danger); background: color-mix(in srgb, var(--ps-danger) 10%, transparent); }
+.ps-iconbtn:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+.ps-iconbtn-outline { border-color: var(--ps-line-2); background: var(--ps-canvas); }
+.ps-iconbtn-sm { width: 28px; height: 28px; }
+.ps-iconbtn-sm svg { width: 14px; height: 14px; }
+.ps-iconbtn-xs { width: 24px; height: 24px; }
+.ps-iconbtn-xs svg { width: 12px; height: 12px; }
+
+/* Text link: ink, underlined on hover. */
+.ps-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ps-ink);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--ps-line-2);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 120ms ease-out;
+}
+.ps-link:hover { text-decoration-color: var(--ps-ink); }
+.ps-link:disabled { color: var(--ps-ash); cursor: default; text-decoration: none; }
+.ps-link:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; border-radius: var(--ps-r-input); }
+
+/* ---------- Inputs: paper, 1 px line-2, 4 px radius, 14 px, 8 × 12 padding ---------- */
+
+.ps-input {
+  height: 36px;
+  width: 100%;
+  min-width: 0;
+  padding: 0 12px;
+  border: 1px solid var(--ps-line-2);
+  border-radius: var(--ps-r-input);
+  background: var(--ps-paper);
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0;
+  color: var(--ps-ink);
+  outline: none;
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
+}
+.ps-input::placeholder { color: var(--ps-ash); }
+.ps-input:hover { border-color: var(--ps-ash); }
+.ps-input:focus { border-color: var(--ps-ink); box-shadow: 0 0 0 2px var(--ps-ink-ring); }
+.ps-input:disabled { opacity: 0.5; }
+.ps-input[type="number"] { font-variant-numeric: tabular-nums; }
+.ps-input[type="number"]::-webkit-inner-spin-button { opacity: 0; }
+select.ps-input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 28px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ps-ash) 50%), linear-gradient(135deg, var(--ps-ash) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 16px, calc(100% - 12px) 16px;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+}
+select.ps-input option { background: var(--ps-paper); color: var(--ps-ink); }
+textarea.ps-input { height: auto; min-height: 72px; padding: 8px 12px; resize: vertical; line-height: 20px; }
+
+/* Segmented control: pills in one outlined group, 32 px; the active segment is an ink-filled pill. */
+.ps-seg {
+  display: inline-flex;
+  height: 32px;
+  width: 100%;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--ps-line-2);
+  border-radius: var(--ps-r-pill);
+  background: var(--ps-canvas);
+}
+.ps-seg button {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--ps-r-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ps-smoke);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+.ps-seg button:hover:not(:disabled) { color: var(--ps-ink); background: var(--ps-plate); }
+.ps-seg button[aria-pressed="true"] { background: var(--ps-ink); color: var(--ps-on-ink); }
+.ps-seg button:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: -2px; }
+.ps-seg button:disabled { opacity: 0.4; cursor: default; }
+
+/* Colour swatch: 20 px circle with a 0.5 px inset ring; a red slash marks "no value". */
+.ps-swatch {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--ps-r-pill);
+  box-shadow: var(--ps-inset);
+  background-clip: padding-box;
+  cursor: pointer;
+}
+.ps-swatch:hover { box-shadow: var(--ps-inset), 0 0 0 2px var(--ps-line-2); }
+.ps-swatch:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+.ps-swatch[data-empty="true"]::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 50%;
+  height: 1.5px;
+  background: var(--ps-danger);
+  transform: rotate(-45deg);
+}
+.ps-swatch[aria-pressed="true"], .ps-swatch[aria-selected="true"] { box-shadow: var(--ps-inset), 0 0 0 2px var(--ps-paper), 0 0 0 3.5px var(--ps-ink); }
+.ps-swatch-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.ps-swatch-grid .ps-swatch { width: 100%; height: auto; aspect-ratio: 1; }
+input[type="color"].ps-swatch-native { width: 28px; border-radius: var(--ps-r-input); }
+input[type="color"].ps-swatch-native::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"].ps-swatch-native::-webkit-color-swatch { border: 0; border-radius: inherit; }
+
+/* ---------- Popovers: elevated paper ---------- */
+
+.ps-popover {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 232px;
+  padding: 10px;
+  border: 1px solid var(--ps-line);
+  border-radius: var(--ps-r-sm);
+  background: var(--ps-paper);
+  box-shadow: var(--ps-shadow-subtle);
+  color: var(--ps-ink);
+}
+.ps-popover-icons { width: 264px; }
+.ps-popover-wide { width: 320px; }
+[data-slot="popover-content"], [data-slot="dropdown-menu-content"] { border: 1px solid var(--ps-line); border-radius: var(--ps-r-sm); background: var(--ps-paper); box-shadow: var(--ps-shadow-subtle); }
+
+/* ---------- Slide thumbnail tile (filmstrip and review) ---------- */
+
+.ps-thumb {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--ps-r-sm);
+  background: var(--ps-paper);
+  box-shadow: 0 0 0 1px var(--ps-line);
+  transition: box-shadow 120ms ease-out;
+}
+.ps-thumb:hover:not([data-active="true"]) { box-shadow: 0 0 0 1px var(--ps-ash); }
+.ps-thumb[data-active="true"] { box-shadow: 0 0 0 2px var(--ps-ink); }
+/* Caption row under the tile: number in ash, title in graphite. */
+.ps-thumb-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--ps-ash);
+}
+.ps-thumb-num[data-active="true"] { color: var(--ps-ink); font-weight: 500; }
+.ps-thumb-caption { display: flex; align-items: center; gap: 8px; min-width: 0; margin-top: 8px; padding: 0 2px; }
+.ps-thumb-caption-title { min-width: 0; font-size: 12px; line-height: 18px; color: var(--ps-graphite); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Error notice ---------- */
+
+.ps-error {
+  padding: 16px 20px;
+  border-radius: var(--ps-r-sm);
+  border: 1px solid color-mix(in srgb, var(--ps-danger) 30%, transparent);
+  background: color-mix(in srgb, var(--ps-danger) 6%, var(--ps-paper));
+  font-size: 13px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: var(--ps-danger);
+}
+.ps-error-compact { padding: 10px 14px; }
+
+/* ---------- Pipeline stage marker (outline and generate steps) ---------- */
+
+.ps-stage-mark {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border: 1px solid var(--ps-line-2);
+  border-radius: var(--ps-r-pill);
+  background: var(--ps-canvas);
+  color: var(--ps-line-2);
+  font-size: 11px;
+}
+.ps-stage-mark[data-state="done"] { border-color: var(--ps-ink); background: var(--ps-ink); color: var(--ps-on-ink); }
+.ps-stage-mark[data-state="active"] { border-color: var(--ps-ink); color: var(--ps-ink); }

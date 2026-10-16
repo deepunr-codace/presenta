@@ -1,0 +1,443 @@
+/* Right sidebar (DESIGN.md §7): a 340 px taupe panel (no border) with the segmented Assistant | Design
+   pill, hairline-separated groups, outline chips, a paper composer card and 32 px property rows.
+   Shared controls (.ps-btn, .ps-iconbtn, .ps-input, .ps-seg, .ps-popover) live in controls.css. */
+
+/* ---------- Panel ---------- */
+
+.ps-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 340px;
+  min-width: 340px;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--ps-surface);
+  color: var(--ps-ink);
+  font-size: 13px;
+  line-height: 20px;
+}
+.ps-sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 56px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--ps-line);
+  flex-shrink: 0;
+}
+
+/* Segmented pill group: one outline pill holding 28 px segments; the active segment is ink-filled. */
+.ps-sb-seg {
+  display: inline-flex;
+  height: 32px;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--ps-line-2);
+  border-radius: var(--ps-r-pill);
+  background: var(--ps-paper);
+}
+.ps-sb-seg > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--ps-r-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--ps-graphite);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+.ps-sb-seg > button svg { width: 14px; height: 14px; }
+.ps-sb-seg > button:hover { color: var(--ps-ink); background: var(--ps-plate); }
+.ps-sb-seg > button[aria-selected="true"] { background: var(--ps-ink); color: var(--ps-on-ink); }
+.ps-sb-seg > button:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+
+/* AI status tag: 22 px plate pill with a state dot. */
+.ps-sb-status {
+  display: inline-flex;
+  height: 22px;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 0 9px;
+  border-radius: var(--ps-r-pill);
+  background: var(--ps-plate);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ps-smoke);
+  white-space: nowrap;
+}
+.ps-sb-status-dot { width: 6px; height: 6px; border-radius: var(--ps-r-pill); background: var(--ps-ash); }
+.ps-sb-status[data-state="claude"] .ps-sb-status-dot { background: var(--ps-success); }
+.ps-sb-status[data-state="mock"] .ps-sb-status-dot { background: var(--ps-warning); }
+
+.ps-sb-divider { height: 1px; background: var(--ps-line); flex-shrink: 0; }
+
+/* Chip (DESIGN.md §5): outline pill, 28 px, 13 px; the selected chip is ink fill with canvas text. */
+.ps-sb-chip {
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 11px;
+  border: 1px solid var(--ps-line-2);
+  border-radius: var(--ps-r-pill);
+  background: var(--ps-paper);
+  font: inherit;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  color: var(--ps-ink);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
+}
+.ps-sb-chip:hover:not(:disabled) { background: var(--ps-plate); }
+.ps-sb-chip[data-active], .ps-sb-chip[aria-pressed="true"] { background: var(--ps-ink); border-color: var(--ps-ink); color: var(--ps-on-ink); }
+.ps-sb-chip:disabled { opacity: 0.5; cursor: not-allowed; }
+.ps-sb-chip:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+.ps-sb-chip svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+/* ---------- Assistant ---------- */
+
+.ps-scope-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ps-line);
+}
+.ps-scope-sep { color: var(--ps-ash); }
+
+.ps-messages {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  overflow-y: auto;
+}
+.ps-msg-user { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.ps-scope-tag { font-size: 12px; line-height: 16px; color: var(--ps-ash); }
+/* User turn: a plate block. */
+.ps-bubble-user {
+  max-width: 90%;
+  padding: 8px 12px;
+  border-radius: var(--ps-r-sm);
+  background: var(--ps-plate);
+  color: var(--ps-ink);
+  font-size: 13px;
+  line-height: 20px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* Assistant reply: plain text under a hairline, applied changes as a list, Undo / Show as underlined ink links. */
+.ps-bubble-assistant {
+  padding-top: 12px;
+  border-top: 1px solid var(--ps-line);
+  color: var(--ps-ink);
+  font-size: 13px;
+  line-height: 20px;
+}
+.ps-bubble-ops {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ps-smoke);
+}
+.ps-bubble-ops li { display: flex; gap: 8px; }
+.ps-bubble-ops li::before { content: ""; width: 4px; height: 4px; margin-top: 8px; flex-shrink: 0; border-radius: var(--ps-r-pill); background: var(--ps-ink); }
+.ps-bubble-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ps-ash);
+}
+.ps-bubble-meta .ps-link { font-size: 13px; font-weight: 500; color: var(--ps-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ps-line-2); }
+.ps-bubble-meta .ps-link:hover { text-decoration-color: var(--ps-ink); }
+.ps-bubble-meta .ps-link:disabled { color: var(--ps-ash); text-decoration: none; }
+.ps-bubble-error {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--ps-r-sm);
+  border: 1px solid color-mix(in srgb, var(--ps-danger) 30%, transparent);
+  background: color-mix(in srgb, var(--ps-danger) 6%, var(--ps-paper));
+  color: var(--ps-danger);
+  font-size: 13px;
+  line-height: 18px;
+}
+.ps-bubble-busy { display: flex; align-items: center; gap: 6px; padding-top: 12px; border-top: 1px solid var(--ps-line); font-size: 13px; line-height: 18px; color: var(--ps-smoke); }
+
+.ps-empty {
+  padding: 12px 14px;
+  border-radius: var(--ps-r-sm);
+  border: 1px dashed var(--ps-line-2);
+  color: var(--ps-smoke);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.ps-quick { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px 0; }
+/* Inline value prompt for a quick action ("Add a slide about…"): a plate block. */
+.ps-chip-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 16px 0;
+  padding: 4px 4px 4px 12px;
+  border-radius: var(--ps-r-sm);
+  background: var(--ps-plate);
+  font-size: 13px;
+  color: var(--ps-graphite);
+}
+.ps-chip-input input {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--ps-line-2);
+  border-radius: var(--ps-r-input);
+  background: var(--ps-paper);
+  font: inherit;
+  font-size: 13px;
+  color: var(--ps-ink);
+  outline: none;
+}
+.ps-chip-input input:focus { border-color: var(--ps-ink); box-shadow: 0 0 0 2px var(--ps-ink-ring); }
+
+/* Composer: a paper card with a borderless textarea and a filled pill Send in the footer. */
+.ps-composer { padding: 12px 16px 16px; }
+.ps-sb-prompt {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 10px 10px 16px;
+  border: 1px solid var(--ps-line);
+  border-radius: var(--ps-r-card);
+  background: var(--ps-paper);
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
+}
+.ps-sb-prompt:focus-within { border-color: var(--ps-ink); box-shadow: 0 0 0 2px var(--ps-ink-ring); }
+.ps-sb-prompt textarea {
+  width: 100%;
+  min-height: 40px;
+  max-height: 160px;
+  resize: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ps-ink);
+  outline: none;
+}
+.ps-sb-prompt textarea::placeholder { color: var(--ps-ash); }
+.ps-sb-prompt-footer { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.ps-sb-prompt-scope { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 16px; color: var(--ps-smoke); }
+.ps-sb-prompt-kbd { margin-left: auto; font-size: 12px; line-height: 16px; color: var(--ps-ash); white-space: nowrap; }
+.ps-sb-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  flex-shrink: 0;
+  padding: 0 14px;
+  border: 1px solid var(--ps-ink);
+  border-radius: var(--ps-r-pill);
+  background: var(--ps-ink);
+  color: var(--ps-on-ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease-out, opacity 120ms ease-out;
+}
+.ps-sb-send:hover:not(:disabled) { background: var(--ps-graphite); border-color: var(--ps-graphite); }
+.ps-sb-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.ps-sb-send:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+
+/* ---------- Design tab: groups and property rows ---------- */
+
+.ps-props { flex: 1; min-height: 0; overflow-y: auto; }
+.ps-group { padding: 14px 16px 16px; border-bottom: 1px solid var(--ps-line); }
+.ps-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+  margin-bottom: 6px;
+}
+.ps-group-title { font-size: 13px; line-height: 18px; font-weight: 500; color: var(--ps-ink); }
+.ps-rows { display: flex; flex-direction: column; gap: 2px; }
+/* Property row: 12 px graphite label left, control right, 32 px tall. */
+.ps-row {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+.ps-row-label {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--ps-graphite);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ps-row-wide { display: flex; flex-direction: column; gap: 6px; padding: 6px 0; }
+.ps-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ps-pair { display: grid; grid-template-columns: 14px minmax(0, 1fr); align-items: center; gap: 4px; }
+.ps-pair-k { font-size: 11px; font-weight: 500; color: var(--ps-ash); text-align: center; }
+/* Loose children (tables, previews, captions) in a group keep a little air. */
+.ps-rows > :not(.ps-row):not(.ps-row-wide) + :not(.ps-row):not(.ps-row-wide) { margin-top: 8px; }
+.ps-rows > .ps-row + :not(.ps-row):not(.ps-row-wide), .ps-rows > .ps-row-wide + :not(.ps-row):not(.ps-row-wide) { margin-top: 6px; }
+.ps-rows > :not(.ps-row):not(.ps-row-wide) + .ps-row, .ps-rows > :not(.ps-row):not(.ps-row-wide) + .ps-row-wide { margin-top: 6px; }
+.ps-sidebar .ps-caption { font-size: 12px; line-height: 16px; color: var(--ps-smoke); }
+
+/* Colour swatch: 20 px circle with a 0.5 px inset ring; the selected one gets an ink ring. */
+.ps-swatch-20 {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--ps-r-pill);
+  box-shadow: var(--ps-inset);
+}
+.ps-swatch-20:hover { box-shadow: var(--ps-inset), 0 0 0 2px var(--ps-line-2); }
+.ps-swatch-20[aria-pressed="true"], .ps-swatch-20[aria-selected="true"] { box-shadow: var(--ps-inset), 0 0 0 2px var(--ps-paper), 0 0 0 3.5px var(--ps-ink); }
+.ps-swatch-20[data-empty="true"]::after { height: 1.5px; }
+.ps-swatch-grid-20 { display: grid; grid-template-columns: repeat(6, 20px); justify-content: space-between; gap: 10px 8px; padding: 2px; }
+input[type="color"].ps-swatch-20 { width: 32px; height: 32px; border-radius: var(--ps-r-input); }
+
+/* Preview boxes: 16:9 by default, short variants for logos. */
+.ps-preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--ps-r-sm);
+  border: 1px solid var(--ps-line);
+  background: var(--ps-plate);
+  color: var(--ps-smoke);
+  font-size: 12px;
+}
+.ps-preview img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.ps-preview-logo { width: 64px; height: 32px; aspect-ratio: auto; flex-shrink: 0; }
+.ps-preview-logo-wide { height: 48px; aspect-ratio: auto; padding: 8px; }
+
+/* Focal-point grid: nine 18 px cells. */
+.ps-grid9 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; width: 58px; }
+.ps-grid9 button {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: var(--ps-r-input);
+  border: 1px solid var(--ps-line-2);
+  background: var(--ps-paper);
+  cursor: pointer;
+}
+.ps-grid9 button:hover { background: var(--ps-plate); }
+.ps-grid9 button[aria-pressed="true"] { background: var(--ps-ink); border-color: var(--ps-ink); }
+.ps-grid9 button:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 1px; }
+
+/* Chart data table. */
+.ps-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ps-table th, .ps-table td { padding: 2px; }
+.ps-table th { font-weight: 500; color: var(--ps-graphite); text-align: left; font-size: 11px; }
+.ps-table .ps-input { height: 28px; padding: 0 6px; }
+
+/* Icon picker results: a grid of 32 px plate tiles. */
+.ps-icon-results {
+  display: grid;
+  grid-template-columns: repeat(7, 32px);
+  justify-content: space-between;
+  gap: 3px;
+  max-height: 212px;
+  padding: 2px;
+  overflow-y: auto;
+}
+.ps-icon-results button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ps-r-sm);
+  background: var(--ps-plate);
+  color: var(--ps-ink);
+  cursor: pointer;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+.ps-icon-results button:hover { background: var(--ps-line-2); }
+.ps-icon-results button[aria-selected="true"] { background: var(--ps-ink); color: var(--ps-on-ink); }
+.ps-icon-results button:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 1px; }
+
+/* Theme and layout tiles: paper with a hairline; the selected tile gets an ink border. */
+.ps-theme-grid, .ps-layout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ps-theme-tile, .ps-layout-tile {
+  display: flex;
+  border-radius: var(--ps-r-sm);
+  border: 1px solid var(--ps-line-2);
+  background: var(--ps-paper);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease-out, background-color 120ms ease-out;
+}
+.ps-theme-tile { align-items: center; gap: 8px; height: 32px; padding: 0 8px; font-size: 12px; font-weight: 500; color: var(--ps-ink); }
+.ps-layout-tile { flex-direction: column; gap: 4px; padding: 5px; }
+.ps-theme-tile:hover, .ps-layout-tile:hover:enabled { border-color: var(--ps-ash); }
+.ps-theme-tile[aria-selected="true"], .ps-layout-tile[aria-selected="true"] { border-color: var(--ps-ink); background: var(--ps-ink-soft); }
+.ps-theme-tile:focus-visible, .ps-layout-tile:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+.ps-layout-tile:disabled { cursor: not-allowed; opacity: 0.5; }
+.ps-layout-tile span { font-size: 11px; font-weight: 500; color: var(--ps-graphite); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Gradient presets. */
+.ps-gradient-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.ps-gradient-row button {
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ps-r-input);
+  box-shadow: var(--ps-inset);
+  cursor: pointer;
+}
+.ps-gradient-row button[aria-pressed="true"] { box-shadow: var(--ps-inset), 0 0 0 2px var(--ps-paper), 0 0 0 3.5px var(--ps-ink); }
+.ps-gradient-row button:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+
+/* ---------- Details tab ---------- */
+
+.ps-details dt { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--ps-graphite); }
+.ps-details dd { margin: 2px 0 0; font-size: 13px; line-height: 20px; color: var(--ps-ink); overflow-wrap: anywhere; }
+.ps-details > div + div { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--ps-line); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-sidebar * { transition-duration: 0ms !important; }
+}

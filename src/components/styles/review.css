@@ -1,0 +1,135 @@
+/* Review page (DESIGN.md §6): under the pinned nav, a title row (deck name in heading weight, meta in
+   smoke, Edit outline and Present filled pills, Export menu), the hero slide in a paper card, three
+   taupe stat tiles with Inter 300 values, the "All slides" grid and the 340 px taupe sidebar.
+   Dots replace the grid under 900 px. */
+
+/* ---------- Layout ---------- */
+
+.ps-review { display: flex; height: 100%; min-height: 0; background: var(--ps-canvas); color: var(--ps-ink); }
+.ps-review-main { flex: 1; min-width: 0; padding: 24px 24px 48px; overflow-y: auto; }
+.ps-review-side { height: 100%; min-height: 0; flex-shrink: 0; }
+
+/* ---------- Title row ---------- */
+
+.ps-review-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-bottom: 20px; }
+.ps-review-title {
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  font-feature-settings: "ss01";
+  color: var(--ps-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ps-review-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 6px; font-size: 13px; line-height: 18px; color: var(--ps-smoke); }
+.ps-review-meta-theme { display: inline-flex; align-items: center; gap: 6px; color: var(--ps-graphite); font-weight: 500; }
+.ps-review-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+
+/* ---------- Hero: paper card ---------- */
+
+.ps-review-hero { display: flex; align-items: center; gap: 8px; }
+.ps-review-hero-card {
+  flex: 1;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--ps-line);
+  border-radius: var(--ps-r-card);
+  background: var(--ps-paper);
+}
+/* Width-fitted, but capped by the viewport height so the stat row stays above the fold at 900 px tall. */
+.ps-review-hero-slide { max-width: min(1100px, max(480px, calc((100dvh - 440px) * 16 / 9))); overflow: hidden; border-radius: var(--ps-r-sm); background: var(--ps-plate); box-shadow: 0 0 0 1px var(--ps-line); }
+.ps-review-hero-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 16px;
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ps-smoke);
+  font-variant-numeric: tabular-nums;
+}
+/* Previous / next: 32 px ghost circles. */
+.ps-nav {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ps-r-pill);
+  background: transparent;
+  color: var(--ps-ink);
+  cursor: pointer;
+  transition: background-color 120ms ease-out, opacity 120ms ease-out;
+}
+.ps-nav:hover:not(:disabled) { background: var(--ps-plate); }
+.ps-nav:disabled { opacity: 0.3; cursor: default; }
+.ps-nav:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+.ps-review-dots { display: none; justify-content: center; padding: 12px 0 2px; }
+
+/* ---------- Stats: taupe tiles, label 13/500 graphite, value Inter 300 at 32 px ---------- */
+
+.ps-review-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.ps-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 24px;
+  border-radius: var(--ps-r-card);
+  background: var(--ps-surface);
+}
+.ps-stat-label { display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--ps-graphite); }
+.ps-stat-label svg { width: 14px; height: 14px; color: var(--ps-ash); }
+.ps-stat-value { display: inline-flex; align-items: baseline; gap: 6px; font-size: 32px; line-height: 1.13; font-weight: 300; letter-spacing: -0.02em; font-feature-settings: "ss01"; font-variant-numeric: tabular-nums; color: var(--ps-ink); }
+.ps-stat-unit { font-size: 13px; line-height: 18px; font-weight: 400; letter-spacing: 0; color: var(--ps-smoke); }
+.ps-stat-caption { font-size: 12px; line-height: 16px; color: var(--ps-ash); }
+
+/* ---------- Thumbnails ---------- */
+
+.ps-review-all { margin-top: 32px; }
+.ps-review-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.ps-review-thumb { position: relative; display: block; width: 100%; padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer; }
+.ps-review-thumb:focus-visible { outline: none; }
+.ps-review-thumb:focus-visible .ps-thumb { box-shadow: 0 0 0 2px var(--ps-canvas), 0 0 0 4px var(--ps-ink-ring); }
+/* Thumbnail (DESIGN.md §5): radius sm, 1 px line, 2 px ink ring when active. */
+.ps-review-grid .ps-thumb { border-radius: var(--ps-r-sm); background: var(--ps-plate); box-shadow: 0 0 0 1px var(--ps-line-2); transition: box-shadow 120ms ease-out; }
+.ps-review-grid .ps-thumb:hover:not([data-active="true"]) { box-shadow: 0 0 0 1px var(--ps-ash); }
+.ps-review-grid .ps-thumb[data-active="true"] { box-shadow: 0 0 0 2px var(--ps-ink); }
+.ps-review-thumb-foot { display: flex; align-items: center; gap: 6px; min-height: 20px; margin-top: 8px; padding: 0 2px; font-size: 12px; line-height: 16px; }
+.ps-review-thumb-num { flex-shrink: 0; min-width: 12px; font-variant-numeric: tabular-nums; color: var(--ps-ash); }
+.ps-review-thumb-foot[data-active="true"] .ps-review-thumb-num { color: var(--ps-ink); font-weight: 500; }
+.ps-review-thumb-title { flex: 1; min-width: 0; color: var(--ps-graphite); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ps-review-thumb-foot .ps-link { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-size: 12px; color: var(--ps-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ps-line-2); opacity: 0; transition: opacity 120ms ease-out; }
+.ps-review-thumb-foot .ps-link:hover { text-decoration-color: var(--ps-ink); }
+.ps-review-thumb-wrap:hover .ps-review-thumb-foot .ps-link, .ps-review-thumb-foot .ps-link:focus-visible { opacity: 1; }
+
+@media (min-width: 640px) { .ps-review-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1280px) { .ps-review-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+@media (max-width: 1023px) {
+  .ps-review-side { display: none; }
+}
+@media (max-width: 899px) {
+  .ps-review-main { padding: 16px 16px 32px; }
+  .ps-review-title { font-size: 24px; white-space: normal; }
+  .ps-review-actions { width: 100%; margin-left: 0; flex-wrap: wrap; }
+  .ps-review-all { display: none; }
+  .ps-review-dots { display: flex; }
+  .ps-review-stats { gap: 8px; }
+  .ps-stat { padding: 16px; }
+  .ps-review-hero { gap: 0; }
+  .ps-review-hero-card { padding: 10px; }
+  .ps-review-hero-foot { margin-top: 10px; }
+  .ps-nav { display: none; }
+}
+@media (max-width: 599px) {
+  .ps-review-stats { grid-template-columns: 1fr; }
+  .ps-stat { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; }
+  .ps-stat-caption { width: 100%; }
+  .ps-stat-value { font-size: 28px; }
+}

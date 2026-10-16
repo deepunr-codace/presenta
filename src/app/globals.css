@@ -1,0 +1,784 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Screen-specific chrome; each file documents its own sections. */
+@import "../components/styles/controls.css";
+@import "../components/styles/sidebar.css";
+@import "../components/styles/editor.css";
+@import "../components/styles/review.css";
+@import "../components/styles/present.css";
+@import "../components/styles/print.css";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-heading);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+/* ---------- Tokens: warm editorial, light and dark (DESIGN.md §2) ---------- */
+:root, [data-theme="light"] {
+  --ps-canvas: #FDFCFC; --ps-surface: #F5F3F1; --ps-plate: #EBE8E4; --ps-paper: #FDFCFC;
+  --ps-ink: #000000; --ps-graphite: #44403B; --ps-smoke: #777169; --ps-ash: #A59F97;
+  --ps-line: #EBE8E4; --ps-line-2: #E5E5E5;
+  --ps-ink-soft: rgba(0,0,0,0.06); --ps-ink-ring: rgba(0,0,0,0.18);
+  --ps-spark-violet: #0447FF; --ps-spark-orange: #FF4704;
+  --ps-success: #2E7D4F; --ps-warning: #B45309; --ps-danger: #B42318;
+  --ps-stage: #EBE8E4;
+  --ps-shadow-subtle: rgba(0,0,0,0.4) 0 0 1px 0, rgba(0,0,0,0.04) 0 1px 1px 0, rgba(0,0,0,0.04) 0 2px 4px 0;
+  --ps-inset: rgba(0,0,0,0.075) 0 0 0 0.5px inset;
+  --ps-r-input: 4px; --ps-r-sm: 10px; --ps-r-card: 20px; --ps-r-card-lg: 24px; --ps-r-pill: 9999px;
+  --ps-on-ink: #FDFCFC;
+  color-scheme: light;
+}
+[data-theme="dark"] {
+  --ps-canvas: #121110; --ps-surface: #1B1917; --ps-plate: #262320; --ps-paper: #1B1917;
+  --ps-ink: #F4F2EF; --ps-graphite: #D6D1CB; --ps-smoke: #A39D95; --ps-ash: #716B64;
+  --ps-line: #2B2825; --ps-line-2: #36322E;
+  --ps-ink-soft: rgba(255,255,255,0.08); --ps-ink-ring: rgba(255,255,255,0.24);
+  --ps-spark-violet: #4C7DFF; --ps-spark-orange: #FF6A33;
+  --ps-success: #6FCF97; --ps-warning: #F2A73B; --ps-danger: #F0776B;
+  --ps-stage: #0E0D0C;
+  --ps-shadow-subtle: rgba(0,0,0,0.6) 0 0 1px 0, rgba(0,0,0,0.3) 0 2px 6px 0;
+  --ps-inset: rgba(255,255,255,0.08) 0 0 0 0.5px inset;
+  --ps-on-ink: #121110;
+  color-scheme: dark;
+}
+/* shadcn theme mapping */
+:root, [data-theme="light"], [data-theme="dark"] {
+  --background: var(--ps-canvas); --foreground: var(--ps-ink);
+  --card: var(--ps-paper); --card-foreground: var(--ps-ink);
+  --popover: var(--ps-paper); --popover-foreground: var(--ps-ink);
+  --primary: var(--ps-ink); --primary-foreground: var(--ps-on-ink);
+  --secondary: var(--ps-surface); --secondary-foreground: var(--ps-ink);
+  --muted: var(--ps-plate); --muted-foreground: var(--ps-smoke);
+  --accent: var(--ps-ink-soft); --accent-foreground: var(--ps-ink);
+  --destructive: var(--ps-danger); --border: var(--ps-line); --input: var(--ps-line-2); --ring: var(--ps-ink-ring);
+  --radius: var(--ps-r-sm);
+}
+
+/* ---------- Deck stage (slide renderer) ---------- */
+
+.deck-stage {
+  -webkit-font-smoothing: antialiased;
+}
+
+.deck-stage .deck-text p {
+  margin: 0;
+}
+
+.deck-stage .deck-text p + p {
+  margin-top: 0.35em;
+}
+
+.deck-stage .deck-text ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 0.9em;
+}
+
+.deck-stage .deck-text ol {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+.deck-stage .deck-text li {
+  position: relative;
+  margin: 0 0 0.45em 0;
+}
+
+.deck-stage .deck-text li:last-child {
+  margin-bottom: 0;
+}
+
+.deck-stage .deck-text ul > li::before {
+  content: "";
+  position: absolute;
+  left: -0.9em;
+  top: 0.55em;
+  width: 0.38em;
+  height: 0.38em;
+  border-radius: 9999px;
+  background: var(--deck-accent);
+}
+
+.deck-stage .deck-text strong {
+  font-weight: 700;
+}
+
+.deck-stage .ProseMirror {
+  outline: none;
+  min-height: 1em;
+}
+
+.deck-stage .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--deck-muted);
+  opacity: 0.6;
+}
+
+.deck-stage .deck-element[data-editing="true"] {
+  outline: 2px solid var(--deck-accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Base typography (DESIGN.md §3) ---------- */
+@layer base {
+  body {
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: 0.01em;
+    color: var(--ps-smoke);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  h1, h2, h3, h4, h5, h6, strong, b, th, legend {
+    color: var(--ps-ink);
+  }
+  input, textarea, select, button {
+    color: var(--ps-ink);
+  }
+  ::placeholder {
+    color: var(--ps-ash);
+  }
+  ::selection {
+    background: var(--ps-ink-soft);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ---------- Kit: app shell and component classes (DESIGN.md §4–§5) ---------- */
+@layer components {
+  /* Shell: 56 px top nav over a content column that scrolls on its own (so the nav stays pinned on work surfaces). */
+  .ps-shell {
+    display: grid;
+    grid-template-rows: 56px minmax(0, 1fr);
+    height: 100dvh;
+    background: var(--ps-canvas);
+  }
+  .ps-content {
+    display: flex;
+    min-height: 0;
+    min-width: 0;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+  .ps-content-body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+  .ps-content-body > * {
+    min-width: 0;
+  }
+  /* Page column: 1280 px max with 64 px gutters (24 px under 1024 px). */
+  .ps-page {
+    --ps-page-x: 64px;
+    --ps-page-b: 96px;
+    width: 100%;
+    max-width: calc(1280px + 2 * var(--ps-page-x));
+    margin: 0 auto;
+    padding: 40px var(--ps-page-x) var(--ps-page-b);
+  }
+
+  /* Top nav: wordmark, links, "Soon" tags, mode toggle and avatar on the canvas with a hairline below. */
+  .ps-topnav {
+    display: flex;
+    height: 56px;
+    align-items: center;
+    gap: 24px;
+    padding: 0 var(--ps-page-x, 64px);
+    border-bottom: 1px solid var(--ps-line);
+    background: var(--ps-canvas);
+  }
+  .ps-wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: var(--ps-r-pill);
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ps-ink);
+    text-decoration: none;
+  }
+  .ps-topnav-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+  }
+  .ps-topnav-link {
+    display: inline-flex;
+    height: 32px;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--ps-r-pill);
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: var(--ps-smoke);
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 120ms ease-out, background-color 120ms ease-out;
+  }
+  .ps-topnav-link:hover { color: var(--ps-ink); background: var(--ps-plate); }
+  .ps-topnav-link[data-active="true"] { color: var(--ps-ink); background: var(--ps-ink-soft); }
+  .ps-topnav-link[aria-disabled="true"] { color: var(--ps-ash); cursor: not-allowed; background: transparent; }
+  .ps-topnav-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+  .ps-avatar {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border-radius: var(--ps-r-pill);
+    background: var(--ps-ink);
+    color: var(--ps-on-ink);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  /* Work-surface header: a small smoke breadcrumb line under the nav with page actions on the right. */
+  .ps-crumbbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    width: 100%;
+    max-width: calc(1280px + 2 * var(--ps-page-x, 64px));
+    margin: 0 auto;
+    padding: 20px var(--ps-page-x, 64px) 0;
+  }
+  .ps-crumbbar + .ps-content-body > .ps-page { padding-top: 16px; }
+  .ps-crumbs {
+    display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 20px;
+    color: var(--ps-smoke);
+  }
+  .ps-crumbs li { display: inline-flex; min-width: 0; align-items: center; gap: 8px; }
+  .ps-crumbs a { color: var(--ps-smoke); text-decoration: none; border-radius: var(--ps-r-pill); transition: color 120ms ease-out; }
+  .ps-crumbs a:hover { color: var(--ps-ink); }
+  .ps-crumbs [aria-current="page"] { color: var(--ps-ink); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ps-crumb-sep { color: var(--ps-ash); }
+  .ps-crumbbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+  /* Card: taupe surface, 20 px radius, 24 px padding, no border or shadow. `data-paper` is the paper variant. */
+  .ps-glass {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 24px;
+    border: 1px solid transparent;
+    border-radius: var(--ps-r-card);
+    background: var(--ps-surface);
+    color: var(--ps-ink);
+    transition: border-color 120ms ease-out, box-shadow 120ms ease-out, background-color 120ms ease-out;
+  }
+  .ps-glass[data-paper] {
+    border-color: var(--ps-line);
+    background: var(--ps-paper);
+  }
+  .ps-glass[data-hero] { padding: 32px; border-radius: var(--ps-r-card-lg); }
+  .ps-glass[data-clickable] { cursor: pointer; text-align: left; }
+  .ps-glass[data-clickable]:hover { background: var(--ps-plate); }
+  .ps-glass[data-paper][data-clickable]:hover { background: var(--ps-paper); box-shadow: var(--ps-shadow-subtle); }
+  .ps-glass[data-active="true"] { box-shadow: 0 0 0 2px var(--ps-ink); }
+  .ps-glass-head {
+    display: flex;
+    min-height: 32px;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .ps-glass-action { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+  .ps-cardtitle { font-size: 16px; line-height: 1.4; font-weight: 400; letter-spacing: 0; color: var(--ps-ink); }
+  .ps-cardcaption { font-size: 12px; line-height: 1.5; letter-spacing: 0; color: var(--ps-ash); }
+
+  /* Tile: a small paper card inside a taupe card (outline rows, theme tiles, suggestion blocks). */
+  .ps-tile {
+    border: 1px solid var(--ps-line);
+    border-radius: var(--ps-r-sm);
+    background: var(--ps-paper);
+    padding: 12px;
+    transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
+  }
+  .ps-tile[data-clickable], a.ps-tile, button.ps-tile { cursor: pointer; }
+  .ps-tile[data-clickable]:hover, a.ps-tile:hover, button.ps-tile:hover { border-color: var(--ps-ash); }
+  .ps-tile[data-active="true"] { border-color: var(--ps-ink); box-shadow: 0 0 0 1px var(--ps-ink); }
+
+  /* Stat value: Inter 300 at 32 px with tight tracking, unit in smoke. */
+  .ps-numeral-wrap { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .ps-numeral {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+    font-size: 32px;
+    line-height: 1.13;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ps-ink);
+  }
+  .ps-numeral-lg { font-size: 36px; line-height: 1.17; }
+  .ps-unit { font-size: 13px; line-height: 1.4; font-weight: 400; letter-spacing: 0; color: var(--ps-smoke); white-space: nowrap; }
+
+  /* Icon plate: 32 px plate circle with a 16 px ink icon. Arrow: 32 px outline circle button. */
+  .ps-iconchip {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: var(--ps-r-pill);
+    color: var(--ps-ink);
+    background: var(--ps-plate);
+  }
+  .ps-iconchip svg { width: 16px; height: 16px; }
+  .ps-arrow {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border: 1px solid var(--ps-line-2);
+    border-radius: var(--ps-r-pill);
+    background: var(--ps-canvas);
+    color: var(--ps-ink);
+    cursor: pointer;
+    transition: background-color 120ms ease-out, border-color 120ms ease-out;
+  }
+  .ps-arrow svg { width: 14px; height: 14px; }
+  .ps-arrow:hover { background: var(--ps-plate); border-color: var(--ps-ash); }
+  .ps-arrow:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Dots */
+  .ps-dots { display: inline-flex; align-items: center; gap: 6px; }
+  .ps-dots > * {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--ps-r-pill);
+    background: var(--ps-line-2);
+    transform: scale(0.75);
+    transition: transform 120ms ease-out, background-color 120ms ease-out;
+  }
+  .ps-dots > [data-active] { transform: scale(1); background: var(--ps-ink); }
+
+  /* Progress: 2 px plate track, ink fill. */
+  .ps-progress { position: relative; height: 2px; width: 100%; overflow: hidden; border-radius: var(--ps-r-pill); background: var(--ps-plate); }
+  .ps-progress > span { display: block; height: 100%; border-radius: inherit; background: var(--ps-ink); transition: width 180ms ease-out; }
+
+  /* Prompt box: paper card by default (composers); `data-hero` is the wide taupe card on the home page. */
+  .ps-prompt {
+    display: flex;
+    flex-direction: column;
+    min-height: 96px;
+    padding: 12px;
+    border: 1px solid var(--ps-line);
+    border-radius: var(--ps-r-sm);
+    background: var(--ps-paper);
+    transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
+  }
+  .ps-prompt:focus-within { border-color: var(--ps-ink); box-shadow: 0 0 0 2px var(--ps-ink-ring); }
+  .ps-prompt textarea {
+    width: 100%;
+    min-height: 44px;
+    resize: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: 0;
+    color: var(--ps-ink);
+    outline: none;
+  }
+  .ps-prompt-footer { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .ps-prompt[data-hero] {
+    padding: 24px;
+    border-color: transparent;
+    border-radius: var(--ps-r-card-lg);
+    background: var(--ps-surface);
+  }
+  .ps-prompt[data-hero]:focus-within { border-color: transparent; box-shadow: 0 0 0 2px var(--ps-ink-ring); }
+  .ps-prompt[data-hero] textarea { min-height: 72px; font-size: 16px; line-height: 1.5; }
+  .ps-prompt[data-hero] .ps-prompt-footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ps-line-2); }
+  /* Send: filled pill, 36 px; icon-only variant is a 36 px circle. */
+  .ps-send {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 36px;
+    min-width: 36px;
+    flex-shrink: 0;
+    padding: 0 16px;
+    border: 1px solid var(--ps-ink);
+    border-radius: var(--ps-r-pill);
+    background: var(--ps-ink);
+    color: var(--ps-on-ink);
+    font: inherit;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    letter-spacing: 0;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 120ms ease-out, border-color 120ms ease-out, opacity 120ms ease-out;
+  }
+  .ps-send:hover:not(:disabled) { background: var(--ps-graphite); border-color: var(--ps-graphite); }
+  .ps-send:disabled { opacity: 0.35; cursor: not-allowed; }
+  .ps-send svg { width: 14px; height: 14px; }
+  .ps-send[data-icon-only] { width: 36px; padding: 0; }
+
+  /* Chip: outline pill, 28 px, 13 px; selected is ink fill with canvas text. */
+  .ps-chip {
+    display: inline-flex;
+    height: 28px;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    border: 1px solid var(--ps-line-2);
+    border-radius: var(--ps-r-pill);
+    background: var(--ps-canvas);
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--ps-ink);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 120ms ease-out, background-color 120ms ease-out, color 120ms ease-out;
+  }
+  .ps-chip:hover { border-color: var(--ps-ash); background: var(--ps-plate); }
+  .ps-chip[data-active], .ps-chip[data-active="true"], .ps-chip[aria-checked="true"], .ps-chip[aria-pressed="true"] {
+    background: var(--ps-ink);
+    border-color: var(--ps-ink);
+    color: var(--ps-on-ink);
+  }
+  .ps-chip:disabled, .ps-chip[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+  .ps-chip svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* Tag / badge: 22 px pill, plate fill, 12 px; tones recolour the text, "soon" is ash. */
+  .ps-pill {
+    display: inline-flex;
+    height: 22px;
+    align-items: center;
+    gap: 5px;
+    padding: 0 9px;
+    border: 0;
+    border-radius: var(--ps-r-pill);
+    background: var(--ps-plate);
+    font-size: 12px;
+    line-height: 1.5;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--ps-graphite);
+    white-space: nowrap;
+  }
+  .ps-pill svg { width: 12px; height: 12px; }
+  .ps-pill[data-tone="success"] { color: var(--ps-success); }
+  .ps-pill[data-tone="warning"] { color: var(--ps-warning); }
+  .ps-pill[data-tone="soon"] { color: var(--ps-ash); }
+  .ps-pill[data-tone="primary"] { background: var(--ps-ink); color: var(--ps-on-ink); }
+
+  /* Type roles (DESIGN.md §3) */
+  .ps-display { font-size: 48px; line-height: 1.08; font-weight: 300; letter-spacing: -0.02em; color: var(--ps-ink); }
+  .ps-heading { font-size: 36px; line-height: 1.17; font-weight: 300; letter-spacing: -0.02em; color: var(--ps-ink); }
+  .ps-heading-sm { font-size: 32px; line-height: 1.13; font-weight: 300; letter-spacing: -0.02em; color: var(--ps-ink); }
+  .ps-pagetitle { font-size: 28px; line-height: 1.15; font-weight: 300; letter-spacing: -0.02em; color: var(--ps-ink); }
+  .ps-title { font-size: 18px; line-height: 1.6; font-weight: 400; letter-spacing: 0; color: var(--ps-ink); }
+  .ps-section { font-size: 20px; line-height: 1.35; font-weight: 400; letter-spacing: -0.01em; color: var(--ps-ink); }
+  .ps-body { font-size: 14px; line-height: 1.5; letter-spacing: 0.01em; color: var(--ps-smoke); }
+  .ps-body-lg { font-size: 16px; line-height: 1.5; letter-spacing: 0.01em; color: var(--ps-smoke); }
+  .ps-label { font-size: 13px; line-height: 1.4; font-weight: 500; letter-spacing: 0; color: var(--ps-graphite); }
+  .ps-caption { font-size: 12px; line-height: 1.5; letter-spacing: 0; color: var(--ps-ash); }
+  .ps-mono { font-family: var(--font-mono, ui-monospace), monospace; font-size: 13px; line-height: 1.69; letter-spacing: 0; color: var(--ps-graphite); }
+
+  /* Panel header (property rows live in styles/sidebar.css) */
+  .ps-panel-header {
+    display: flex;
+    height: 20px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--ps-line);
+    box-sizing: content-box;
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 500;
+    color: var(--ps-graphite);
+  }
+  .ps-panel-action { display: inline-flex; align-items: center; gap: 6px; font-weight: 400; color: var(--ps-smoke); }
+
+  /* Wizard stepper: 28 px circles (outline; current and done are ink-filled), hairline connector, 14/500 labels with ash sub-labels. */
+  .ps-stepper { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; min-width: 0; }
+  .ps-stepper > li { position: relative; display: flex; min-width: 0; align-items: center; gap: 12px; }
+  .ps-stepmark {
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border: 1px solid var(--ps-line-2);
+    border-radius: var(--ps-r-pill);
+    background: var(--ps-canvas);
+    font-size: 12px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--ps-smoke);
+    transition: background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
+  }
+  .ps-stepmark[data-state="current"], .ps-stepmark[data-state="done"] { border-color: var(--ps-ink); background: var(--ps-ink); color: var(--ps-on-ink); }
+  @media (min-width: 1024px) {
+    .ps-stepper { flex-direction: column; align-items: stretch; gap: 0; }
+    .ps-stepper > li { align-items: flex-start; padding-bottom: 24px; }
+    .ps-stepper > li:last-child { padding-bottom: 0; }
+    .ps-stepper > li:not(:last-child)::before { content: ""; position: absolute; left: 13.5px; top: 32px; bottom: 4px; width: 1px; background: var(--ps-line-2); }
+  }
+
+  /* Focus ring: 2 px ink-ring, offset 2 px. Never removed. */
+  .ps-focus:focus-visible,
+  .ps-chip:focus-visible,
+  .ps-tile:focus-visible,
+  .ps-glass:focus-visible,
+  .ps-arrow:focus-visible,
+  .ps-send:focus-visible,
+  .ps-topnav-link:focus-visible,
+  .ps-wordmark:focus-visible,
+  .ps-crumbs a:focus-visible,
+  .ps-dots > button:focus-visible {
+    outline: 2px solid var(--ps-ink-ring);
+    outline-offset: 2px;
+  }
+  .ps-focus-within:focus-within { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+
+  /* Toast: elevated paper card, bottom-right, 13 px. */
+  .ps-toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: min(420px, calc(100vw - 32px));
+    padding: 10px 12px 10px 14px;
+    border: 1px solid var(--ps-line);
+    border-radius: var(--ps-r-sm);
+    background: var(--ps-paper);
+    box-shadow: var(--ps-shadow-subtle);
+    font-size: 13px;
+    line-height: 1.4;
+    letter-spacing: 0;
+    color: var(--ps-ink);
+  }
+
+  /* Banner (offline mode, home only): plate strip, 13 px smoke, warning dot, dismiss. */
+  .ps-banner {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 10px;
+    padding: 8px var(--ps-page-x, 64px);
+    background: var(--ps-plate);
+    color: var(--ps-smoke);
+    font-size: 13px;
+    line-height: 1.4;
+    letter-spacing: 0;
+  }
+  .ps-banner-code {
+    padding: 1px 5px;
+    border-radius: var(--ps-r-input);
+    background: var(--ps-paper);
+    border: 1px solid var(--ps-line);
+    color: var(--ps-graphite);
+    font-family: var(--font-mono, ui-monospace), monospace;
+    font-size: 12px;
+  }
+
+  /* Empty state: taupe card, centred icon plate, 18 px title, one smoke line, a filled pill. */
+  .ps-emptystate { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 48px 24px; text-align: center; }
+
+  /* Dialogs: paper, 24 px radius, hairline, subtle shadow. */
+  [data-slot="dialog-content"] { border-radius: var(--ps-r-card-lg); background: var(--ps-paper); box-shadow: var(--ps-shadow-subtle); border: 1px solid var(--ps-line); --tw-ring-color: transparent; }
+  [data-slot="dialog-footer"] { border-radius: 0 0 var(--ps-r-card-lg) var(--ps-r-card-lg); }
+  [data-slot="dialog-overlay"] { background: rgba(0,0,0,0.24); }
+
+  /* Responsive */
+  @media (max-width: 1023px) {
+    .ps-page, .ps-crumbbar, .ps-topnav, .ps-banner { --ps-page-x: 24px; }
+    .ps-page { padding-top: 32px; }
+  }
+  @media (max-width: 767px) {
+    .ps-topnav { gap: 12px; }
+    .ps-shell > .ps-topnav .ps-topnav-links { display: none; }
+    .ps-page { --ps-page-x: 16px; --ps-page-b: 48px; padding-top: 24px; }
+    .ps-crumbbar, .ps-topnav, .ps-banner { --ps-page-x: 16px; }
+    .ps-glass { padding: 20px; }
+    .ps-glass[data-hero] { padding: 20px; }
+    .ps-prompt[data-hero] { padding: 20px; }
+    .ps-display { font-size: 36px; }
+    .ps-heading { font-size: 28px; }
+  }
+}
+
+/* Mobile nav sheet (unlayered so it beats the dialog's utility classes): the links stacked in a paper panel pinned to the left edge. */
+.ps-navsheet[data-slot="dialog-content"] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+  width: min(300px, 85vw);
+  max-width: none;
+  transform: none;
+  translate: none;
+  align-content: start;
+  border-radius: 0;
+  padding: 16px;
+  outline: none;
+  background: var(--ps-canvas);
+  box-shadow: var(--ps-shadow-subtle);
+  animation: none;
+}
+.ps-navsheet .ps-topnav-links { flex-direction: column; align-items: stretch; gap: 2px; }
+.ps-navsheet .ps-topnav-link { height: 40px; justify-content: flex-start; font-size: 15px; }
+/* No blur anywhere: the dialog backdrop is a flat scrim. */
+[data-slot="dialog-overlay"] { -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* Nav menu button: unlayered so it beats the unlayered `.ps-iconbtn` display; shown only under 768 px. */
+.ps-topnav-menu { display: none; }
+@media (max-width: 767px) {
+  .ps-topnav-menu { display: inline-flex; }
+}
+
+/* ---------- Tabs (unlayered on purpose so `.ps-tabs`/`.ps-tab` beat later unlayered overrides) ---------- */
+/* Tab pills: 32 px outline pills; the active tab shows a 6 px ink dot before its label. */
+.ps-tabs[role="tablist"] {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  height: auto;
+}
+.ps-tabs[role="tablist"] > .ps-tab {
+  position: relative;
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--ps-line-2);
+  border-radius: var(--ps-r-pill);
+  background: var(--ps-canvas);
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--ps-smoke);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 120ms ease-out, border-color 120ms ease-out, background-color 120ms ease-out;
+}
+.ps-tabs[role="tablist"] > .ps-tab svg { width: 14px; height: 14px; }
+.ps-tabs[role="tablist"] > .ps-tab:hover { color: var(--ps-ink); background: var(--ps-plate); }
+.ps-tabs[role="tablist"] > .ps-tab[data-active] { color: var(--ps-ink); border-color: var(--ps-ink); }
+.ps-tabs[role="tablist"] > .ps-tab[data-active]::before { content: ""; width: 6px; height: 6px; border-radius: var(--ps-r-pill); background: var(--ps-ink); }
+.ps-tabs[role="tablist"] > .ps-tab:disabled, .ps-tabs[role="tablist"] > .ps-tab[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.ps-tabs[role="tablist"] > .ps-tab::after { content: none; display: none; }
+.ps-tabs[role="tablist"] > .ps-tab:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+/* Segmented variant (`data-variant="segmented"`): pills in one outlined group; active is an ink-filled pill. */
+.ps-tabs[role="tablist"][data-variant="segmented"] {
+  flex-wrap: nowrap;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--ps-line-2);
+  border-radius: var(--ps-r-pill);
+  background: var(--ps-canvas);
+}
+.ps-tabs[role="tablist"][data-variant="segmented"] > .ps-tab { height: 26px; padding: 0 12px; border-color: transparent; background: transparent; font-size: 13px; }
+.ps-tabs[role="tablist"][data-variant="segmented"] > .ps-tab[data-active]::before { content: none; }
+.ps-tabs[role="tablist"][data-variant="segmented"] > .ps-tab:hover { background: var(--ps-plate); }
+.ps-tabs[role="tablist"][data-variant="segmented"] > .ps-tab[data-active] { background: var(--ps-ink); border-color: var(--ps-ink); color: var(--ps-on-ink); }

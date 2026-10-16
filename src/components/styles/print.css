@@ -1,0 +1,60 @@
+/* Print view (/print/[id]): one 1920 x 1080 page per slide. On screen the sheets stack on the
+   stage colour under a canvas top bar with a hairline; in print the chrome disappears and shadows and
+   filters are stripped because macOS Quartz rasterises blurred shadows as hard boxes. Sheets are
+   always white. */
+
+@page { size: 1920px 1080px; margin: 0; }
+.print-root { background: #FFFFFF; }
+.print-sheet { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #FFFFFF; }
+
+@media screen {
+  .print-root { display: flex; flex-direction: column; align-items: flex-start; gap: 24px; min-height: 100vh; padding: 80px 24px 24px; background: var(--ps-stage); }
+  .print-sheet { zoom: var(--print-zoom, 1); box-shadow: 0 0 0 1px var(--ps-line-2), var(--ps-shadow-subtle); }
+  .print-note { font: 14px/21px var(--font-inter), system-ui, sans-serif; color: var(--ps-smoke); }
+  .print-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 56px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--ps-line);
+    background: var(--ps-canvas);
+    font: 500 14px/20px var(--font-inter), system-ui, sans-serif;
+    color: var(--ps-ink);
+  }
+  /* Outline pill by default; `.primary` is the filled ink pill. */
+  .print-bar button {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 16px;
+    border: 1px solid var(--ps-line-2);
+    border-radius: var(--ps-r-pill);
+    background: var(--ps-canvas);
+    color: var(--ps-ink);
+    font: inherit;
+    cursor: pointer;
+    transition: background-color 120ms ease-out;
+  }
+  .print-bar button:hover:not(:disabled) { background: var(--ps-plate); }
+  .print-bar button:disabled { opacity: 0.5; cursor: default; }
+  .print-bar button.primary { background: var(--ps-ink); color: var(--ps-on-ink); border-color: var(--ps-ink); }
+  .print-bar button.primary:hover:not(:disabled) { background: var(--ps-graphite); border-color: var(--ps-graphite); }
+  .print-bar button:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+  .print-bar .tip { margin-left: auto; font-weight: 400; font-size: 13px; line-height: 18px; color: var(--ps-smoke); }
+}
+
+@media print {
+  html, body { margin: 0 !important; padding: 0 !important; width: 1920px; min-height: 0 !important; background: #FFFFFF !important; }
+  * { print-color-adjust: exact !important; -webkit-print-color-adjust: exact !important; }
+  .print-bar { display: none !important; }
+  .print-root { display: block !important; padding: 0 !important; gap: 0 !important; background: #FFFFFF !important; }
+  .print-sheet { zoom: 1 !important; break-after: page; page-break-after: always; box-shadow: none !important; }
+  .print-sheet:last-child { break-after: auto; page-break-after: auto; }
+  .print-sheet, .print-sheet * { box-shadow: none !important; text-shadow: none !important; filter: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+}

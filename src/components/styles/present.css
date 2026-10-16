@@ -1,0 +1,93 @@
+/* Present mode: always a black room with white type, independent of the chrome mode, so the stage
+   carries its own two colours. The controls are a translucent paper pill (DESIGN.md §6). */
+
+.ps-present {
+  --present-bg: #000000;
+  --present-ink: #FFFFFF;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--present-bg);
+  color: var(--present-ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  user-select: none;
+}
+.ps-present[data-idle] { cursor: none; }
+.ps-present-stage { position: absolute; left: 0; right: 0; top: 0; display: grid; place-items: center; }
+
+/* Bottom-right HUD: keys hint, previous / counter / next and exit. Shown for two seconds on entry and after
+   any keypress or mouse move, then fades; the stage click (advance) passes through the faded area. */
+.ps-present-hud {
+  position: absolute;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 4px 4px 16px;
+  border-radius: var(--ps-r-pill);
+  border: 1px solid var(--ps-line-2);
+  background: color-mix(in srgb, var(--ps-paper) 90%, transparent);
+  box-shadow: var(--ps-shadow-subtle);
+  color: var(--ps-ink);
+  font-size: 13px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  transition: opacity 180ms ease-out;
+}
+.ps-present[data-idle] .ps-present-hud { opacity: 0; pointer-events: none; }
+.ps-present-hud-keys { margin-right: 10px; color: var(--ps-ash); }
+.ps-present-hud-count { min-width: 52px; text-align: center; font-weight: 500; color: var(--ps-ink); }
+.ps-present-hud-sep { width: 1px; height: 16px; margin: 0 6px; background: var(--ps-line-2); }
+/* 32 px ghost circles. */
+.ps-present-ctl {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ps-r-pill);
+  background: transparent;
+  color: var(--ps-graphite);
+  cursor: pointer;
+  transition: background-color 120ms ease-out, color 120ms ease-out, opacity 120ms ease-out;
+}
+.ps-present-ctl:hover:not(:disabled) { background: var(--ps-plate); color: var(--ps-ink); }
+.ps-present-ctl:disabled { opacity: 0.35; cursor: default; }
+.ps-present-ctl:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+@media (max-width: 599px) { .ps-present-hud-keys { display: none; } .ps-present-hud { padding-left: 4px; } }
+
+/* Speaker notes band. */
+.ps-present-notes {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 220px;
+  padding: 18px 28px;
+  overflow-y: auto;
+  border-top: 1px solid color-mix(in srgb, var(--present-ink) 12%, transparent);
+  background: color-mix(in srgb, var(--present-ink) 7%, var(--present-bg));
+  color: color-mix(in srgb, var(--present-ink) 90%, var(--present-bg));
+  cursor: default;
+}
+.ps-present-notes-eyebrow { margin-bottom: 10px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.55; }
+.ps-present-notes-text { margin: 0; max-width: 1100px; font-size: 18px; line-height: 1.5; white-space: pre-wrap; }
+.ps-present-notes-empty { margin: 0; font-size: 16px; opacity: 0.5; }
+
+/* Not-found state. */
+.ps-present-missing { display: grid; place-items: center; text-align: center; }
+.ps-present-missing-title { margin: 0 0 12px; font-size: 20px; font-weight: 300; letter-spacing: -0.02em; }
+.ps-present-btn {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--present-ink);
+  border-radius: var(--ps-r-pill);
+  background: var(--present-ink);
+  color: var(--present-bg);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.ps-present-btn:focus-visible { outline: 2px solid color-mix(in srgb, var(--present-ink) 40%, transparent); outline-offset: 2px; }

@@ -1,0 +1,148 @@
+/* Editor chrome (DESIGN.md §6): under the pinned nav, a 48 px tool row on canvas with a hairline
+   (title, undo/redo ghosts, Add, Theme, save tag left; Export outline and Present filled right), then
+   a 200 px taupe filmstrip, the stage on --ps-stage and the 340 px taupe sidebar. No borders on the
+   taupe panels, hairlines only; selection handles and the marquee are ink. */
+
+/* ---------- Layout ---------- */
+
+.ps-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--ps-canvas);
+  color: var(--ps-ink);
+}
+.ps-editor-body { display: flex; flex: 1; min-height: 0; }
+
+/* ---------- Tool row: 48 px on canvas, bottom hairline ---------- */
+
+.ps-toolbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  height: 48px;
+  flex-shrink: 0;
+  padding: 0 16px 0 20px;
+  border-bottom: 1px solid var(--ps-line);
+  background: var(--ps-canvas);
+  color: var(--ps-ink);
+}
+.ps-toolbar-sep { width: 1px; height: 16px; margin: 0 8px; flex-shrink: 0; background: var(--ps-line); }
+.ps-toolbar-title {
+  max-width: 300px;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--ps-r-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--ps-ink);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: text;
+  transition: background-color 120ms ease-out;
+}
+.ps-toolbar-title:hover { background: var(--ps-plate); }
+.ps-toolbar-title:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+.ps-toolbar-title-input { width: 300px; height: 32px; font-size: 14px; font-weight: 500; }
+.ps-toolbar-actions { display: flex; align-items: center; gap: 8px; margin-left: 8px; }
+/* Save state tag: 22 px plate pill with a status dot. */
+.ps-save {
+  margin-left: 8px;
+  display: inline-flex;
+  height: 22px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  border-radius: var(--ps-r-pill);
+  background: var(--ps-plate);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--ps-smoke);
+  white-space: nowrap;
+}
+.ps-save-dot { width: 6px; height: 6px; border-radius: var(--ps-r-pill); background: var(--ps-success); }
+.ps-save[data-dirty="true"] .ps-save-dot { background: var(--ps-warning); }
+.ps-save[data-error="true"] .ps-save-dot { background: var(--ps-danger); }
+.ps-save[data-error="true"] { color: var(--ps-danger); }
+
+/* ---------- Filmstrip: 200 px taupe column ---------- */
+
+.ps-filmstrip {
+  display: flex;
+  flex-direction: column;
+  width: 200px;
+  min-width: 200px;
+  min-height: 0;
+  background: var(--ps-surface);
+  overflow: hidden;
+}
+.ps-filmstrip-list { flex: 1; min-height: 0; padding: 12px 12px 4px; overflow-y: auto; outline: none; }
+.ps-filmstrip-list:focus-visible { box-shadow: inset 0 0 0 2px var(--ps-ink-ring); }
+.ps-thumb-row { position: relative; padding: 4px 0 8px; cursor: pointer; user-select: none; touch-action: none; }
+.ps-thumb-row[data-dragging="true"] { opacity: 0.4; }
+/* Thumbnail (DESIGN.md §5): 16:9, radius sm, 1 px line, 2 px ink ring when active. */
+.ps-filmstrip .ps-thumb {
+  border-radius: var(--ps-r-sm);
+  background: var(--ps-plate);
+  box-shadow: 0 0 0 1px var(--ps-line-2);
+  transition: box-shadow 120ms ease-out;
+}
+.ps-filmstrip .ps-thumb:hover:not([data-active="true"]) { box-shadow: 0 0 0 1px var(--ps-ash); }
+.ps-filmstrip .ps-thumb[data-active="true"] { box-shadow: 0 0 0 2px var(--ps-ink); }
+/* Caption row under the tile: number in ash, title in graphite. */
+.ps-thumb-cap { display: flex; align-items: center; gap: 6px; min-width: 0; margin-top: 6px; padding: 0 2px; font-size: 12px; line-height: 16px; }
+.ps-thumb-cap-num { flex-shrink: 0; min-width: 12px; font-variant-numeric: tabular-nums; color: var(--ps-ash); }
+.ps-thumb-cap[data-active="true"] .ps-thumb-cap-num { color: var(--ps-ink); font-weight: 500; }
+.ps-thumb-cap-title { min-width: 0; color: var(--ps-graphite); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ps-thumb-menu { position: absolute; right: 6px; top: 10px; z-index: 1; opacity: 0; transition: opacity 120ms ease-out; }
+.ps-thumb-row:hover .ps-thumb-menu, .ps-thumb-menu:focus-within, .ps-thumb-menu[data-open] { opacity: 1; }
+.ps-thumb-menu .ps-iconbtn { width: 24px; height: 24px; border-radius: var(--ps-r-pill); border: 1px solid var(--ps-line-2); background: var(--ps-paper); color: var(--ps-ink); box-shadow: var(--ps-shadow-subtle); }
+.ps-drop-line { position: absolute; left: 0; right: 0; height: 2px; border-radius: 1px; background: var(--ps-ink); pointer-events: none; }
+.ps-filmstrip-foot { flex-shrink: 0; padding: 8px 12px 12px; border-top: 1px solid var(--ps-line); }
+
+/* ---------- Stage ---------- */
+
+.ps-stage-panel {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 24px;
+  overflow: hidden;
+  background: var(--ps-stage);
+}
+.ps-stage { background: var(--ps-stage); }
+/* react-moveable paints handles and guidelines from --moveable-color; it declares its own default on
+   the control box, so the override targets that element rather than relying on inheritance. */
+.ps-stage .moveable-control-box, .ps-stage .moveable-control-box.moveable-control-box { --moveable-color: var(--ps-ink); }
+.ps-stage .moveable-control { border-color: var(--ps-canvas); }
+.ps-marquee {
+  position: absolute;
+  z-index: 50;
+  pointer-events: none;
+  border: 1px solid var(--ps-ink);
+  border-radius: var(--ps-r-input);
+  background: var(--ps-ink-soft);
+}
+/* Hairline plus the subtle shadow: the slide edge reads the same in both modes. */
+.ps-slide-shadow { box-shadow: 0 0 0 1px var(--ps-line-2), var(--ps-shadow-subtle); }
+
+@media (max-width: 1023px) {
+  .ps-filmstrip { display: none; }
+}
+@media (max-width: 767px) {
+  .ps-toolbar { padding: 0 12px 0 16px; }
+  .ps-stage-panel { padding: 12px; }
+  .ps-editor-body > .ps-sidebar { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-editor * { transition-duration: 0ms !important; }
+}
