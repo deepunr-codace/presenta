@@ -103,6 +103,8 @@
   box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--ps-spark-violet) 70%, transparent);
 }
 
+.ps-home-hero .ps-send:disabled { opacity: 0.6; }
+
 /* The status pill under the prompt is a button that opens the API key dialog. */
 .ps-pill-btn { cursor: pointer; font-family: inherit; border: 0; background: transparent; }
 .ps-pill-btn:hover { background: var(--ps-plate); }

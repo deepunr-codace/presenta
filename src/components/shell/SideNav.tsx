@@ -1,20 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ComponentType, type ReactNode } from "react";
-import {
-  CaretDown,
-  FolderSimple,
-  House,
-  Key,
-  Palette,
-  Plus,
-  Presentation,
-  SquaresFour,
-  Stack,
-  Trash,
-  type IconProps,
-} from "@phosphor-icons/react";
+import { useEffect, useState, type ReactNode } from "react";
+import { ChevronDown, Folder, House, KeyRound, LayoutGrid, LayoutTemplate, Palette, Plus, Presentation, Trash2, type LucideIcon } from "lucide-react";
 import { listDecks, type DeckSummary } from "@/lib/persist";
 import { timeAgo } from "@/lib/time";
 import { Avatar } from "./Avatar";
@@ -23,17 +11,17 @@ import { useApiKeyDialog } from "./api-key-dialog-store";
 import { ModeToggle } from "./ModeToggle";
 import type { NavKey } from "./nav-items";
 
-type Icon = ComponentType<IconProps>;
+type Icon = LucideIcon;
 
 type RailItem = { label: string; href?: string; icon: Icon; key?: NavKey; /** Opens a dialog instead of navigating. */ action?: "apikey" };
 
 /** Icon rail (left column): real destinations link, the rest are marked "Soon" and are not navigable. */
 const RAIL: RailItem[] = [
   { label: "Home", href: "/", icon: House, key: "home" },
-  { label: "Decks", href: "/#decks", icon: SquaresFour, key: "decks" },
-  { label: "Templates", icon: Stack },
+  { label: "Decks", href: "/#decks", icon: LayoutGrid, key: "decks" },
+  { label: "Templates", icon: LayoutTemplate },
   { label: "Brand", icon: Palette },
-  { label: "API key", icon: Key, action: "apikey" },
+  { label: "API key", icon: KeyRound, action: "apikey" },
 ];
 
 const RECENT_LIMIT = 5;
@@ -49,7 +37,7 @@ function RailButton({ item, active }: { item: RailItem; active: boolean }) {
   const body = (
     <>
       <span className="ps-rail-icon">
-        <item.icon size={20} weight={active ? "fill" : "regular"} aria-hidden />
+        <item.icon size={20} strokeWidth={active ? 2.3 : 1.9} aria-hidden />
       </span>
       <span className="ps-rail-label">{item.label}</span>
     </>
@@ -170,17 +158,17 @@ export function SideNav({ active, variant = "full" }: SideNavProps) {
               <span className="ps-panel-ws">Presenta Workspace</span>
               <span className="ps-panel-sub">Internal</span>
             </span>
-            <CaretDown size={12} weight="bold" aria-hidden className="text-[var(--ps-ash)]" />
+            <ChevronDown size={14} strokeWidth={2.2} aria-hidden className="text-[var(--ps-ash)]" />
           </div>
 
           <div className="ps-panel-group">
             <PanelRow icon={Plus} href="/new" active={active === "new"}>
               Create
             </PanelRow>
-            <PanelRow icon={SquaresFour} href="/#decks">
+            <PanelRow icon={LayoutGrid} href="/#decks">
               All decks
             </PanelRow>
-            <PanelRow icon={Key} onClick={() => openKeyDialog(true)}>
+            <PanelRow icon={KeyRound} onClick={() => openKeyDialog(true)}>
               API key
             </PanelRow>
           </div>
@@ -193,11 +181,11 @@ export function SideNav({ active, variant = "full" }: SideNavProps) {
           <p className="ps-panel-kicker">Folders</p>
           <div className="ps-panel-folders">
             <div className="ps-panel-ghost" aria-hidden>
-              <FolderSimple size={14} />
+              <Folder size={14} />
               <span style={{ width: "72%" }} />
             </div>
             <div className="ps-panel-ghost" aria-hidden>
-              <FolderSimple size={14} />
+              <Folder size={14} />
               <span style={{ width: "48%" }} />
             </div>
             <p>Group related decks and share them all at once.</p>
@@ -206,7 +194,7 @@ export function SideNav({ active, variant = "full" }: SideNavProps) {
 
           <div className="ps-panel-rule" />
           <div className="ps-panel-group">
-            <PanelRow icon={Trash} soon>
+            <PanelRow icon={Trash2} soon>
               Trash
             </PanelRow>
           </div>

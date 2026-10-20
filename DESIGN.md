@@ -20,8 +20,8 @@ Warm editorial minimalism. An eggshell canvas, black ink, one layer of warm taup
 | `--ps-paper` | #FDFCFC | #1B1917 | Elevated cards and inputs on top of surface |
 | `--ps-ink` | #000000 | #F4F2EF | Primary text, filled buttons, nav |
 | `--ps-graphite` | #44403B | #D6D1CB | Strong secondary text, section labels |
-| `--ps-smoke` | #777169 | #A39D95 | Body text, descriptions |
-| `--ps-ash` | #A59F97 | #716B64 | Captions, placeholders, tertiary icons |
+| `--ps-smoke` | #625C55 | #BDB7AF | Body text, descriptions |
+| `--ps-ash` | #766F67 | #9A948C | Captions, placeholders, tertiary icons |
 | `--ps-line` | #EBE8E4 | #2B2825 | Hairlines, card borders |
 | `--ps-line-2` | #E5E5E5 | #36322E | Button borders, input borders |
 | `--ps-ink-soft` | rgba(0,0,0,0.06) | rgba(255,255,255,0.08) | Selected rows, active nav, chip selection |
@@ -109,7 +109,7 @@ Assistant tab: scope chips (selected = ink fill), message list (assistant replie
 
 ## 8. Dark mode
 
-Same structure and type. Canvas #121110, surfaces one step lighter, ink becomes warm off-white, filled buttons invert (off-white fill, near-black text). Sparks brighten slightly for the mark. Contrast targets: body smoke on surface ≥ 4.5:1 in both modes; captions in ash are decorative and never carry essential information alone.
+Same structure and type. Canvas #121110, surfaces one step lighter, ink becomes warm off-white, filled buttons invert (off-white fill, near-black text). Sparks brighten slightly for the mark. Contrast targets: body smoke on surface ≥ 4.5:1 in both modes; ash and smoke text meet 4.5:1 on canvas and surface in both modes.
 
 ## 9. Accessibility
 

@@ -73,7 +73,7 @@
 /* ---------- Tokens: warm editorial, light and dark (DESIGN.md §2) ---------- */
 :root, [data-theme="light"] {
   --ps-canvas: #FDFCFC; --ps-surface: #F5F3F1; --ps-plate: #EBE8E4; --ps-paper: #FDFCFC;
-  --ps-ink: #000000; --ps-graphite: #44403B; --ps-smoke: #777169; --ps-ash: #A59F97;
+  --ps-ink: #000000; --ps-graphite: #44403B; --ps-smoke: #625C55; --ps-ash: #766F67;
   --ps-line: #EBE8E4; --ps-line-2: #E5E5E5;
   --ps-ink-soft: rgba(0,0,0,0.06); --ps-ink-ring: rgba(0,0,0,0.18);
   --ps-spark-violet: #0447FF; --ps-spark-orange: #FF4704;
@@ -87,7 +87,7 @@
 }
 [data-theme="dark"] {
   --ps-canvas: #121110; --ps-surface: #1B1917; --ps-plate: #262320; --ps-paper: #1B1917;
-  --ps-ink: #F4F2EF; --ps-graphite: #D6D1CB; --ps-smoke: #A39D95; --ps-ash: #716B64;
+  --ps-ink: #F4F2EF; --ps-graphite: #D6D1CB; --ps-smoke: #BDB7AF; --ps-ash: #9A948C;
   --ps-line: #2B2825; --ps-line-2: #36322E;
   --ps-ink-soft: rgba(255,255,255,0.08); --ps-ink-ring: rgba(255,255,255,0.24);
   --ps-spark-violet: #4C7DFF; --ps-spark-orange: #FF6A33;

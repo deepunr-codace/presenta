@@ -1,6 +1,6 @@
 "use client";
 
-import { Moon, Sun } from "@phosphor-icons/react";
+import { Moon, Sun } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useThemeMode } from "./ThemeMode";
 
