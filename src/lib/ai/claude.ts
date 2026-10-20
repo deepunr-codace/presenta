@@ -16,6 +16,7 @@ import {
   type SuggestRequest,
   type SuggestResponse,
 } from "@/lib/deck/schema";
+import type { AiAuth } from "./auth";
 import { AiError, AiParseError, AiRefusedError } from "./errors";
 import {
   GENERATE_SYSTEM,
@@ -39,6 +40,8 @@ export const AI_MAX_RETRIES = 1;
 export type AiCallOptions = {
   /** Aborts the upstream request when the client goes away (`request.signal` in a route). */
   signal?: AbortSignal;
+  /** The visitor's own key; when absent the server's ANTHROPIC_API_KEY is used. */
+  auth?: AiAuth;
 };
 
 let client: Anthropic | null = null;
@@ -85,8 +88,9 @@ export function structuredOutputFormat<S extends z.ZodType>(schema: S, parseMess
   };
 }
 
-/** The SDK client, created once per server process from ANTHROPIC_API_KEY. Never runs in the browser. */
-function getClient(): Anthropic {
+/** The SDK client: one per request for a visitor's own key, else created once per process from ANTHROPIC_API_KEY. Never runs in the browser. */
+function getClient(auth?: AiAuth): Anthropic {
+  if (auth) return new Anthropic({ apiKey: auth.apiKey, timeout: AI_TIMEOUT_MS, maxRetries: AI_MAX_RETRIES });
   if (client) return client;
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) throw new AiError("auth", "ANTHROPIC_API_KEY is not set on the server.");
@@ -104,7 +108,7 @@ const PARSE_PREFIX = "Failed to parse structured output";
 export function toAiError(err: unknown, parseMessage?: string): AiError {
   if (err instanceof AiError) return err;
   if (err instanceof Anthropic.AuthenticationError) {
-    return new AiError("auth", "The Anthropic API key was rejected. Check ANTHROPIC_API_KEY on the server.");
+    return new AiError("auth", "The Anthropic API key was rejected. Check the key and try again.");
   }
   if (err instanceof Anthropic.RateLimitError) {
     return new AiError("rate_limit", "Claude is rate limited right now. Wait a moment and try again.");
@@ -138,12 +142,13 @@ type StructuredCall<S extends z.ZodType> = {
   refusedMessage?: string;
   parseMessage?: string;
   signal?: AbortSignal;
+  auth?: AiAuth;
 };
 
 /** One structured-output call: cached system prompt, adaptive thinking, output validated against `schema`. */
 async function parseWithClaude<S extends z.ZodType>(call: StructuredCall<S>): Promise<z.output<S>> {
   try {
-    const response = await getClient().messages.parse(
+    const response = await getClient(call.auth).messages.parse(
       {
         model: AI_MODEL,
         max_tokens: MAX_TOKENS,
@@ -172,6 +177,7 @@ export function claudeGenerate(req: GenerateRequest, opts: AiCallOptions = {}): 
     user: buildGenerateUserMessage(req),
     effort: "medium",
     signal: opts.signal,
+    auth: opts.auth,
   });
 }
 
@@ -184,6 +190,7 @@ export function claudeRevise(req: ReviseRequest, opts: AiCallOptions = {}): Prom
     refusedMessage: "Claude declined to revise the deck with this instruction. Try rephrasing it.",
     parseMessage: "Claude returned a revision that could not be parsed. Please try again.",
     signal: opts.signal,
+    auth: opts.auth,
   });
 }
 
@@ -196,6 +203,7 @@ export function claudeSuggest(req: SuggestRequest, opts: AiCallOptions = {}): Pr
     refusedMessage: "Claude declined to suggest answers for this question. Type your own answer instead.",
     parseMessage: "Claude returned suggestions that could not be parsed. Please try again.",
     signal: opts.signal,
+    auth: opts.auth,
   });
 }
 
@@ -208,5 +216,6 @@ export function claudeOutline(req: OutlineRequest, opts: AiCallOptions = {}): Pr
     refusedMessage: "Claude declined to outline this brief. Try rephrasing it.",
     parseMessage: "Claude returned an outline that could not be parsed. Please try again.",
     signal: opts.signal,
+    auth: opts.auth,
   });
 }

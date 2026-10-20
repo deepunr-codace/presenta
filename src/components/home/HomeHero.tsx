@@ -11,7 +11,7 @@ type Props = {
   onSubmit: (prompt: string) => void;
 };
 
-/** Prompt hero (DESIGN.md §6): the wide taupe prompt card with three starter chips and a filled "Create deck" pill. */
+/** Prompt hero (DESIGN.md §6): the wide prompt card over a drifting aurora, with three starter cards that fill the prompt. */
 export function HomeHero({ status, busy, onSubmit }: Props) {
   const [prompt, setPrompt] = useState("");
   const promptRef = useRef<PromptBoxHandle>(null);
@@ -23,28 +23,32 @@ export function HomeHero({ status, busy, onSubmit }: Props) {
 
   return (
     <section aria-label="Start a deck">
-      <PromptBox
-        ref={promptRef}
-        hero
-        value={prompt}
-        onChange={setPrompt}
-        onSubmit={onSubmit}
-        placeholder="Describe the deck you need. Topic, audience and goal are a great start…"
-        disabled={busy}
-        busy={busy}
-        autoFocus
-        starters={
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="ps-caption mr-1">Try</span>
-            {STARTERS.map((s) => (
-              <button key={s.lead} type="button" className="ps-chip" onClick={() => applyStarter(s.prompt)} disabled={busy}>
+      <div className="ps-home-hero">
+        <PromptBox
+          ref={promptRef}
+          hero
+          value={prompt}
+          onChange={setPrompt}
+          onSubmit={onSubmit}
+          placeholder="Describe the deck you need. Topic, audience and goal are a great start…"
+          disabled={busy}
+          busy={busy}
+          autoFocus
+        />
+      </div>
+      <div className="ps-starters" role="group" aria-label="Starter prompts">
+        {STARTERS.map((s) => (
+          <button key={s.lead} type="button" className="ps-starter" onClick={() => applyStarter(s.prompt)} disabled={busy}>
+            <span className="ps-starter-head">
+              <span className="ps-starter-icon" aria-hidden>
                 {s.icon}
-                {s.lead}
-              </button>
-            ))}
-          </div>
-        }
-      />
+              </span>
+              {s.lead}
+            </span>
+            <p>{s.prompt}</p>
+          </button>
+        ))}
+      </div>
       <p className="ps-caption mt-3 px-1" aria-live="polite">
         {status}
       </p>

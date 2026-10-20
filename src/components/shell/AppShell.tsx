@@ -3,8 +3,10 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { X } from "@phosphor-icons/react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { ApiKeyDialog } from "./ApiKeyDialog";
 import { KeyBanner } from "./KeyBanner";
 import { Mark } from "./Mark";
+import { SideNav, type SideNavProps } from "./SideNav";
 import { NavLinks, TopNav } from "./TopNav";
 import { TopBar, type Crumb } from "./TopBar";
 import type { NavKey } from "./nav-items";
@@ -22,6 +24,8 @@ export type AppShellProps = {
   active?: NavKey;
   /** Show the offline-mode banner under the nav (home only). */
   banner?: boolean;
+  /** Left sidebar: `full` adds the workspace panel (home); `rail` is the icon rail only (editor, wizard). */
+  sidebar?: SideNavProps["variant"];
   /** Extra classes for the scrolling content column. */
   className?: string;
 };
@@ -31,18 +35,21 @@ export type AppShellProps = {
  * its own (so the nav stays pinned on the editor and review). Under 768 px the nav links collapse
  * into a menu button that opens them in a sheet.
  */
-export function AppShell({ children, breadcrumbs, actions, active, banner = false, className }: AppShellProps) {
+export function AppShell({ children, breadcrumbs, actions, active, banner = false, sidebar = "rail", className }: AppShellProps) {
   const [navOpen, setNavOpen] = useState(false);
   const closeNav = () => setNavOpen(false);
 
   return (
-    <div className="ps-shell">
+    <div className="ps-shell" data-sidebar="">
       <TopNav active={active} onMenu={() => setNavOpen(true)} />
+      <SideNav active={active} variant={sidebar} />
       <div className={className ? `ps-content ${className}` : "ps-content"}>
         {banner ? <KeyBanner /> : null}
         <TopBar breadcrumbs={breadcrumbs} actions={actions} />
         <div className="ps-content-body">{children}</div>
       </div>
+
+      <ApiKeyDialog />
 
       <Dialog open={navOpen} onOpenChange={setNavOpen}>
         <DialogContent className="ps-navsheet" style={SHEET_STYLE} showCloseButton={false} aria-label="Navigation">

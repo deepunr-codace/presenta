@@ -7,17 +7,26 @@ type Props = {
   value: ReactNode;
   unit?: string;
   caption: string;
+  /** Line icon shown in a small plate before the label. */
+  icon?: ReactNode;
   /** Right-aligned element in the label row (a small button). */
   action?: ReactNode;
   className?: string;
 };
 
-/** Stat tile (DESIGN.md §5): taupe card with a 13 px label, an Inter 300 value at 32 px with a unit, and a caption. No sparkline. */
-export function StatCard({ title, value, unit, caption, action, className }: Props) {
+/** Stat tile (DESIGN.md §5): outlined card with an icon plate and 13 px label, an Inter 300 value with a unit, and a caption. No sparkline. */
+export function StatCard({ title, value, unit, caption, icon, action, className }: Props) {
   return (
     <GlassCard as="article" className={className}>
       <div className="mb-4 flex min-h-8 items-center justify-between gap-2">
-        <h3 className="ps-label">{title}</h3>
+        <div className="ps-stat-title">
+          {icon ? (
+            <span className="ps-stat-icon" aria-hidden>
+              {icon}
+            </span>
+          ) : null}
+          <h3 className="ps-label">{title}</h3>
+        </div>
         {action}
       </div>
       <Numeral value={value} unit={unit} caption={caption} />

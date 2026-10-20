@@ -3,6 +3,7 @@
 import { forwardRef, useImperativeHandle, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { ArrowRight, CircleNotch, Sparkle, WifiSlash } from "@phosphor-icons/react";
 import { useAiHealth } from "@/hooks/useAiHealth";
+import { useApiKeyDialog } from "./api-key-dialog-store";
 
 export type PromptBoxProps = {
   onSubmit: (text: string) => void;
@@ -42,6 +43,7 @@ export const PromptBox = forwardRef<PromptBoxHandle, PromptBoxProps>(function Pr
   const text = controlled ? value : inner;
   const areaRef = useRef<HTMLTextAreaElement>(null);
   const health = useAiHealth();
+  const openKeyDialog = useApiKeyDialog((s) => s.setOpen);
   const pill: "Offline" | "Claude" | "OpenAI" | null = footerPill ?? (health ? (health.hasKey ? (health.provider === "openai" ? "OpenAI" : "Claude") : "Offline") : null);
 
   useImperativeHandle(ref, () => ({ focus: () => areaRef.current?.focus() }), []);
@@ -71,10 +73,10 @@ export const PromptBox = forwardRef<PromptBoxHandle, PromptBoxProps>(function Pr
       {starters}
       <div className="ps-prompt-footer">
         {pill ? (
-          <span className="ps-pill" data-tone={pill === "Offline" ? "warning" : "success"} title={pill === "Offline" ? "Offline mock mode: no API key on the server" : health?.model}>
+          <button type="button" className="ps-pill ps-pill-btn" data-tone={pill === "Offline" ? "warning" : "success"} title={pill === "Offline" ? "Offline demo: click to add your API key" : `${health?.model ?? ""} · click to change your API key`} onClick={() => openKeyDialog(true)}>
             {pill === "Offline" ? <WifiSlash weight="bold" /> : <Sparkle weight="fill" />}
             {pill}
-          </span>
+          </button>
         ) : (
           <span className="ps-pill" aria-hidden>
             <span className="inline-block h-2 w-10 animate-pulse rounded-[var(--ps-r-pill)] bg-[var(--ps-line-2)]" />

@@ -1,4 +1,5 @@
 import { compactDeckForRevise } from "@/lib/ai/compact";
+import { aiKeyHeaders } from "@/lib/ai-key";
 import type { AiErrorCode } from "@/lib/ai/errors";
 import type {
   GenerateRequest,
@@ -24,7 +25,7 @@ export type ApiOk<T> = { ok: true; data: T; source: AiSource };
 export type ApiFail = { ok: false; error: string; code: ApiErrorCode };
 export type ApiResult<T> = ApiOk<T> | ApiFail;
 
-export type AiHealth = { hasKey: boolean; model: string; provider: AiSource };
+export type AiHealth = { hasKey: boolean; model: string; provider: AiSource; /** Served by the visitor's own key. */ byok: boolean; /** The server's own key may serve requests without one. */ serverKey: boolean };
 
 /** Hard deadline for one API call from the browser; the server gives the AI 55 s per attempt. */
 const REQUEST_TIMEOUT_MS = 90_000;
@@ -78,7 +79,7 @@ export function withDeadline(signal?: AbortSignal, timeoutMs = REQUEST_TIMEOUT_M
 function post<T>(url: string, body: unknown, signal?: AbortSignal): Promise<ApiResult<T>> {
   return request<T>(url, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...aiKeyHeaders() },
     body: JSON.stringify(body),
     signal: withDeadline(signal),
   });
@@ -102,7 +103,7 @@ export function postOutline(req: OutlineBody, signal?: AbortSignal): Promise<Api
 }
 
 export function getHealth(signal?: AbortSignal): Promise<ApiResult<AiHealth>> {
-  return request<AiHealth>("/api/health", { method: "GET", signal });
+  return request<AiHealth>("/api/health", { method: "GET", headers: aiKeyHeaders(), cache: "no-store", signal });
 }
 
 export function sourceLabel(source: AiSource | null | undefined): string {

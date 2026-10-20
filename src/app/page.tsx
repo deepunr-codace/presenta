@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Presentation, Stack } from "@phosphor-icons/react";
 import { SAMPLE_DECK } from "@/lib/deck/sample";
 import { deleteDeckById, downloadBlob, exportDeckJson, importDeckJson, listDecks, loadDeckById, saveDeck, type DeckSummary } from "@/lib/persist";
 import { deckSlug } from "@/components/editor/deck-slug";
@@ -154,7 +155,7 @@ export default function HomePage() {
   const loading = decks === null;
 
   return (
-    <AppShell active="home" banner>
+    <AppShell active="home" sidebar="full" banner>
       <div className="ps-page">
         <div>
           <input
@@ -172,7 +173,9 @@ export default function HomePage() {
 
           <header className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
             <div className="min-w-0">
-              <h1 className="ps-heading">What are we building today?</h1>
+              <h1 className="ps-home-title">
+                What are we building <span className="ps-accent">today</span>?
+              </h1>
               <p className="ps-body-lg mt-2">Good {part ?? "day"}. Describe a deck to start one, or pick up a recent deck below.</p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -187,7 +190,7 @@ export default function HomePage() {
 
           <HomeHero status={busy ?? "Presenta can make mistakes. Review important details."} busy={busy !== null} onSubmit={startFromPrompt} />
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          <div className="ps-home-stats mt-8 grid gap-4 sm:grid-cols-3">
             {loading ? (
               <>
                 <StatSkeleton />
@@ -196,8 +199,8 @@ export default function HomePage() {
               </>
             ) : (
               <>
-                <StatCard title="Decks" value={stats.decks.toLocaleString()} unit={stats.decks === 1 ? "deck" : "decks"} caption="Saved in this browser" />
-                <StatCard title="Slides" value={stats.slides.toLocaleString()} unit={stats.slides === 1 ? "slide" : "slides"} caption={hasDecks ? `Across ${stats.decks} deck${stats.decks === 1 ? "" : "s"}` : "Nothing generated yet"} />
+                <StatCard title="Decks" icon={<Stack />} value={stats.decks.toLocaleString()} unit={stats.decks === 1 ? "deck" : "decks"} caption="Saved in this browser" />
+                <StatCard title="Slides" icon={<Presentation />} value={stats.slides.toLocaleString()} unit={stats.slides === 1 ? "slide" : "slides"} caption={hasDecks ? `Across ${stats.decks} deck${stats.decks === 1 ? "" : "s"}` : "Nothing generated yet"} />
                 <LastEditedCard summary={decks?.[0] ?? null} />
               </>
             )}

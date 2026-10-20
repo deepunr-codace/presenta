@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import type { z } from "zod";
 import { AiError, aiSource } from "@/lib/ai";
-import type { ApiErrorCode, ApiFail, ApiOk } from "@/lib/api-client";
+import type { AiSource, ApiErrorCode, ApiFail, ApiOk } from "@/lib/api-client";
 
 /** Request bodies above this size are rejected with 413 before they are parsed. */
 export const MAX_BODY_BYTES = 1024 * 1024;
 
-export function jsonOk<T>(data: T): NextResponse<ApiOk<T>> {
-  return NextResponse.json({ ok: true, data, source: aiSource() });
+export function jsonOk<T>(data: T, source: AiSource = aiSource()): NextResponse<ApiOk<T>> {
+  return NextResponse.json({ ok: true, data, source });
 }
 
 export function jsonError(status: number, code: ApiErrorCode, error: string): NextResponse<ApiFail> {

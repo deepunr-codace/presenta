@@ -14,6 +14,7 @@ import {
   type SuggestResponse,
 } from "@/lib/deck/schema";
 import { AI_TIMEOUT_MS, dropBooleanItems, type AiCallOptions } from "./claude";
+import type { AiAuth } from "./auth";
 import { AiError, AiParseError, AiRefusedError } from "./errors";
 import {
   GENERATE_SYSTEM,
@@ -44,7 +45,7 @@ type ChatResponse = {
 };
 
 function statusToError(status: number): AiError {
-  if (status === 401 || status === 403) return new AiError("auth", "The OpenAI API key was rejected. Check OPENAI_API_KEY on the server.");
+  if (status === 401 || status === 403) return new AiError("auth", "The OpenAI API key was rejected. Check the key and try again.");
   if (status === 429) return new AiError("rate_limit", "OpenAI is rate limited right now. Wait a moment and try again.");
   return new AiError("api", `The OpenAI API returned an error (HTTP ${status}).`);
 }
@@ -58,10 +59,13 @@ async function parseWithOpenAi<S extends z.ZodType>(call: {
   refusedMessage?: string;
   parseMessage?: string;
   signal?: AbortSignal;
+  /** The visitor's own key; when absent the server's OPENAI_API_KEY is used. */
+  auth?: AiAuth;
 }): Promise<z.output<S>> {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) throw new AiError("auth", "OPENAI_API_KEY is not set on the server.");
-  const baseUrl = (process.env.OPENAI_BASE_URL?.trim() || DEFAULT_BASE_URL).replace(/\/+$/, "");
+  const apiKey = call.auth?.apiKey ?? process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) throw new AiError("auth", "No OpenAI API key is available. Add your key in Settings.");
+  // A visitor's key only ever goes to OpenAI itself; the configurable base URL belongs to the server's own key.
+  const baseUrl = (call.auth ? DEFAULT_BASE_URL : process.env.OPENAI_BASE_URL?.trim() || DEFAULT_BASE_URL).replace(/\/+$/, "");
 
   const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
     { role: "system", content: call.system },
@@ -137,6 +141,7 @@ async function requestOnce<S extends z.ZodType>(
   const result = call.schema.safeParse(parsed);
   if (!result.success) {
     const issues = JSON.stringify(result.error.issues.slice(0, 8).map((i) => ({ path: i.path.join("."), message: i.message })));
+    // eslint-disable-next-line no-console -- server-side diagnostics; the client only sees the generic parse message
     console.warn(`[openai] ${call.name} failed validation:`, issues);
     return { ok: false, content, issues };
   }
@@ -144,7 +149,7 @@ async function requestOnce<S extends z.ZodType>(
 }
 
 export function openAiGenerate(req: GenerateRequest, opts: AiCallOptions = {}): Promise<Generation> {
-  return parseWithOpenAi({ schema: GenerationSchema, name: "generation", system: GENERATE_SYSTEM, user: buildGenerateUserMessage(req), signal: opts.signal });
+  return parseWithOpenAi({ schema: GenerationSchema, name: "generation", system: GENERATE_SYSTEM, user: buildGenerateUserMessage(req), signal: opts.signal, auth: opts.auth });
 }
 
 export function openAiRevise(req: ReviseRequest, opts: AiCallOptions = {}): Promise<Revision> {
@@ -156,6 +161,7 @@ export function openAiRevise(req: ReviseRequest, opts: AiCallOptions = {}): Prom
     refusedMessage: "OpenAI declined to revise the deck with this instruction. Try rephrasing it.",
     parseMessage: "OpenAI returned a revision that could not be parsed. Please try again.",
     signal: opts.signal,
+    auth: opts.auth,
   });
 }
 
@@ -168,6 +174,7 @@ export function openAiSuggest(req: SuggestRequest, opts: AiCallOptions = {}): Pr
     refusedMessage: "OpenAI declined to suggest answers for this question. Type your own answer instead.",
     parseMessage: "OpenAI returned suggestions that could not be parsed. Please try again.",
     signal: opts.signal,
+    auth: opts.auth,
   });
 }
 
@@ -180,5 +187,6 @@ export function openAiOutline(req: OutlineRequest, opts: AiCallOptions = {}): Pr
     refusedMessage: "OpenAI declined to outline this brief. Try rephrasing it.",
     parseMessage: "OpenAI returned an outline that could not be parsed. Please try again.",
     signal: opts.signal,
+    auth: opts.auth,
   });
 }

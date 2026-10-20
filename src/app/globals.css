@@ -7,6 +7,9 @@
 @import "../components/styles/sidebar.css";
 @import "../components/styles/editor.css";
 @import "../components/styles/review.css";
+@import "../components/styles/home.css";
+@import "../components/styles/sidenav.css";
+@import "../components/styles/apikey.css";
 @import "../components/styles/present.css";
 @import "../components/styles/print.css";
 
