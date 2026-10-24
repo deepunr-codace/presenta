@@ -1,6 +1,8 @@
 "use client";
 
-import { ArrowSquareOut, Copy, DotsThree, DownloadSimple, PencilSimple, Trash } from "@phosphor-icons/react";
+import { ArrowSquareOut, Copy, DotsThree, DownloadSimple, PencilSimple, Star, Trash } from "@phosphor-icons/react";
+import { useStarred } from "@/hooks/useStarred";
+import { toggleStarred } from "@/lib/starred";
 import type { DeckSummary } from "@/lib/persist";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { DeckActions } from "./deck-actions";
@@ -9,6 +11,7 @@ type Props = { summary: DeckSummary; actions: DeckActions };
 
 /** Three-dot menu on a deck card: open, edit, duplicate, export, delete. */
 export function DeckMenu({ summary, actions }: Props) {
+  const starred = useStarred().includes(summary.id);
   return (
     <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
       <DropdownMenu>
@@ -21,6 +24,9 @@ export function DeckMenu({ summary, actions }: Props) {
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => actions.onEdit(summary.id)}>
             <PencilSimple /> Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => toggleStarred(summary.id)}>
+            <Star weight={starred ? "fill" : "regular"} /> {starred ? "Remove star" : "Star"}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => actions.onDuplicate(summary.id)}>
             <Copy /> Duplicate

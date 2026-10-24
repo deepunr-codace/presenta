@@ -77,7 +77,7 @@
 
 /* Not-found state. */
 .ps-present-missing { display: grid; place-items: center; text-align: center; }
-.ps-present-missing-title { margin: 0 0 12px; font-size: 20px; font-weight: 300; letter-spacing: -0.02em; }
+.ps-present-missing-title { margin: 0 0 12px; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
 .ps-present-btn {
   height: 36px;
   padding: 0 16px;

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Image as ImageIcon, LinkSimple, Sparkle, Trash, UploadSimple } from "@phosphor-icons/react";
+import { Image as ImageIcon, Images, LinkSimple, Sparkle, Trash, UploadSimple } from "@phosphor-icons/react";
 import { getScope } from "@/lib/assistant/scope";
 import type { ImageElement } from "@/lib/deck/schema";
 import { fileToImageDataUrl, ImageIntakeError, pickImageFile } from "@/lib/image";
 import { useDeckStore, type ElementPatch } from "@/store/deck-store";
+import { MediaPicker } from "@/components/media/MediaPicker";
 import { NumInput } from "@/components/ui-kit/NumInput";
 import { PercentSlider } from "@/components/ui-kit/PercentSlider";
 import { PropertyGroup } from "@/components/ui-kit/PropertyGroup";
@@ -27,6 +28,7 @@ export function ImageProps({ el, patch }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [pasting, setPasting] = useState(false);
+  const [library, setLibrary] = useState(false);
 
   const upload = async () => {
     setError(null);
@@ -67,10 +69,14 @@ export function ImageProps({ el, patch }: Props) {
         <button type="button" className="ps-btn flex-1" onClick={() => void upload()} disabled={busy}>
           <UploadSimple size={12} /> {busy ? "Reading…" : "Upload"}
         </button>
+        <button type="button" className="ps-btn flex-1" onClick={() => setLibrary(true)}>
+          <Images size={12} /> Library
+        </button>
         <button type="button" className="ps-btn flex-1" aria-pressed={pasting} onClick={() => setPasting((v) => !v)}>
-          <LinkSimple size={12} /> Paste URL
+          <LinkSimple size={12} /> URL
         </button>
       </div>
+      <MediaPicker open={library} onOpenChange={setLibrary} onPick={(src, name) => patch({ src, alt: el.alt || name })} />
       {pasting ? (
         <TextInput
           aria-label="Image URL"

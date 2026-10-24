@@ -167,3 +167,59 @@ export function downloadBlob(blob: Blob, filename: string): void {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
+
+/* ---------- Trash (soft delete) ---------- */
+
+export const TRASH_INDEX_KEY = "presenta:trash";
+
+/** A deck in the trash keeps its data; it is purged for good after this many days. */
+export const TRASH_RETENTION_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export type TrashedDeck = DeckSummary & { trashedAt: string };
+
+function asTrash(value: unknown): TrashedDeck[] {
+  return Array.isArray(value) ? (value as TrashedDeck[]) : [];
+}
+
+/** Move a deck out of the index and into the trash. Its data stays until it is purged. Returns false if it was not found. */
+export async function trashDeck(id: string, now: Date = new Date()): Promise<boolean> {
+  const index = await readIndex();
+  const summary = index.find((d) => d.id === id);
+  if (!summary) return false;
+  await update<TrashedDeck[]>(TRASH_INDEX_KEY, (current) => [{ ...summary, trashedAt: now.toISOString() }, ...asTrash(current).filter((d) => d.id !== id)]);
+  await update<DeckSummary[]>(DECK_INDEX_KEY, (current) => asIndex(current).filter((d) => d.id !== id));
+  return true;
+}
+
+/** Put a trashed deck back in the deck list. Returns false if it is not in the trash. */
+export async function restoreDeck(id: string): Promise<boolean> {
+  const trash = asTrash(await get<TrashedDeck[]>(TRASH_INDEX_KEY));
+  const entry = trash.find((d) => d.id === id);
+  if (!entry) return false;
+  const { trashedAt: _trashedAt, ...summary } = entry;
+  void _trashedAt;
+  await update<DeckSummary[]>(DECK_INDEX_KEY, (current) => [summary, ...asIndex(current).filter((d) => d.id !== id)].sort(byUpdatedDesc));
+  await update<TrashedDeck[]>(TRASH_INDEX_KEY, (current) => asTrash(current).filter((d) => d.id !== id));
+  return true;
+}
+
+/** Delete a trashed deck and its data for good. */
+export async function purgeDeck(id: string): Promise<void> {
+  await del(deckKey(id));
+  await update<TrashedDeck[]>(TRASH_INDEX_KEY, (current) => asTrash(current).filter((d) => d.id !== id));
+}
+
+export async function emptyTrash(): Promise<void> {
+  const trash = asTrash(await get<TrashedDeck[]>(TRASH_INDEX_KEY));
+  await Promise.all(trash.map((d) => del(deckKey(d.id))));
+  await set(TRASH_INDEX_KEY, []);
+}
+
+/** Trashed decks, newest first. Decks past the retention window are purged first. */
+export async function listTrash(now: number = Date.now()): Promise<TrashedDeck[]> {
+  const all = asTrash(await get<TrashedDeck[]>(TRASH_INDEX_KEY));
+  const expired = all.filter((d) => now - Date.parse(d.trashedAt) > TRASH_RETENTION_DAYS * DAY_MS);
+  for (const d of expired) await purgeDeck(d.id);
+  return all.filter((d) => !expired.includes(d)).sort((a, b) => (b.trashedAt < a.trashedAt ? -1 : b.trashedAt > a.trashedAt ? 1 : 0));
+}

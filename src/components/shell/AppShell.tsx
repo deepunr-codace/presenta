@@ -4,7 +4,9 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { X } from "@phosphor-icons/react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ApiKeyDialog } from "./ApiKeyDialog";
+import { CommandPalette } from "./CommandPalette";
 import { KeyBanner } from "./KeyBanner";
+import { ShortcutsDialog } from "./ShortcutsDialog";
 import { Mark } from "./Mark";
 import { SideNav, type SideNavProps } from "./SideNav";
 import { NavLinks, TopNav } from "./TopNav";
@@ -50,6 +52,8 @@ export function AppShell({ children, breadcrumbs, actions, active, banner = fals
       </div>
 
       <ApiKeyDialog />
+      <CommandPalette />
+      <ShortcutsDialog />
 
       <Dialog open={navOpen} onOpenChange={setNavOpen}>
         <DialogContent className="ps-navsheet" style={SHEET_STYLE} showCloseButton={false} aria-label="Navigation">

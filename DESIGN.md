@@ -114,3 +114,11 @@ Same structure and type. Canvas #121110, surfaces one step lighter, ink becomes 
 ## 9. Accessibility
 
 Visible 2 px ink-ring focus on every control; nav items, icon buttons and thumbnails carry labels; dialogs have titles; all interactive targets at least 32 px.
+
+## 10. Type and icon standards (supersedes the light display weight above)
+
+- **Font:** Inter with its default letterforms. No stylistic alternates (`ss01`, `cv11`) and no positive letter-spacing on body text.
+- **Weights:** 400 body, 500 controls and row labels, 600 headings, labels in caps and numerals. No 300 or 700 in the app chrome (slide content is separate).
+- **Sizes:** 12 (captions, labels), 13 to 14 (body, rows), 16 (large body), 20 and up for headings; page titles top out at 40.
+- **Tracking:** headings -0.02em, uppercase labels +0.04em, everything else 0.
+- **Icons:** Phosphor only, `regular` weight, `fill` for the active state; 20 to 24 px in navigation, 16 px inline. Do not mix in other icon libraries.

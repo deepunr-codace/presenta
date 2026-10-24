@@ -10,6 +10,9 @@
 @import "../components/styles/home.css";
 @import "../components/styles/sidenav.css";
 @import "../components/styles/apikey.css";
+@import "../components/styles/pages.css";
+@import "../components/styles/labs.css";
+@import "../components/styles/scrollbar.css";
 @import "../components/styles/present.css";
 @import "../components/styles/print.css";
 
@@ -184,10 +187,9 @@
   body {
     font-size: 14px;
     line-height: 1.5;
-    letter-spacing: 0.01em;
+    letter-spacing: 0;
     color: var(--ps-smoke);
     -webkit-font-smoothing: antialiased;
-    font-feature-settings: "ss01", "cv11";
   }
   h1, h2, h3, h4, h5, h6, strong, b, th, legend {
     color: var(--ps-ink);
@@ -399,7 +401,7 @@
     max-width: 100%;
     font-size: 32px;
     line-height: 1.13;
-    font-weight: 300;
+    font-weight: 600;
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
     color: var(--ps-ink);
@@ -570,14 +572,14 @@
   .ps-pill[data-tone="primary"] { background: var(--ps-ink); color: var(--ps-on-ink); }
 
   /* Type roles (DESIGN.md §3) */
-  .ps-display { font-size: 48px; line-height: 1.08; font-weight: 300; letter-spacing: -0.02em; color: var(--ps-ink); }
-  .ps-heading { font-size: 36px; line-height: 1.17; font-weight: 300; letter-spacing: -0.02em; color: var(--ps-ink); }
-  .ps-heading-sm { font-size: 32px; line-height: 1.13; font-weight: 300; letter-spacing: -0.02em; color: var(--ps-ink); }
-  .ps-pagetitle { font-size: 28px; line-height: 1.15; font-weight: 300; letter-spacing: -0.02em; color: var(--ps-ink); }
+  .ps-display { font-size: 48px; line-height: 1.08; font-weight: 600; letter-spacing: -0.02em; color: var(--ps-ink); }
+  .ps-heading { font-size: 36px; line-height: 1.17; font-weight: 600; letter-spacing: -0.02em; color: var(--ps-ink); }
+  .ps-heading-sm { font-size: 32px; line-height: 1.13; font-weight: 600; letter-spacing: -0.02em; color: var(--ps-ink); }
+  .ps-pagetitle { font-size: 28px; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em; color: var(--ps-ink); }
   .ps-title { font-size: 18px; line-height: 1.6; font-weight: 400; letter-spacing: 0; color: var(--ps-ink); }
   .ps-section { font-size: 20px; line-height: 1.35; font-weight: 400; letter-spacing: -0.01em; color: var(--ps-ink); }
-  .ps-body { font-size: 14px; line-height: 1.5; letter-spacing: 0.01em; color: var(--ps-smoke); }
-  .ps-body-lg { font-size: 16px; line-height: 1.5; letter-spacing: 0.01em; color: var(--ps-smoke); }
+  .ps-body { font-size: 14px; line-height: 1.5; letter-spacing: 0; color: var(--ps-smoke); }
+  .ps-body-lg { font-size: 16px; line-height: 1.5; letter-spacing: 0; color: var(--ps-smoke); }
   .ps-label { font-size: 13px; line-height: 1.4; font-weight: 500; letter-spacing: 0; color: var(--ps-graphite); }
   .ps-caption { font-size: 12px; line-height: 1.5; letter-spacing: 0; color: var(--ps-ash); }
   .ps-mono { font-family: var(--font-mono, ui-monospace), monospace; font-size: 13px; line-height: 1.69; letter-spacing: 0; color: var(--ps-graphite); }

@@ -1,0 +1,12 @@
+/* Scrollbars are hidden app-wide. Scrolling still works with the wheel, trackpad, touch and keyboard;
+   only the bar itself is not drawn. To bring bars back, delete the rules below. */
+
+* {
+  scrollbar-width: none; /* Firefox and current Chromium */
+  -ms-overflow-style: none; /* old Edge */
+}
+*::-webkit-scrollbar {
+  display: none; /* Safari and older Chromium */
+  width: 0;
+  height: 0;
+}

@@ -15,9 +15,8 @@
 .ps-review-title {
   font-size: 28px;
   line-height: 1.15;
-  font-weight: 300;
+  font-weight: 600;
   letter-spacing: -0.02em;
-  font-feature-settings: "ss01";
   color: var(--ps-ink);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -85,7 +84,7 @@
 }
 .ps-stat-label { display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--ps-graphite); }
 .ps-stat-label svg { width: 14px; height: 14px; color: var(--ps-ash); }
-.ps-stat-value { display: inline-flex; align-items: baseline; gap: 6px; font-size: 32px; line-height: 1.13; font-weight: 300; letter-spacing: -0.02em; font-feature-settings: "ss01"; font-variant-numeric: tabular-nums; color: var(--ps-ink); }
+.ps-stat-value { display: inline-flex; align-items: baseline; gap: 6px; font-size: 32px; line-height: 1.13; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--ps-ink); }
 .ps-stat-unit { font-size: 13px; line-height: 18px; font-weight: 400; letter-spacing: 0; color: var(--ps-smoke); }
 .ps-stat-caption { font-size: 12px; line-height: 16px; color: var(--ps-ash); }
 

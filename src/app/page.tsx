@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Presentation, Stack } from "@phosphor-icons/react";
 import { SAMPLE_DECK } from "@/lib/deck/sample";
-import { deleteDeckById, downloadBlob, exportDeckJson, importDeckJson, listDecks, loadDeckById, saveDeck, type DeckSummary } from "@/lib/persist";
+import { trashDeck, downloadBlob, exportDeckJson, importDeckJson, listDecks, loadDeckById, saveDeck, type DeckSummary } from "@/lib/persist";
 import { deckSlug } from "@/components/editor/deck-slug";
 import { DeckCard } from "@/components/home/DeckCard";
 import { DeleteDeckDialog } from "@/components/home/DeleteDeckDialog";
@@ -115,10 +115,10 @@ export default function HomePage() {
     const target = pendingDelete;
     if (!target) return;
     setPendingDelete(null);
-    void run("Deleting…", async () => {
-      await deleteDeckById(target.id);
+    void run("Moving to trash…", async () => {
+      await trashDeck(target.id);
       await refresh();
-      toast("Deck deleted.");
+      toast("Moved to trash. You can restore it from Trash.");
     });
   };
 
