@@ -11,6 +11,7 @@
 @import "../components/styles/sidenav.css";
 @import "../components/styles/apikey.css";
 @import "../components/styles/pages.css";
+@import "../components/styles/auth.css";
 @import "../components/styles/labs.css";
 @import "../components/styles/scrollbar.css";
 @import "../components/styles/present.css";
@@ -787,3 +788,20 @@
 .ps-tabs[role="tablist"][data-variant="segmented"] > .ps-tab[data-active]::before { content: none; }
 .ps-tabs[role="tablist"][data-variant="segmented"] > .ps-tab:hover { background: var(--ps-plate); }
 .ps-tabs[role="tablist"][data-variant="segmented"] > .ps-tab[data-active] { background: var(--ps-ink); border-color: var(--ps-ink); color: var(--ps-on-ink); }
+
+/* ---------- /account: profile, password and danger-zone cards ---------- */
+.ps-page-narrow {
+  max-width: 640px;
+}
+.ps-account-avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--ps-r-pill);
+  background: var(--ps-ink);
+  color: var(--ps-on-ink);
+  font-size: 20px;
+  font-weight: 600;
+}

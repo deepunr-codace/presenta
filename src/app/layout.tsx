@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Inter, Inter_Tight, Oswald, Roboto } from "next/font/google";
 import type { CSSProperties, ReactNode } from "react";
+import { SessionProvider } from "next-auth/react";
 import { ThemeModeProvider } from "@/components/shell/ThemeMode";
 import { ToastProvider } from "@/components/shell/Toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -45,11 +46,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full bg-[var(--ps-canvas)] text-foreground">
-        <ThemeModeProvider>
-          <TooltipProvider delay={200}>
-            <ToastProvider>{children}</ToastProvider>
-          </TooltipProvider>
-        </ThemeModeProvider>
+        <SessionProvider>
+          <ThemeModeProvider>
+            <TooltipProvider delay={200}>
+              <ToastProvider>{children}</ToastProvider>
+            </TooltipProvider>
+          </ThemeModeProvider>
+        </SessionProvider>
       </body>
     </html>
   );
