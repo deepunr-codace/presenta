@@ -2,32 +2,33 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import {
   ArrowRight,
-  CaretRight,
-  ChartLineUp,
-  DotsThree,
-  Flask,
-  FolderSimple,
+  ChartLine,
+  ChevronRight,
+  Ellipsis,
+  FlaskConical,
+  Folder,
   House,
   Images,
-  Key,
+  KeyRound,
   Keyboard,
-  Layout,
-  MagnifyingGlass,
+  LayoutGrid,
+  LayoutTemplate,
   Palette,
-  PlugsConnected,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plug,
   Plus,
   Presentation,
-  ShareNetwork,
-  SidebarSimple,
-  SquaresFour,
+  Search,
+  Share2,
   Star,
-  Trash,
-  UsersThree,
-  type IconProps,
-} from "@phosphor-icons/react";
+  Trash2,
+  UsersRound,
+  type LucideIcon,
+} from "lucide-react";
 import { LABS_FEATURES, LABS_HIGHLIGHTS } from "@/components/labs/labs-data";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAiHealth } from "@/hooks/useAiHealth";
@@ -43,18 +44,18 @@ import { ModeToggle } from "./ModeToggle";
 import type { NavKey } from "./nav-items";
 import { useOverlays } from "./overlay-store";
 
-type Icon = ComponentType<IconProps>;
+type Icon = LucideIcon;
 
 type RailItem = { label: string; href?: string; icon: Icon; key?: NavKey; /** Opens a dialog instead of navigating. */ action?: "apikey" | "search"; /** Shows a small "new" dot. */ isNew?: boolean };
 
 /** Icon rail (left column): the everyday destinations. Search comes first so it is one click away on every screen, including the editor. The rest live under More. */
 const RAIL: RailItem[] = [
-  { label: "Search", icon: MagnifyingGlass, action: "search" },
+  { label: "Search", icon: Search, action: "search" },
   { label: "Home", href: "/", icon: House, key: "home" },
-  { label: "Decks", href: "/decks", icon: SquaresFour, key: "decks" },
-  { label: "Templates", href: "/templates", icon: Layout, key: "templates" },
+  { label: "Decks", href: "/decks", icon: LayoutGrid, key: "decks" },
+  { label: "Templates", href: "/templates", icon: LayoutTemplate, key: "templates" },
   { label: "Media", href: "/media", icon: Images, key: "media" },
-  { label: "Teams", href: "/teams", icon: UsersThree, key: "teams" },
+  { label: "Teams", href: "/teams", icon: UsersRound, key: "teams" },
   { label: "Brand", href: "/brand", icon: Palette, key: "brand" },
 ];
 
@@ -109,7 +110,7 @@ function RailButton({ item, active }: { item: RailItem; active: boolean }) {
   const body = (
     <>
       <span className="ps-rail-icon">
-        <item.icon size={21} weight={active ? "regular" : "light"} aria-hidden />
+        <item.icon size={21} strokeWidth={active ? 2 : 1.75} aria-hidden />
         {item.isNew ? <span className="ps-rail-new" aria-label="New" /> : null}
       </span>
       <span className="ps-rail-label">{item.label}</span>
@@ -150,20 +151,20 @@ function RailMore({ active }: { active?: NavKey }) {
         render={<button type="button" className="ps-rail-item" data-active={current ? "true" : undefined} aria-label="More" title="More" />}
       >
         <span className="ps-rail-icon">
-          <DotsThree size={21} weight="regular" aria-hidden />
+          <Ellipsis size={21} strokeWidth={2} aria-hidden />
         </span>
         <span className="ps-rail-label">More</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="right" align="end" sideOffset={12} className="ps-more-menu w-60">
         <DropdownMenuItem onClick={() => router.push("/trash")}>
-          <Trash /> Trash
+          <Trash2 /> Trash
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setShortcuts(true)}>
           <Keyboard /> Keyboard shortcuts
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => openKeyDialog(true)}>
-          <Key /> API key
+          <KeyRound /> API key
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -173,7 +174,7 @@ function RailMore({ active }: { active?: NavKey }) {
 function PanelRow({ icon: IconC, children, href, active, soon, trailing, onClick }: { icon: Icon; children: ReactNode; href?: string; active?: boolean; soon?: boolean; trailing?: ReactNode; onClick?: () => void }) {
   const inner = (
     <>
-      <IconC size={16} weight={active ? "regular" : "light"} aria-hidden />
+      <IconC size={16} strokeWidth={active ? 2 : 1.75} aria-hidden />
       <span className="min-w-0 flex-1 truncate">{children}</span>
       {soon ? (
         <span className="ps-pill" data-tone="soon">
@@ -203,7 +204,7 @@ function DeckLink({ deck, icon: IconC }: { deck: DeckSummary; icon: Icon }) {
   return (
     <li>
       <Link href={`/deck/${deck.id}`} className="ps-panel-recent-link" title={deck.title || "Untitled deck"}>
-        <IconC size={15} weight="light" aria-hidden />
+        <IconC size={15} strokeWidth={1.75} aria-hidden />
         <span className="min-w-0 flex-1">
           <span className="block truncate">{deck.title || "Untitled deck"}</span>
           <span className="ps-panel-sub">{timeAgo(deck.updatedAt)}</span>
@@ -263,7 +264,7 @@ function WorkspaceCard({ onClose, mod }: { onClose: () => void; mod: string }) {
         <span className="ps-panel-sub">Good {part ?? "day"}</span>
       </span>
       <button type="button" className="ps-panel-close" aria-label="Close sidebar panel" aria-expanded title={`Close sidebar (${mod}+B)`} onClick={onClose}>
-        <SidebarSimple size={16} weight="light" aria-hidden />
+        <PanelLeftClose size={16} strokeWidth={1.75} aria-hidden />
       </button>
     </section>
   );
@@ -286,7 +287,7 @@ function AiStatus() {
       <span className="ps-ai-head">
         <span className="ps-panel-ai-dot" data-live={live ? "true" : undefined} aria-hidden />
         <span className="ps-panel-ai-name">{provider}</span>
-        <CaretRight size={12} className="ps-ai-go" aria-hidden />
+        <ChevronRight size={12} strokeWidth={2} className="ps-ai-go" aria-hidden />
       </span>
       {quota ? (
         <>
@@ -342,7 +343,7 @@ export function SideNav({ active, variant = "full", startCollapsed = false }: Si
         </Link>
         {full && !panelOpen ? (
           <button type="button" className="ps-rail-expand" aria-label="Open sidebar panel" aria-expanded={false} title={`Open sidebar (${mod}+B)`} onClick={openPanel}>
-            <SidebarSimple size={20} aria-hidden />
+            <PanelLeftOpen size={20} strokeWidth={1.75} aria-hidden />
           </button>
         ) : null}
         <div className="ps-rail-items">
@@ -375,19 +376,19 @@ export function SideNav({ active, variant = "full", startCollapsed = false }: Si
           <div className="ps-panel-rule" />
           <p className="ps-panel-kicker">Workspace</p>
           <div className="ps-panel-group">
-            <PanelRow icon={ShareNetwork} href="/#shared">
+            <PanelRow icon={Share2} href="/#shared">
               Shared with me
             </PanelRow>
-            <PanelRow icon={UsersThree} href="/teams" active={active === "teams"}>
+            <PanelRow icon={UsersRound} href="/teams" active={active === "teams"}>
               Teams
             </PanelRow>
-            <PanelRow icon={FolderSimple} href="/decks" active={active === "decks"}>
+            <PanelRow icon={Folder} href="/decks" active={active === "decks"}>
               Folders
             </PanelRow>
-            <PanelRow icon={ChartLineUp} href="/analytics" active={active === "analytics"}>
+            <PanelRow icon={ChartLine} href="/analytics" active={active === "analytics"}>
               Analytics
             </PanelRow>
-            <PanelRow icon={PlugsConnected} href="/integrations" active={active === "integrations"}>
+            <PanelRow icon={Plug} href="/integrations" active={active === "integrations"}>
               Integrations
             </PanelRow>
           </div>
@@ -395,7 +396,7 @@ export function SideNav({ active, variant = "full", startCollapsed = false }: Si
           <div className="ps-panel-labs">
             <div className="ps-panel-labs-head">
               <span className="ps-panel-labs-title">
-                <Flask size={15} weight="light" aria-hidden /> Labs
+                <FlaskConical size={15} strokeWidth={1.75} aria-hidden /> Labs
               </span>
               <span className="ps-panel-new-chip">New</span>
             </div>

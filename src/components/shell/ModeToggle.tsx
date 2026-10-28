@@ -1,6 +1,6 @@
 "use client";
 
-import { Moon, Sun } from "@phosphor-icons/react";
+import { Moon, Sun } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useThemeMode } from "./ThemeMode";
 
@@ -16,7 +16,7 @@ export function ModeToggle({ side = "bottom" }: Props) {
   return (
     <Tooltip>
       <TooltipTrigger render={<button type="button" />} className="ps-iconbtn" aria-label={label} aria-pressed={resolved === "dark"} onClick={() => setMode(next)}>
-        {resolved === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+        {resolved === "dark" ? <Sun size={16} strokeWidth={1.75} /> : <Moon size={16} strokeWidth={1.75} />}
       </TooltipTrigger>
       <TooltipContent side={side} sideOffset={8}>
         {label}
