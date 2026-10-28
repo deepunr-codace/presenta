@@ -1,0 +1,128 @@
+/* Mini player: an edited deck kept in the bottom-right corner after leaving the editor. */
+
+.ps-mini {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 40;
+  width: min(300px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid var(--ps-line);
+  border-radius: 16px;
+  background: var(--ps-paper);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.14),
+    0 24px 60px -24px rgba(0, 0, 0, 0.45);
+  transform-origin: center center;
+  will-change: transform, opacity;
+  animation: ps-mini-shadow 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ps-mini[data-closing] { pointer-events: none; }
+
+@keyframes ps-mini-shadow {
+  from { box-shadow: 0 0 0 rgba(0, 0, 0, 0); }
+}
+
+.ps-mini-open {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: var(--ps-plate);
+  cursor: pointer;
+  text-align: left;
+}
+.ps-mini-slide { border: 0 !important; border-radius: 0 !important; }
+
+/* Hover / focus reveals the same controls a video mini player has: a scrim, the resume icon and the close X. */
+.ps-mini-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.34));
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+.ps-mini-resume {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transform: scale(0.72);
+  transition: opacity 180ms ease-out, transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ps-mini-resume > span {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 9999px;
+  background: rgba(18, 17, 16, 0.62);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.6);
+}
+.ps-mini:hover .ps-mini-veil,
+.ps-mini:focus-within .ps-mini-veil { opacity: 1; }
+.ps-mini:hover .ps-mini-resume,
+.ps-mini:focus-within .ps-mini-resume { opacity: 1; transform: scale(1); }
+
+.ps-mini-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(18, 17, 16, 0.55);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.85);
+  backdrop-filter: blur(6px);
+  transition: opacity 160ms ease-out, transform 200ms cubic-bezier(0.22, 1, 0.36, 1), background 140ms ease-out;
+}
+.ps-mini:hover .ps-mini-close,
+.ps-mini:focus-within .ps-mini-close { opacity: 1; transform: scale(1); }
+.ps-mini-close:hover { background: rgba(18, 17, 16, 0.8); }
+.ps-mini-close:focus-visible,
+.ps-mini-open:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: -2px; }
+
+.ps-mini-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--ps-line-2);
+}
+.ps-mini-title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--ps-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ps-mini-hint {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ps-smoke);
+}
+
+@media (max-width: 640px) {
+  .ps-mini { right: 12px; bottom: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-mini { animation: none; }
+  .ps-mini-veil, .ps-mini-resume, .ps-mini-close { transition: none; }
+}

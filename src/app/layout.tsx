@@ -3,6 +3,7 @@ import { DM_Sans, Inter, Inter_Tight, Oswald, Roboto } from "next/font/google";
 import { Suspense, type CSSProperties, type ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
 import { AccountSync } from "@/components/shell/AccountSync";
+import { MiniDeck } from "@/components/shell/MiniDeck";
 import { NavProgress } from "@/components/shell/NavProgress";
 import { ThemeModeProvider } from "@/components/shell/ThemeMode";
 import { ToastProvider } from "@/components/shell/Toast";
@@ -55,7 +56,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <AccountSync />
           <ThemeModeProvider>
             <TooltipProvider delay={200}>
-              <ToastProvider>{children}</ToastProvider>
+              <ToastProvider>
+                {children}
+                <MiniDeck />
+              </ToastProvider>
             </TooltipProvider>
           </ThemeModeProvider>
         </SessionProvider>

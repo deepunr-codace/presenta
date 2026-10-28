@@ -17,6 +17,7 @@
 @import "../components/styles/present.css";
 @import "../components/styles/print.css";
 @import "../components/styles/loading.css";
+@import "../components/styles/mini-deck.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
