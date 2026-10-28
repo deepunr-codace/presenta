@@ -26,7 +26,7 @@ export type AppShellProps = {
   active?: NavKey;
   /** Show the offline-mode banner under the nav (home only). */
   banner?: boolean;
-  /** Left sidebar: `full` adds the workspace panel (home); `rail` is the icon rail only (editor, wizard). */
+  /** Left sidebar: `full` adds the workspace panel (every page except the editor); `rail` is the icon rail only (editor). */
   sidebar?: SideNavProps["variant"];
   /** Extra classes for the scrolling content column. */
   className?: string;
@@ -37,7 +37,7 @@ export type AppShellProps = {
  * its own (so the nav stays pinned on the editor and review). Under 768 px the nav links collapse
  * into a menu button that opens them in a sheet.
  */
-export function AppShell({ children, breadcrumbs, actions, active, banner = false, sidebar = "rail", className }: AppShellProps) {
+export function AppShell({ children, breadcrumbs, actions, active, banner = false, sidebar = "full", className }: AppShellProps) {
   const [navOpen, setNavOpen] = useState(false);
   const closeNav = () => setNavOpen(false);
 
