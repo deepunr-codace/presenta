@@ -26,8 +26,10 @@ export type AppShellProps = {
   active?: NavKey;
   /** Show the offline-mode banner under the nav (home only). */
   banner?: boolean;
-  /** Left sidebar: `full` adds the workspace panel (every page except the editor); `rail` is the icon rail only (editor). */
+  /** Left sidebar: `full` adds the workspace panel (every page except the editor); `rail` is the icon rail only. */
   sidebar?: SideNavProps["variant"];
+  /** Keep the workspace panel available but start it closed (the editor), so it can be opened from the rail icon. */
+  sidebarStartCollapsed?: boolean;
   /** Extra classes for the scrolling content column. */
   className?: string;
 };
@@ -37,14 +39,14 @@ export type AppShellProps = {
  * its own (so the nav stays pinned on the editor and review). Under 768 px the nav links collapse
  * into a menu button that opens them in a sheet.
  */
-export function AppShell({ children, breadcrumbs, actions, active, banner = false, sidebar = "full", className }: AppShellProps) {
+export function AppShell({ children, breadcrumbs, actions, active, banner = false, sidebar = "full", sidebarStartCollapsed = false, className }: AppShellProps) {
   const [navOpen, setNavOpen] = useState(false);
   const closeNav = () => setNavOpen(false);
 
   return (
     <div className="ps-shell" data-sidebar="">
       <TopNav active={active} onMenu={() => setNavOpen(true)} />
-      <SideNav active={active} variant={sidebar} />
+      <SideNav active={active} variant={sidebar} startCollapsed={sidebarStartCollapsed} />
       <div className={className ? `ps-content ${className}` : "ps-content"}>
         {banner ? <KeyBanner /> : null}
         <TopBar breadcrumbs={breadcrumbs} actions={actions} />

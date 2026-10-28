@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
 import {
   ArrowRight,
   CaretRight,
@@ -97,8 +97,10 @@ function writePanelClosed(closed: boolean): void {
 
 export type SideNavProps = {
   active?: NavKey;
-  /** `full` = icon rail plus the workspace panel; `rail` = icon rail only (editor, wizard). */
+  /** `full` = icon rail plus the workspace panel; `rail` = icon rail only. */
   variant?: "full" | "rail";
+  /** The panel exists but starts closed (the editor): it opens from the rail icon, without touching the saved state. */
+  startCollapsed?: boolean;
 };
 
 function RailButton({ item, active }: { item: RailItem; active: boolean }) {
@@ -309,15 +311,19 @@ function AiStatus() {
  * appears once: the rail has the global ones, More has Trash, shortcuts and the API key. Hidden under 768 px, where
  * the top nav and its menu sheet take over.
  */
-export function SideNav({ active, variant = "full" }: SideNavProps) {
+export function SideNav({ active, variant = "full", startCollapsed = false }: SideNavProps) {
   const full = variant === "full";
   const mod = useIsMac() ? "⌘" : "Ctrl";
   const closed = useSyncExternalStore(subscribePanel, readPanelClosed, () => false);
-  const panelOpen = !closed;
+  // Pages that start collapsed (the editor) keep their own open state so they never change the saved preference.
+  const [localOpen, setLocalOpen] = useState(false);
+  const panelOpen = startCollapsed ? localOpen : !closed;
+  const openPanel = () => (startCollapsed ? setLocalOpen(true) : writePanelClosed(false));
+  const closePanel = () => (startCollapsed ? setLocalOpen(false) : writePanelClosed(true));
 
   // Cmd/Ctrl+B shows or hides the panel on pages that have one (not the editor, where it means bold).
   useEffect(() => {
-    if (!full) return;
+    if (!full || startCollapsed) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "b") {
         e.preventDefault();
@@ -326,7 +332,7 @@ export function SideNav({ active, variant = "full" }: SideNavProps) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [full]);
+  }, [full, startCollapsed]);
 
   return (
     <aside className="ps-sidenav" data-variant={variant} aria-label="Sidebar">
@@ -335,7 +341,7 @@ export function SideNav({ active, variant = "full" }: SideNavProps) {
           <Mark size={36} />
         </Link>
         {full && !panelOpen ? (
-          <button type="button" className="ps-rail-expand" aria-label="Open sidebar panel" aria-expanded={false} title={`Open sidebar (${mod}+B)`} onClick={() => writePanelClosed(false)}>
+          <button type="button" className="ps-rail-expand" aria-label="Open sidebar panel" aria-expanded={false} title={`Open sidebar (${mod}+B)`} onClick={openPanel}>
             <SidebarSimple size={20} aria-hidden />
           </button>
         ) : null}
@@ -353,7 +359,7 @@ export function SideNav({ active, variant = "full" }: SideNavProps) {
 
       {full ? (
         <div className="ps-panel" data-open={panelOpen ? "true" : "false"} inert={!panelOpen} aria-hidden={!panelOpen}>
-          <WorkspaceCard mod={mod} onClose={() => writePanelClosed(true)} />
+          <WorkspaceCard mod={mod} onClose={closePanel} />
 
           {/* Only this middle part scrolls; the header above and the AI card below stay put. */}
           <div className="ps-panel-scroll">
