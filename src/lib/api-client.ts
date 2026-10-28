@@ -17,7 +17,7 @@ import type {
  * same envelope, so callers narrow on `ok` and never see a thrown error.
  */
 
-export type AiSource = "claude" | "openai" | "mock";
+export type AiSource = "claude" | "openai" | "presenta" | "mock";
 
 export type ApiErrorCode = AiErrorCode | "too_large" | "cancelled";
 
@@ -25,7 +25,17 @@ export type ApiOk<T> = { ok: true; data: T; source: AiSource };
 export type ApiFail = { ok: false; error: string; code: ApiErrorCode };
 export type ApiResult<T> = ApiOk<T> | ApiFail;
 
-export type AiHealth = { hasKey: boolean; model: string; provider: AiSource; /** Served by the visitor's own key. */ byok: boolean; /** The server's own key may serve requests without one. */ serverKey: boolean };
+export type AiHealth = {
+  hasKey: boolean;
+  model: string;
+  provider: AiSource;
+  /** Served by the visitor's own key. */
+  byok: boolean;
+  /** The server's own key may serve requests without one. */
+  serverKey: boolean;
+  /** Today's free Presenta AI allowance, when it is the active source. */
+  quota?: { used: number; limit: number };
+};
 
 /** Hard deadline for one API call from the browser; the server gives the AI 55 s per attempt. */
 const REQUEST_TIMEOUT_MS = 90_000;
@@ -44,7 +54,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function isApiResult<T>(v: unknown): v is ApiResult<T> {
   if (!isRecord(v) || typeof v.ok !== "boolean") return false;
-  if (v.ok) return "data" in v && (v.source === "claude" || v.source === "openai" || v.source === "mock");
+  if (v.ok) return "data" in v && (v.source === "claude" || v.source === "openai" || v.source === "presenta" || v.source === "mock");
   return typeof v.error === "string" && typeof v.code === "string";
 }
 
@@ -109,6 +119,7 @@ export function getHealth(signal?: AbortSignal): Promise<ApiResult<AiHealth>> {
 export function sourceLabel(source: AiSource | null | undefined): string {
   if (source === "claude") return "Claude";
   if (source === "openai") return "OpenAI";
+  if (source === "presenta") return "Presenta AI";
   if (source === "mock") return "Offline mock";
   return "Checking…";
 }

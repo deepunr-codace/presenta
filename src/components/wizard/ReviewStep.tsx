@@ -20,7 +20,7 @@ export function ReviewStep() {
   if (!deckId) return null;
   return (
     <div className="space-y-5">
-      <StepHeader title="Review" hint="Your deck is generated and saved in this browser." />
+      <StepHeader title="Review" hint="Your deck is generated and saved to your account." />
       <section className="ps-glass flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="ps-title truncate">{outline?.title ?? "Your deck"}</p>

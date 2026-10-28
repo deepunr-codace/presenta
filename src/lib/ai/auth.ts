@@ -6,14 +6,23 @@ import type { AiSource } from "@/lib/api-client";
  */
 
 export type AiProvider = "openai" | "anthropic";
-export type AiAuth = { provider: AiProvider; apiKey: string };
+/**
+ * "openrouter" is internal: it marks a key taken from the server's pool (Presenta AI), never one a visitor
+ * sends. `model` is the pooled model chosen by the admin.
+ */
+export type AiAuth = { provider: AiProvider | "openrouter"; apiKey: string; model?: string };
 
 /** Request headers the browser uses to carry the visitor's own key. */
 export const KEY_HEADER = "x-ai-key";
 export const PROVIDER_HEADER = "x-ai-provider";
 
 /** Which provider and key will serve a request, and the label the UI shows for it. */
-export type AiResolution = { source: AiSource; auth?: AiAuth };
+export type AiResolution = {
+  source: AiSource;
+  auth?: AiAuth;
+  /** Set when the request is served by the pooled keys ("Presenta AI"); see `resolveAiForRequest`. */
+  presenta?: { userId: string; cost: number; model: string };
+};
 
 const KEY_PATTERN = /^[A-Za-z0-9._-]{20,400}$/;
 
@@ -60,5 +69,6 @@ export function envSource(): AiSource {
 export function resolveAi(request: Request): AiResolution {
   const auth = readAiAuth(request.headers);
   if (auth) return { source: auth.provider === "openai" ? "openai" : "claude", auth };
+  // (The pooled "Presenta AI" source needs the session and database, so it is added by `resolveAiForRequest`.)
   return { source: serverKeyAllowed() ? envSource() : "mock" };
 }

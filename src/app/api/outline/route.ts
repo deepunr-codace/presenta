@@ -1,4 +1,4 @@
-import { buildOutline, resolveAi } from "@/lib/ai";
+import { buildOutline, resolveAiForRequest } from "@/lib/ai";
 import { OutlineRequestSchema } from "@/lib/deck/schema";
 import { jsonError, jsonFailure, jsonOk, readJsonBody } from "../_lib/respond";
 
@@ -13,10 +13,11 @@ export async function POST(request: Request) {
     return jsonError(400, "invalid", "Paste mode needs brief.source with the pasted material.");
   }
 
-  const ai = resolveAi(request);
   try {
+    const ai = await resolveAiForRequest(request);
     return jsonOk(await buildOutline(body.data, { signal: request.signal, ai }), ai.source);
   } catch (err) {
     return jsonFailure(err, "Unexpected error while building the outline.");
   }
 }
+

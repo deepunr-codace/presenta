@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { DM_Sans, Inter, Inter_Tight, Oswald, Roboto } from "next/font/google";
-import type { CSSProperties, ReactNode } from "react";
+import { Suspense, type CSSProperties, type ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
+import { AccountSync } from "@/components/shell/AccountSync";
+import { NavProgress } from "@/components/shell/NavProgress";
 import { ThemeModeProvider } from "@/components/shell/ThemeMode";
 import { ToastProvider } from "@/components/shell/Toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -46,7 +48,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full bg-[var(--ps-canvas)] text-foreground">
+        <Suspense fallback={null}>
+          <NavProgress />
+        </Suspense>
         <SessionProvider>
+          <AccountSync />
           <ThemeModeProvider>
             <TooltipProvider delay={200}>
               <ToastProvider>{children}</ToastProvider>

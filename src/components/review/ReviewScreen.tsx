@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { Clock, Stack, TextAa } from "@phosphor-icons/react";
 import { resolveTheme } from "@/lib/deck/themes";
+import { useDeckEvent } from "@/hooks/useDeckEvent";
 import { timeAgo } from "@/lib/time";
 import { flushSave, useDeckStore } from "@/store/deck-store";
 import { DeckActions } from "@/components/editor/DeckActions";
@@ -28,6 +29,7 @@ type Props = { id: string };
  */
 export function ReviewScreen({ id }: Props) {
   const { deck: fetched, status } = useDeck(id);
+  useDeckEvent(id, "view", status === "ready");
   const loadDeck = useDeckStore((s) => s.loadDeck);
   const deck = useDeckStore((s) => (s.deck?.id === id ? s.deck : null));
   const selectedSlideId = useDeckStore((s) => s.selectedSlideId);

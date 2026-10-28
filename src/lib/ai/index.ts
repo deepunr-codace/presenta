@@ -4,10 +4,12 @@ import { envSource, serverKeyAllowed, type AiResolution } from "./auth";
 import { AI_MODEL as CLAUDE_MODEL, claudeGenerate, claudeOutline, claudeRevise, claudeSuggest, type AiCallOptions } from "./claude";
 import { mockGenerate, mockOutline, mockRevise, mockSuggest } from "./mock";
 import { openAiGenerate, openAiModel, openAiOutline, openAiRevise, openAiSuggest } from "./openai";
+import { withPoolKey } from "./presenta";
 
 export type { AiCallOptions };
 export { AiError } from "./errors";
 export { resolveAi, serverKeyAllowed, type AiResolution } from "./auth";
+export { presentaQuota, resolveAiForRequest } from "./presenta";
 
 /**
  * Server-side entry point of the AI layer. Each request is served by the visitor's own key when it
@@ -25,8 +27,9 @@ export function hasAiKey(): boolean {
   return aiSource() !== "mock";
 }
 
-/** Model name for a source (Claude's when running on the mock). */
+/** Model name for a source (Claude's when running on the mock). Presenta AI never reveals its model. */
 export function activeModel(source: AiSource = aiSource()): string {
+  if (source === "presenta") return "Presenta AI";
   return source === "openai" ? openAiModel() : CLAUDE_MODEL;
 }
 
@@ -35,6 +38,8 @@ export type AiRunOptions = Omit<AiCallOptions, "auth"> & { ai?: AiResolution };
 function pick<T>(opts: AiRunOptions, run: { claude: (o: AiCallOptions) => Promise<T>; openai: (o: AiCallOptions) => Promise<T>; mock: () => T }): Promise<T> {
   const ai = opts.ai ?? { source: aiSource() };
   const call: AiCallOptions = { signal: opts.signal, auth: ai.auth };
+  // Presenta AI: the same chat-completions path as OpenAI, with a key from the pool.
+  if (ai.source === "presenta" && ai.presenta) return withPoolKey(ai.presenta, (auth) => run.openai({ ...call, auth }));
   if (ai.source === "claude") return run.claude(call);
   if (ai.source === "openai") return run.openai(call);
   return Promise.resolve(run.mock());

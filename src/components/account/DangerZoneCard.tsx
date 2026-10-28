@@ -38,7 +38,7 @@ export function DangerZoneCard() {
         </span>
         <h2 className="ps-cardtitle">Delete account</h2>
       </div>
-      <p className="ps-body mb-4">Permanently deletes your Presenta account and sign-in. This does not affect decks already saved in this browser.</p>
+      <p className="ps-body mb-4">Permanently deletes your Presenta account, sign-in, decks, brand kit and uploaded media. This cannot be undone.</p>
       {error ? <ErrorNotice compact className="mb-4" message={error} /> : null}
       <button type="button" className="ps-btn ps-btn-xs" data-danger="true" onClick={() => setOpen(true)}>
         <Trash /> Delete account

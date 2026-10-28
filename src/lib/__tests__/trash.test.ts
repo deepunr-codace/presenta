@@ -1,18 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-// In-memory stand-in for IndexedDB (idb-keyval's get/set/del/update).
-const store = new Map<string, unknown>();
-vi.mock("idb-keyval", () => ({
-  get: async (k: string) => store.get(k),
-  set: async (k: string, v: unknown) => void store.set(k, v),
-  del: async (k: string) => void store.delete(k),
-  update: async (k: string, fn: (v: unknown) => unknown) => void store.set(k, fn(store.get(k))),
-}));
-
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { makeDeck } from "@/lib/deck/__tests__/fixtures";
-import { deckKey, emptyTrash, listDecks, listTrash, loadDeckById, purgeDeck, restoreDeck, saveDeck, trashDeck, TRASH_RETENTION_DAYS } from "../persist";
+import { emptyTrash, listDecks, listTrash, loadDeckById, purgeDeck, restoreDeck, saveDeck, trashDeck } from "../persist";
+import { installFakeServer } from "./fake-server";
 
-beforeEach(() => store.clear());
+const server = installFakeServer();
+
+beforeEach(() => server.reset());
+afterAll(() => vi.unstubAllGlobals());
 
 describe("trash", () => {
   it("moves a deck out of the list and into the trash, keeping its data", async () => {
@@ -22,6 +16,7 @@ describe("trash", () => {
     expect(await listDecks()).toEqual([]);
     const trash = await listTrash();
     expect(trash.map((d) => d.id)).toEqual([deck.id]);
+    expect(trash[0].trashedAt).toBeTruthy();
     expect(await loadDeckById(deck.id)).not.toBeNull();
   });
 
@@ -39,6 +34,15 @@ describe("trash", () => {
     expect(await restoreDeck("nope")).toBe(false);
   });
 
+  it("keeps a deck in the trash when it is saved again", async () => {
+    const deck = makeDeck(1);
+    await saveDeck(deck);
+    await trashDeck(deck.id);
+    await saveDeck({ ...deck, title: "Edited while trashed" });
+    expect(await listDecks()).toEqual([]);
+    expect((await listTrash()).map((d) => d.id)).toEqual([deck.id]);
+  });
+
   it("purges one deck or the whole trash, removing the data", async () => {
     const a = makeDeck(1);
     const b = { ...makeDeck(1), id: "deck-b" };
@@ -47,19 +51,18 @@ describe("trash", () => {
     await trashDeck(a.id);
     await trashDeck(b.id);
     await purgeDeck(a.id);
-    expect(store.has(deckKey(a.id))).toBe(false);
+    expect(await loadDeckById(a.id)).toBeNull();
     expect((await listTrash()).map((d) => d.id)).toEqual([b.id]);
     await emptyTrash();
     expect(await listTrash()).toEqual([]);
-    expect(store.has(deckKey(b.id))).toBe(false);
+    expect(await loadDeckById(b.id)).toBeNull();
   });
 
-  it("purges decks older than the retention window when the trash is listed", async () => {
-    const old = makeDeck(1);
-    await saveDeck(old);
-    const longAgo = new Date(Date.now() - (TRASH_RETENTION_DAYS + 1) * 86_400_000);
-    await trashDeck(old.id, longAgo);
-    expect(await listTrash()).toEqual([]);
-    expect(store.has(deckKey(old.id))).toBe(false);
+  it("surfaces a server error instead of pretending the deck was trashed", async () => {
+    const deck = makeDeck(1);
+    await saveDeck(deck);
+    server.failNext(1, "Could not update that deck.");
+    await expect(trashDeck(deck.id)).rejects.toThrow("Could not update that deck.");
+    expect((await listDecks()).map((d) => d.id)).toEqual([deck.id]);
   });
 });

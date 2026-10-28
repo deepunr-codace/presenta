@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
 import {
   ArrowRight,
+  CaretRight,
   ChartLineUp,
   DotsThree,
   Flask,
@@ -24,6 +25,7 @@ import {
   SquaresFour,
   Star,
   Trash,
+  UsersThree,
   type IconProps,
 } from "@phosphor-icons/react";
 import { LABS_FEATURES, LABS_HIGHLIGHTS } from "@/components/labs/labs-data";
@@ -49,9 +51,10 @@ type RailItem = { label: string; href?: string; icon: Icon; key?: NavKey; /** Op
 const RAIL: RailItem[] = [
   { label: "Search", icon: MagnifyingGlass, action: "search" },
   { label: "Home", href: "/", icon: House, key: "home" },
-  { label: "Decks", href: "/#decks", icon: SquaresFour, key: "decks" },
+  { label: "Decks", href: "/decks", icon: SquaresFour, key: "decks" },
   { label: "Templates", href: "/templates", icon: Layout, key: "templates" },
   { label: "Media", href: "/media", icon: Images, key: "media" },
+  { label: "Teams", href: "/teams", icon: UsersThree, key: "teams" },
   { label: "Brand", href: "/brand", icon: Palette, key: "brand" },
 ];
 
@@ -104,7 +107,7 @@ function RailButton({ item, active }: { item: RailItem; active: boolean }) {
   const body = (
     <>
       <span className="ps-rail-icon">
-        <item.icon size={24} weight={active ? "fill" : "regular"} aria-hidden />
+        <item.icon size={21} weight={active ? "regular" : "light"} aria-hidden />
         {item.isNew ? <span className="ps-rail-new" aria-label="New" /> : null}
       </span>
       <span className="ps-rail-label">{item.label}</span>
@@ -145,7 +148,7 @@ function RailMore({ active }: { active?: NavKey }) {
         render={<button type="button" className="ps-rail-item" data-active={current ? "true" : undefined} aria-label="More" title="More" />}
       >
         <span className="ps-rail-icon">
-          <DotsThree size={24} weight="bold" aria-hidden />
+          <DotsThree size={21} weight="regular" aria-hidden />
         </span>
         <span className="ps-rail-label">More</span>
       </DropdownMenuTrigger>
@@ -168,7 +171,7 @@ function RailMore({ active }: { active?: NavKey }) {
 function PanelRow({ icon: IconC, children, href, active, soon, trailing, onClick }: { icon: Icon; children: ReactNode; href?: string; active?: boolean; soon?: boolean; trailing?: ReactNode; onClick?: () => void }) {
   const inner = (
     <>
-      <IconC size={20} aria-hidden />
+      <IconC size={16} weight={active ? "regular" : "light"} aria-hidden />
       <span className="min-w-0 flex-1 truncate">{children}</span>
       {soon ? (
         <span className="ps-pill" data-tone="soon">
@@ -198,7 +201,7 @@ function DeckLink({ deck, icon: IconC }: { deck: DeckSummary; icon: Icon }) {
   return (
     <li>
       <Link href={`/deck/${deck.id}`} className="ps-panel-recent-link" title={deck.title || "Untitled deck"}>
-        <IconC size={18} aria-hidden />
+        <IconC size={15} weight="light" aria-hidden />
         <span className="min-w-0 flex-1">
           <span className="block truncate">{deck.title || "Untitled deck"}</span>
           <span className="ps-panel-sub">{timeAgo(deck.updatedAt)}</span>
@@ -254,11 +257,11 @@ function WorkspaceCard({ onClose, mod }: { onClose: () => void; mod: string }) {
         <span>P</span>
       </span>
       <span className="min-w-0 flex-1">
-        <span className="ps-ws-hello">Good {part ?? "day"}</span>
-        <span className="ps-panel-sub">Presenta Workspace</span>
+        <span className="ps-ws-hello">Presenta</span>
+        <span className="ps-panel-sub">Good {part ?? "day"}</span>
       </span>
       <button type="button" className="ps-panel-close" aria-label="Close sidebar panel" aria-expanded title={`Close sidebar (${mod}+B)`} onClick={onClose}>
-        <SidebarSimple size={18} aria-hidden />
+        <SidebarSimple size={16} weight="light" aria-hidden />
       </button>
     </section>
   );
@@ -268,24 +271,41 @@ function WorkspaceCard({ onClose, mod }: { onClose: () => void; mod: string }) {
 function AiStatus() {
   const health = useAiHealth();
   const openKeyDialog = useApiKeyDialog((s) => s.setOpen);
-  const provider = health ? (health.provider === "openai" ? "OpenAI" : health.provider === "claude" ? "Claude" : "Offline demo") : "Checking…";
+  const provider = health ? (health.provider === "presenta" ? "Presenta AI" : health.provider === "openai" ? "OpenAI" : health.provider === "claude" ? "Claude" : "Offline demo") : "Checking…";
   const live = Boolean(health?.hasKey);
+  // The free daily allowance as a bar: full when nothing is used, and it turns amber, then red, as it runs out.
+  const quota = health?.quota && !health.byok ? health.quota : null;
+  const left = quota ? Math.max(quota.limit - quota.used, 0) : 0;
+  const pct = quota && quota.limit > 0 ? (left / quota.limit) * 100 : 0;
+  const tone = !health ? "idle" : !live ? "off" : quota ? (pct <= 15 ? "low" : pct <= 40 ? "mid" : "ok") : "ok";
+  const hint = !live ? "Add a key for real decks" : health?.byok ? `Your key · ${health.model}` : "Included with your account";
   return (
-    <button type="button" className="ps-panel-ai" onClick={() => openKeyDialog(true)} aria-label={`AI: ${provider}. Open API key settings`}>
-      <span className="ps-panel-ai-dot" data-live={live ? "true" : undefined} aria-hidden />
-      <span className="min-w-0 flex-1 text-left">
+    <button type="button" className="ps-panel-ai" data-tone={tone} onClick={() => openKeyDialog(true)} title={live ? "Change the AI, or use your own key" : "Add an API key"} aria-label={`AI: ${provider}${quota ? `, ${left} of ${quota.limit} free requests left today` : ""}. Open API key settings`}>
+      <span className="ps-ai-head">
+        <span className="ps-panel-ai-dot" data-live={live ? "true" : undefined} aria-hidden />
         <span className="ps-panel-ai-name">{provider}</span>
-        <span className="ps-panel-sub truncate">{live ? (health?.byok ? `Your key · ${health.model}` : health?.model) : "Add a key for real decks"}</span>
+        <CaretRight size={12} className="ps-ai-go" aria-hidden />
       </span>
-      <span className="ps-panel-ai-action">{live ? "Change" : "Add key"}</span>
+      {quota ? (
+        <>
+          <span className="ps-ai-bar" role="progressbar" aria-valuemin={0} aria-valuemax={quota.limit} aria-valuenow={left} aria-label="Free requests left today">
+            <span style={{ width: `${Math.max(pct, left > 0 ? 3 : 0)}%` }} />
+          </span>
+          <span className="ps-ai-meta">
+            <strong>{left}</strong> of {quota.limit} free requests left today
+          </span>
+        </>
+      ) : (
+        <span className="ps-ai-meta">{hint}</span>
+      )}
     </button>
   );
 }
 
 /**
- * Left sidebar: an 84 px icon rail (search, destinations, theme toggle, account) and, on the home page, a 292 px
- * workspace panel: New deck, starred and recent decks, a workspace group of upcoming features (shared decks,
- * folders, media, analytics, integrations), the Labs card and, pinned at the bottom, the AI status. Each destination
+ * Left sidebar: a 68 px icon rail (search, destinations, theme toggle, account) and, on the home page, a 224 px
+ * workspace panel: New deck, starred and recent decks, a workspace group (shared decks, teams, folders, analytics,
+ * integrations), the Labs card and, fixed at the bottom, the AI status. Each destination
  * appears once: the rail has the global ones, More has Trash, shortcuts and the API key. Hidden under 768 px, where
  * the top nav and its menu sheet take over.
  */
@@ -335,6 +355,8 @@ export function SideNav({ active, variant = "full" }: SideNavProps) {
         <div className="ps-panel" data-open={panelOpen ? "true" : "false"} inert={!panelOpen} aria-hidden={!panelOpen}>
           <WorkspaceCard mod={mod} onClose={() => writePanelClosed(true)} />
 
+          {/* Only this middle part scrolls; the header above and the AI card below stay put. */}
+          <div className="ps-panel-scroll">
           <div className="ps-panel-group">
             <PanelRow icon={Plus} href="/new" active={active === "new"}>
               New deck
@@ -347,16 +369,19 @@ export function SideNav({ active, variant = "full" }: SideNavProps) {
           <div className="ps-panel-rule" />
           <p className="ps-panel-kicker">Workspace</p>
           <div className="ps-panel-group">
-            <PanelRow icon={ShareNetwork} soon>
+            <PanelRow icon={ShareNetwork} href="/#shared">
               Shared with me
             </PanelRow>
-            <PanelRow icon={FolderSimple} soon>
+            <PanelRow icon={UsersThree} href="/teams" active={active === "teams"}>
+              Teams
+            </PanelRow>
+            <PanelRow icon={FolderSimple} href="/decks" active={active === "decks"}>
               Folders
             </PanelRow>
-            <PanelRow icon={ChartLineUp} soon>
+            <PanelRow icon={ChartLineUp} href="/analytics" active={active === "analytics"}>
               Analytics
             </PanelRow>
-            <PanelRow icon={PlugsConnected} soon>
+            <PanelRow icon={PlugsConnected} href="/integrations" active={active === "integrations"}>
               Integrations
             </PanelRow>
           </div>
@@ -364,7 +389,7 @@ export function SideNav({ active, variant = "full" }: SideNavProps) {
           <div className="ps-panel-labs">
             <div className="ps-panel-labs-head">
               <span className="ps-panel-labs-title">
-                <Flask size={18} aria-hidden /> Labs
+                <Flask size={15} weight="light" aria-hidden /> Labs
               </span>
               <span className="ps-panel-new-chip">New</span>
             </div>
@@ -391,6 +416,7 @@ export function SideNav({ active, variant = "full" }: SideNavProps) {
             <Link href="/labs" className="ps-panel-labs-all">
               Explore all labs <ArrowRight size={14} aria-hidden />
             </Link>
+          </div>
           </div>
 
           <div className="ps-panel-foot">

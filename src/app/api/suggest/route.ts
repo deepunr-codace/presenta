@@ -1,4 +1,4 @@
-import { suggestAnswers, resolveAi } from "@/lib/ai";
+import { suggestAnswers, resolveAiForRequest } from "@/lib/ai";
 import { SuggestRequestSchema } from "@/lib/deck/schema";
 import { jsonFailure, jsonOk, readJsonBody } from "../_lib/respond";
 
@@ -10,10 +10,11 @@ export async function POST(request: Request) {
   const body = await readJsonBody(request, SuggestRequestSchema);
   if (!body.ok) return body.response;
 
-  const ai = resolveAi(request);
   try {
+    const ai = await resolveAiForRequest(request, { cost: 0 });
     return jsonOk(await suggestAnswers(body.data, { signal: request.signal, ai }), ai.source);
   } catch (err) {
     return jsonFailure(err, "Unexpected error while suggesting answers.");
   }
 }
+

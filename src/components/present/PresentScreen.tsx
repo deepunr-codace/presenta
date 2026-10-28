@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } fr
 import { CaretLeft, CaretRight, X } from "@phosphor-icons/react";
 import { STAGE_H, STAGE_W, type Slide } from "@/lib/deck/schema";
 import { resolveTheme } from "@/lib/deck/themes";
+import { useDeckEvent } from "@/hooks/useDeckEvent";
 import { SlideRenderer } from "@/components/canvas/SlideRenderer";
 import { PresentNotes } from "./PresentNotes";
 import { useDeck } from "./useDeck";
@@ -41,6 +42,7 @@ function leave(): void {
  */
 export function PresentScreen({ id }: Props) {
   const { deck, status } = useDeck(id);
+  useDeckEvent(id, "present", status === "ready");
   const theme = useMemo(() => (deck ? resolveTheme(deck) : null), [deck]);
   const count = deck?.slides.length ?? 0;
 

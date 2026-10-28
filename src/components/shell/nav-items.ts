@@ -1,7 +1,7 @@
 import type { ComponentType } from "react";
-import { Flask, FolderSimple, House, Images, Palette, Plus, SquaresFour, Stack, Trash, type IconProps } from "@phosphor-icons/react";
+import { ChartLineUp, Flask, FolderSimple, PlugsConnected, House, Images, Palette, Plus, SquaresFour, Stack, Trash, UsersThree, type IconProps } from "@phosphor-icons/react";
 
-export type NavKey = "home" | "decks" | "new" | "projects" | "templates" | "media" | "brand" | "labs" | "trash";
+export type NavKey = "home" | "decks" | "new" | "projects" | "templates" | "media" | "teams" | "analytics" | "integrations" | "brand" | "labs" | "trash";
 
 export type NavItem = {
   key: NavKey;
@@ -15,10 +15,13 @@ export type NavItem = {
 /** Top nav links (also the mobile menu): Studio, Decks, New deck, Templates, Brand, Trash; Projects marked "Soon". */
 export const NAV_ITEMS: NavItem[] = [
   { key: "home", label: "Studio", href: "/", icon: House },
-  { key: "decks", label: "Decks", href: "/#decks", icon: SquaresFour },
+  { key: "decks", label: "Decks", href: "/decks", icon: SquaresFour },
   { key: "new", label: "New deck", href: "/new", icon: Plus },
   { key: "templates", label: "Templates", href: "/templates", icon: Stack },
   { key: "media", label: "Media", href: "/media", icon: Images },
+  { key: "teams", label: "Teams", href: "/teams", icon: UsersThree },
+  { key: "analytics", label: "Analytics", href: "/analytics", icon: ChartLineUp },
+  { key: "integrations", label: "Integrations", href: "/integrations", icon: PlugsConnected },
   { key: "brand", label: "Brand", href: "/brand", icon: Palette },
   { key: "labs", label: "Labs", href: "/labs", icon: Flask },
   { key: "trash", label: "Trash", href: "/trash", icon: Trash },

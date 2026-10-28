@@ -3,11 +3,14 @@ export type AiErrorCode = "auth" | "rate_limit" | "network" | "api" | "refused" 
 /** Error surfaced by the AI layer; `code` is stable for the UI, `message` is human readable. */
 export class AiError extends Error {
   readonly code: AiErrorCode;
+  /** HTTP status of the upstream answer, when there was one. Server-side only; used to retire bad pooled keys. */
+  readonly status?: number;
 
-  constructor(code: AiErrorCode, message: string) {
+  constructor(code: AiErrorCode, message: string, status?: number) {
     super(message);
     this.name = "AiError";
     this.code = code;
+    this.status = status;
   }
 }
 

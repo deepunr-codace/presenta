@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
+import { isAdminEmail } from "@/lib/admin";
 import { deleteUserById, findUserById, updateUserName } from "@/lib/auth/users";
+import { forgetUser } from "@/lib/collab-db";
+import { listMediaRows } from "@/lib/media-db";
+import { deleteObjects } from "@/lib/r2";
 
 export async function GET() {
   const session = await auth();
@@ -15,6 +19,7 @@ export async function GET() {
     email: user.email,
     image: user.image,
     hasPassword: Boolean(user.passwordHash),
+    isAdmin: isAdminEmail(user.email),
   });
 }
 
@@ -35,6 +40,10 @@ export async function DELETE() {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
+  // Remove the user's library files from R2 first; their media rows go with the user row.
+  const rows = await listMediaRows(session.user.id);
+  await deleteObjects(rows.flatMap((r) => [r.key, r.thumb_key]));
+  await forgetUser(session.user.id);
   await deleteUserById(session.user.id);
   return NextResponse.json({ ok: true });
 }

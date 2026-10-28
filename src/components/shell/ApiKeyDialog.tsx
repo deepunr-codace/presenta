@@ -63,7 +63,7 @@ function KeyForm({ onClose }: { onClose: () => void }) {
           <DialogTitle>API key</DialogTitle>
           <DialogDescription>
             {health?.serverKey && health.hasKey && !health.byok
-              ? "This workspace already has AI turned on. Add your own key to use your account instead."
+              ? health.provider === "presenta" ? "Presenta AI is included free with your account, with a daily allowance. Add your own key to remove the limit." : "This workspace already has AI turned on. Add your own key to use your account instead."
               : "Presenta uses your own AI account to write decks. Without a key you get the offline demo."}
           </DialogDescription>
         </DialogHeader>
@@ -141,3 +141,4 @@ function KeyForm({ onClose }: { onClose: () => void }) {
     </>
   );
 }
+

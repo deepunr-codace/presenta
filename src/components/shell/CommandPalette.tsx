@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
-import { Command, Flask, Images, Key, Keyboard, Layout, MagnifyingGlass, Palette, Plus, Presentation, SquaresFour, Trash, House, type IconProps } from "@phosphor-icons/react";
+import { ChartLineUp, Command, Flask, Gear, PlugsConnected, Images, Key, Keyboard, Layout, MagnifyingGlass, Palette, Plus, Presentation, SquaresFour, Trash, House, UsersThree, type IconProps } from "@phosphor-icons/react";
 import { listDecks, type DeckSummary } from "@/lib/persist";
 import { timeAgo } from "@/lib/time";
 import { TEMPLATES } from "@/components/templates/templates-data";
@@ -83,9 +83,13 @@ function PaletteBody({ onClose, go, openKey, openShortcuts }: { onClose: () => v
     const pages: Entry[] = [
       { id: "new", group: "Go to", label: "New deck", icon: Plus, run: () => go("/new") },
       { id: "home", group: "Go to", label: "Home", icon: House, run: () => go("/") },
-      { id: "decks", group: "Go to", label: "All decks", icon: SquaresFour, run: () => go("/#decks") },
+      { id: "decks", group: "Go to", label: "All decks", icon: SquaresFour, run: () => go("/decks") },
       { id: "templates", group: "Go to", label: "Templates", icon: Layout, run: () => go("/templates") },
       { id: "media", group: "Go to", label: "Media library", icon: Images, run: () => go("/media") },
+      { id: "teams", group: "Go to", label: "Teams", icon: UsersThree, run: () => go("/teams") },
+      { id: "analytics", group: "Go to", label: "Analytics", icon: ChartLineUp, run: () => go("/analytics") },
+      { id: "integrations", group: "Go to", label: "Integrations", icon: PlugsConnected, run: () => go("/integrations") },
+      { id: "settings", group: "Go to", label: "Settings", hint: "Storage, profile, security", icon: Gear, run: () => go("/account") },
       { id: "brand", group: "Go to", label: "Brand kit", icon: Palette, run: () => go("/brand") },
       { id: "labs", group: "Go to", label: "Labs", icon: Flask, run: () => go("/labs") },
       { id: "trash", group: "Go to", label: "Trash", icon: Trash, run: () => go("/trash") },

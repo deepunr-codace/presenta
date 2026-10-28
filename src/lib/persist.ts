@@ -1,19 +1,23 @@
-import { del, get, set, update } from "idb-keyval";
+import { CLIENT_HEADER, getClientId } from "@/lib/client-id";
 import { newId } from "@/lib/deck/ids";
 import { DeckImportSchema, DeckSchema, type Deck, type ThemeId } from "@/lib/deck/schema";
+import type { DriveDeck } from "@/lib/drive-db";
+import { uploadDataUrl } from "@/lib/media";
 import { sanitizeHtml, stripTags } from "@/lib/text";
 
 /**
- * IndexedDB persistence via idb-keyval. Nothing here touches IndexedDB at
- * module load, so the module is safe to import during SSR; only call the
+ * Deck persistence. Decks live in the signed-in user's account (Postgres, through /api/decks), so they follow the
+ * user across devices. Nothing here runs at module load, so the module is safe to import during SSR; only call the
  * functions from the client.
  */
 
-export const DECK_INDEX_KEY = "presenta:decks";
-export const deckKey = (id: string) => `presenta:deck:${id}` as const;
-
 /** Imported files above this size are refused before they are read. */
 export const IMPORT_MAX_BYTES = 20 * 1024 * 1024;
+
+/** A saved deck is sent in one request, and the host caps a request body at about 4.5 MB. */
+const SAVE_BODY_SOFT_LIMIT = 3.5 * 1024 * 1024;
+/** Embedded images smaller than this are never moved out of the deck. */
+const MIN_EXTERNALIZE_CHARS = 100 * 1024;
 
 export type DeckSummary = {
   id: string;
@@ -21,56 +25,106 @@ export type DeckSummary = {
   updatedAt: string;
   slideCount: number;
   themeId: ThemeId;
+  /** Which folder the deck is in (null: the top level). Present on the account's deck list. */
+  folderId?: string | null;
+  /** Stored size in bytes. */
+  sizeBytes?: number;
+  /** Who the deck is shared with, for the sharing indicator. */
+  sharing?: DriveDeck["sharing"];
 };
 
-function summarize(deck: Deck): DeckSummary {
-  return {
-    id: deck.id,
-    title: deck.title,
-    updatedAt: deck.updatedAt,
-    slideCount: deck.slides.length,
-    themeId: deck.themeId,
-  };
+async function readError(res: Response, fallback: string): Promise<Error> {
+  const body = (await res.json().catch(() => null)) as { error?: string } | null;
+  return new Error(body?.error ?? fallback);
 }
 
-function asIndex(value: unknown): DeckSummary[] {
-  return Array.isArray(value) ? (value as DeckSummary[]) : [];
+async function request(input: string, init: RequestInit | undefined, fallback: string): Promise<Response> {
+  const res = await fetch(input, init);
+  if (!res.ok) throw await readError(res, fallback);
+  return res;
 }
 
-async function readIndex(): Promise<DeckSummary[]> {
-  return asIndex(await get<DeckSummary[]>(DECK_INDEX_KEY));
-}
+const json = (method: string, body: unknown): RequestInit => ({ method, headers: { "Content-Type": "application/json", [CLIENT_HEADER]: getClientId() }, body: JSON.stringify(body) });
 
-function byUpdatedDesc(a: DeckSummary, b: DeckSummary): number {
-  return b.updatedAt < a.updatedAt ? -1 : b.updatedAt > a.updatedAt ? 1 : 0;
+/* ---------- Large embedded images ---------- */
+
+const externalized = new Map<string, string>();
+
+/** Every `data:image/...` string in the deck, with the object and key that hold it. */
+function findDataUrls(node: unknown, out: { holder: Record<string, unknown>; key: string; value: string }[] = []) {
+  if (Array.isArray(node)) {
+    node.forEach((child, i) => {
+      if (typeof child === "string") {
+        if (child.startsWith("data:image/")) out.push({ holder: node as unknown as Record<string, unknown>, key: String(i), value: child });
+      } else findDataUrls(child, out);
+    });
+  } else if (node && typeof node === "object") {
+    for (const [key, child] of Object.entries(node as Record<string, unknown>)) {
+      if (typeof child === "string") {
+        if (child.startsWith("data:image/")) out.push({ holder: node as Record<string, unknown>, key, value: child });
+      } else findDataUrls(child, out);
+    }
+  }
+  return out;
 }
 
 /**
- * Write the deck, then fold its summary into the index inside one
- * read-modify-write transaction (`update`), so two saves racing each other
- * cannot drop one another's index entry.
+ * Keep a save under the request-size cap: when the deck is too big because of embedded base64 images, upload the
+ * largest ones to the media library and save their URLs instead. The deck in the editor is not changed.
  */
+async function fitForSave(deck: Deck): Promise<Deck> {
+  if (JSON.stringify(deck).length <= SAVE_BODY_SOFT_LIMIT) return deck;
+  const copy = structuredClone(deck);
+  const found = findDataUrls(copy).filter((f) => f.value.length >= MIN_EXTERNALIZE_CHARS).sort((a, b) => b.value.length - a.value.length);
+  let size = JSON.stringify(copy).length;
+  for (const f of found) {
+    if (size <= SAVE_BODY_SOFT_LIMIT) break;
+    let url = externalized.get(f.value);
+    if (!url) {
+      url = await uploadDataUrl(f.value, "Slide image");
+      externalized.set(f.value, url);
+    }
+    f.holder[f.key] = url;
+    size -= f.value.length - url.length;
+  }
+  return copy;
+}
+
+/* ---------- Decks ---------- */
+
+/** Save a deck to the account (create or replace). */
 export async function saveDeck(deck: Deck): Promise<void> {
-  await set(deckKey(deck.id), deck);
-  const summary = summarize(deck);
-  await update<DeckSummary[]>(DECK_INDEX_KEY, (current) => [summary, ...asIndex(current).filter((d) => d.id !== deck.id)].sort(byUpdatedDesc));
+  const body = await fitForSave(deck);
+  await request(`/api/decks/${encodeURIComponent(deck.id)}`, json("PUT", body), "The deck could not be saved.");
+}
+
+/** A deck with what the signed-in user may do with it, and who is editing it right now (if anyone). */
+export type DeckAccess = { deck: Deck; role: "owner" | "editor" | "viewer"; editor: string | null };
+
+/** Load a deck of mine, or one shared with me. Null when there is no such deck for me. */
+export async function loadDeckWithAccess(id: string): Promise<DeckAccess | null> {
+  const res = await fetch(`/api/decks/${encodeURIComponent(id)}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw await readError(res, "The deck could not be loaded.");
+  const body = (await res.json()) as { deck?: unknown; role?: DeckAccess["role"]; editor?: string | null };
+  const parsed = DeckSchema.safeParse(body.deck);
+  return parsed.success ? { deck: parsed.data, role: body.role ?? "owner", editor: body.editor ?? null } : null;
 }
 
 export async function loadDeckById(id: string): Promise<Deck | null> {
-  const raw = await get<unknown>(deckKey(id));
-  if (raw === undefined || raw === null) return null;
-  const parsed = DeckSchema.safeParse(raw);
-  return parsed.success ? parsed.data : null;
+  return (await loadDeckWithAccess(id))?.deck ?? null;
 }
 
+/** Decks in the list, newest first. */
 export async function listDecks(): Promise<DeckSummary[]> {
-  const index = await readIndex();
-  return [...index].sort(byUpdatedDesc);
+  const res = await request("/api/decks", { cache: "no-store" }, "Could not read saved decks.");
+  const body = (await res.json()) as { decks?: DeckSummary[] };
+  return Array.isArray(body.decks) ? body.decks : [];
 }
 
+/** Delete a deck for good (the trash is the soft delete; see `trashDeck`). */
 export async function deleteDeckById(id: string): Promise<void> {
-  await del(deckKey(id));
-  await update<DeckSummary[]>(DECK_INDEX_KEY, (current) => asIndex(current).filter((d) => d.id !== id));
+  await request(`/api/decks/${encodeURIComponent(id)}`, { method: "DELETE" }, "The deck could not be deleted.");
 }
 
 export function exportDeckJson(deck: Deck): Blob {
@@ -119,30 +173,31 @@ function sanitizeDeckText(deck: Deck): Deck {
 /**
  * Parse and validate a deck JSON file. Files over `IMPORT_MAX_BYTES` and
  * decks over the `DeckImportSchema` bounds are refused; text is sanitised and
- * duplicate ids are re-issued. If a deck with the same id is already stored,
- * the imported copy gets a fresh id and timestamps so it never overwrites the
- * existing one. Does not save; callers decide.
+ * duplicate ids are re-issued. If a deck with the same id is already in the account
+ * (list or trash), the imported copy gets a fresh id and timestamps so it never
+ * overwrites the existing one. Does not save; callers decide.
  */
 export async function importDeckJson(file: File): Promise<Deck> {
   if (file.size > IMPORT_MAX_BYTES) {
     throw new DeckImportError(`That file is ${(file.size / 1024 / 1024).toFixed(1)} MB; the import limit is ${IMPORT_MAX_BYTES / 1024 / 1024} MB.`);
   }
   const text = await file.text();
-  let json: unknown;
+  let parsedJson: unknown;
   try {
-    json = JSON.parse(text);
+    parsedJson = JSON.parse(text);
   } catch {
     throw new DeckImportError("That file is not valid JSON.");
   }
-  const parsed = DeckImportSchema.safeParse(json);
+  const parsed = DeckImportSchema.safeParse(parsedJson);
   if (!parsed.success) {
     const first = parsed.error.issues[0];
     const where = first?.path.length ? ` at ${first.path.join(".")}` : "";
     throw new DeckImportError(`That file is not a Presenta deck${where}: ${first?.message ?? "invalid"}.`);
   }
   const deck = sanitizeDeckText(reIdDuplicates(parsed.data));
-  const index = await readIndex();
-  if (index.some((d) => d.id === deck.id)) {
+  const idsRes = await request("/api/decks?ids=1", { cache: "no-store" }, "Could not check your saved decks.");
+  const { ids } = (await idsRes.json()) as { ids?: string[] };
+  if ((ids ?? []).includes(deck.id)) {
     const now = new Date().toISOString();
     return {
       ...deck,
@@ -170,56 +225,39 @@ export function downloadBlob(blob: Blob, filename: string): void {
 
 /* ---------- Trash (soft delete) ---------- */
 
-export const TRASH_INDEX_KEY = "presenta:trash";
-
 /** A deck in the trash keeps its data; it is purged for good after this many days. */
 export const TRASH_RETENTION_DAYS = 30;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type TrashedDeck = DeckSummary & { trashedAt: string };
 
-function asTrash(value: unknown): TrashedDeck[] {
-  return Array.isArray(value) ? (value as TrashedDeck[]) : [];
-}
-
-/** Move a deck out of the index and into the trash. Its data stays until it is purged. Returns false if it was not found. */
-export async function trashDeck(id: string, now: Date = new Date()): Promise<boolean> {
-  const index = await readIndex();
-  const summary = index.find((d) => d.id === id);
-  if (!summary) return false;
-  await update<TrashedDeck[]>(TRASH_INDEX_KEY, (current) => [{ ...summary, trashedAt: now.toISOString() }, ...asTrash(current).filter((d) => d.id !== id)]);
-  await update<DeckSummary[]>(DECK_INDEX_KEY, (current) => asIndex(current).filter((d) => d.id !== id));
+/** Move a deck out of the list and into the trash. Its data stays until it is purged. Returns false if it was not found. */
+export async function trashDeck(id: string): Promise<boolean> {
+  const res = await fetch(`/api/decks/${encodeURIComponent(id)}`, json("PATCH", { trashed: true }));
+  if (res.status === 404) return false;
+  if (!res.ok) throw await readError(res, "The deck could not be moved to the trash.");
   return true;
 }
 
 /** Put a trashed deck back in the deck list. Returns false if it is not in the trash. */
 export async function restoreDeck(id: string): Promise<boolean> {
-  const trash = asTrash(await get<TrashedDeck[]>(TRASH_INDEX_KEY));
-  const entry = trash.find((d) => d.id === id);
-  if (!entry) return false;
-  const { trashedAt: _trashedAt, ...summary } = entry;
-  void _trashedAt;
-  await update<DeckSummary[]>(DECK_INDEX_KEY, (current) => [summary, ...asIndex(current).filter((d) => d.id !== id)].sort(byUpdatedDesc));
-  await update<TrashedDeck[]>(TRASH_INDEX_KEY, (current) => asTrash(current).filter((d) => d.id !== id));
+  const res = await fetch(`/api/decks/${encodeURIComponent(id)}`, json("PATCH", { trashed: false }));
+  if (res.status === 404) return false;
+  if (!res.ok) throw await readError(res, "The deck could not be restored.");
   return true;
 }
 
 /** Delete a trashed deck and its data for good. */
 export async function purgeDeck(id: string): Promise<void> {
-  await del(deckKey(id));
-  await update<TrashedDeck[]>(TRASH_INDEX_KEY, (current) => asTrash(current).filter((d) => d.id !== id));
+  await deleteDeckById(id);
 }
 
 export async function emptyTrash(): Promise<void> {
-  const trash = asTrash(await get<TrashedDeck[]>(TRASH_INDEX_KEY));
-  await Promise.all(trash.map((d) => del(deckKey(d.id))));
-  await set(TRASH_INDEX_KEY, []);
+  await request("/api/decks?trash=1", { method: "DELETE" }, "The trash could not be emptied.");
 }
 
-/** Trashed decks, newest first. Decks past the retention window are purged first. */
-export async function listTrash(now: number = Date.now()): Promise<TrashedDeck[]> {
-  const all = asTrash(await get<TrashedDeck[]>(TRASH_INDEX_KEY));
-  const expired = all.filter((d) => now - Date.parse(d.trashedAt) > TRASH_RETENTION_DAYS * DAY_MS);
-  for (const d of expired) await purgeDeck(d.id);
-  return all.filter((d) => !expired.includes(d)).sort((a, b) => (b.trashedAt < a.trashedAt ? -1 : b.trashedAt > a.trashedAt ? 1 : 0));
+/** Trashed decks, newest first. Decks past the retention window are purged by the server first. */
+export async function listTrash(): Promise<TrashedDeck[]> {
+  const res = await request("/api/decks?trash=1", { cache: "no-store" }, "Could not read the trash.");
+  const body = (await res.json()) as { decks?: TrashedDeck[] };
+  return Array.isArray(body.decks) ? body.decks : [];
 }

@@ -1,4 +1,4 @@
-import { generateDeck, resolveAi } from "@/lib/ai";
+import { generateDeck, resolveAiForRequest } from "@/lib/ai";
 import { GenerateRequestSchema } from "@/lib/deck/schema";
 import { jsonFailure, jsonOk, readJsonBody } from "../_lib/respond";
 
@@ -10,10 +10,11 @@ export async function POST(request: Request) {
   const body = await readJsonBody(request, GenerateRequestSchema);
   if (!body.ok) return body.response;
 
-  const ai = resolveAi(request);
   try {
+    const ai = await resolveAiForRequest(request);
     return jsonOk(await generateDeck(body.data, { signal: request.signal, ai }), ai.source);
   } catch (err) {
     return jsonFailure(err, "Unexpected error while generating the deck.");
   }
 }
+

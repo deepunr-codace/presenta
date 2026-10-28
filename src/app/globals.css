@@ -16,6 +16,7 @@
 @import "../components/styles/scrollbar.css";
 @import "../components/styles/present.css";
 @import "../components/styles/print.css";
+@import "../components/styles/loading.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 

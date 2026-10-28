@@ -9,7 +9,7 @@ export type PromptBoxProps = {
   onSubmit: (text: string) => void;
   placeholder?: string;
   /** Status tag in the footer; defaults to the AI health check ("Offline", "Claude" or "OpenAI"). */
-  footerPill?: "Offline" | "Claude" | "OpenAI";
+  footerPill?: "Offline" | "Claude" | "OpenAI" | "Presenta AI";
   /** Label of the filled pill. */
   submitLabel?: ReactNode;
   /** Wide taupe hero card (home) instead of the paper composer. */
@@ -44,7 +44,7 @@ export const PromptBox = forwardRef<PromptBoxHandle, PromptBoxProps>(function Pr
   const areaRef = useRef<HTMLTextAreaElement>(null);
   const health = useAiHealth();
   const openKeyDialog = useApiKeyDialog((s) => s.setOpen);
-  const pill: "Offline" | "Claude" | "OpenAI" | null = footerPill ?? (health ? (health.hasKey ? (health.provider === "openai" ? "OpenAI" : "Claude") : "Offline") : null);
+  const pill: "Offline" | "Claude" | "OpenAI" | "Presenta AI" | null = footerPill ?? (health ? (health.hasKey ? (health.provider === "presenta" ? "Presenta AI" : health.provider === "openai" ? "OpenAI" : "Claude") : "Offline") : null);
 
   useImperativeHandle(ref, () => ({ focus: () => areaRef.current?.focus() }), []);
 
@@ -92,3 +92,4 @@ export const PromptBox = forwardRef<PromptBoxHandle, PromptBoxProps>(function Pr
     </div>
   );
 });
+

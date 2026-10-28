@@ -11,6 +11,7 @@ import { DeleteDeckDialog } from "@/components/home/DeleteDeckDialog";
 import { EmptyDecksCard } from "@/components/home/EmptyDecksCard";
 import { HomeHero } from "@/components/home/HomeHero";
 import { LastEditedCard } from "@/components/home/LastEditedCard";
+import { SharedDecks } from "@/components/home/SharedDecks";
 import { StatCard } from "@/components/home/StatCard";
 import { StatSkeleton } from "@/components/home/StatSkeleton";
 import type { DeckActions } from "@/components/home/deck-actions";
@@ -199,7 +200,7 @@ export default function HomePage() {
               </>
             ) : (
               <>
-                <StatCard title="Decks" icon={<Stack />} value={stats.decks.toLocaleString()} unit={stats.decks === 1 ? "deck" : "decks"} caption="Saved in this browser" />
+                <StatCard title="Decks" icon={<Stack />} value={stats.decks.toLocaleString()} unit={stats.decks === 1 ? "deck" : "decks"} caption="Saved to your account" />
                 <StatCard title="Slides" icon={<Presentation />} value={stats.slides.toLocaleString()} unit={stats.slides === 1 ? "slide" : "slides"} caption={hasDecks ? `Across ${stats.decks} deck${stats.decks === 1 ? "" : "s"}` : "Nothing generated yet"} />
                 <LastEditedCard summary={decks?.[0] ?? null} />
               </>
@@ -231,6 +232,8 @@ export default function HomePage() {
               <EmptyDecksCard onSample={() => void openSample()} busy={busy !== null} />
             )}
           </section>
+
+          <SharedDecks />
         </div>
       </div>
 

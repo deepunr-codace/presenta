@@ -1,20 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Deck, TextElement } from "@/lib/deck/schema";
 
-/* ---- in-memory idb-keyval ---- */
-const memory = new Map<IDBValidKey, unknown>();
-vi.mock("idb-keyval", () => ({
-  get: vi.fn(async (key: IDBValidKey) => memory.get(key)),
-  set: vi.fn(async (key: IDBValidKey, value: unknown) => {
-    memory.set(key, structuredClone(value));
-  }),
-  del: vi.fn(async (key: IDBValidKey) => {
-    memory.delete(key);
-  }),
-  update: vi.fn(async (key: IDBValidKey, updater: (old: unknown) => unknown) => {
-    memory.set(key, structuredClone(updater(memory.get(key))));
-  }),
-}));
+/* ---- in-memory stand-in for the /api/decks routes ---- */
+const server = installFakeServer();
 
 /* ---- Task 1 stand-ins ---- */
 vi.mock("@/lib/deck/layouts", async () => {
@@ -32,19 +20,16 @@ vi.mock("@/lib/deck/ids", async () => {
 
 import { AUTOSAVE_MS, COALESCE_MS, HISTORY_CAP, SAVE_RETRY_MS, flushSave, useDeckStore } from "@/store/deck-store";
 import {
-  DECK_INDEX_KEY,
   IMPORT_MAX_BYTES,
-  deckKey,
   deleteDeckById,
   exportDeckJson,
   importDeckJson,
   listDecks,
   loadDeckById,
   saveDeck,
-  type DeckSummary,
 } from "@/lib/persist";
-import * as idb from "idb-keyval";
 import { makeDeck, resetIds, text } from "@/lib/deck/__tests__/fixtures";
+import { installFakeServer } from "@/lib/__tests__/fake-server";
 
 const store = () => useDeckStore.getState();
 
@@ -54,7 +39,7 @@ function slideIds(): string[] {
 
 beforeEach(() => {
   resetIds();
-  memory.clear();
+  server.reset();
   vi.useFakeTimers();
   useDeckStore.setState({
     deck: null,
@@ -161,14 +146,14 @@ describe("useDeckStore: load and commit", () => {
     const deck = makeDeck(2);
     store().loadDeck(deck);
     store().setTitle("Saved?");
-    expect(memory.has(deckKey(deck.id))).toBe(false);
+    expect(server.decks.has(deck.id)).toBe(false);
     await vi.advanceTimersByTimeAsync(AUTOSAVE_MS - 1);
-    expect(memory.has(deckKey(deck.id))).toBe(false);
+    expect(server.decks.has(deck.id)).toBe(false);
     await vi.advanceTimersByTimeAsync(1);
-    const saved = memory.get(deckKey(deck.id)) as Deck;
+    const saved = server.decks.get(deck.id) as Deck;
     expect(saved.title).toBe("Saved?");
     expect(store().dirty).toBe(false);
-    const index = memory.get(DECK_INDEX_KEY) as DeckSummary[];
+    const index = await listDecks();
     expect(index).toHaveLength(1);
     expect(index[0]).toMatchObject({ id: deck.id, title: "Saved?", slideCount: 2, themeId: "paper" });
   });
@@ -180,9 +165,9 @@ describe("useDeckStore: load and commit", () => {
     await vi.advanceTimersByTimeAsync(500);
     store().setTitle("b");
     await vi.advanceTimersByTimeAsync(500);
-    expect(memory.has(deckKey(deck.id))).toBe(false);
+    expect(server.decks.has(deck.id)).toBe(false);
     await flushSave();
-    expect((memory.get(deckKey(deck.id)) as Deck).title).toBe("b");
+    expect((server.decks.get(deck.id) as Deck).title).toBe("b");
     expect(store().dirty).toBe(false);
   });
 
@@ -194,7 +179,7 @@ describe("useDeckStore: load and commit", () => {
     store().undo();
     expect(store().dirty).toBe(true);
     await vi.advanceTimersByTimeAsync(AUTOSAVE_MS);
-    expect((memory.get(deckKey(deck.id)) as Deck).title).toBe("Test deck");
+    expect((server.decks.get(deck.id) as Deck).title).toBe("Test deck");
     expect(store().dirty).toBe(false);
   });
 });
@@ -400,7 +385,7 @@ describe("useDeckStore: slide and deck actions", () => {
     expect(deck.meta.source).toBe("blank");
     expect(store().selectedSlideId).toBe(deck.slides[0].id);
     await vi.advanceTimersByTimeAsync(AUTOSAVE_MS);
-    expect(memory.has(deckKey(deck.id))).toBe(true);
+    expect(server.decks.has(deck.id)).toBe(true);
   });
 });
 
@@ -531,7 +516,7 @@ describe("useDeckStore: commit coalescing and no-op skipping", () => {
     expect(store().deck).toBe(deck);
     expect(store().dirty).toBe(false);
     await vi.advanceTimersByTimeAsync(AUTOSAVE_MS * 2);
-    expect(memory.has(deckKey(deck.id))).toBe(false);
+    expect(server.decks.has(deck.id)).toBe(false);
     store().applyPatch([{ op: "setTitle", title: deck.title }]);
     expect(store().past).toEqual([]);
   });
@@ -542,14 +527,13 @@ describe("useDeckStore: saveError", () => {
     const deck = makeDeck(1);
     store().loadDeck(deck);
     useDeckStore.setState({ saveError: "old" });
-    const setSpy = vi.mocked(idb.set);
-    setSpy.mockRejectedValueOnce(new Error("QuotaExceededError"));
+    server.failNext(1, "QuotaExceededError");
     store().setTitle("Retry me");
     await vi.advanceTimersByTimeAsync(AUTOSAVE_MS);
-    expect(memory.has(deckKey(deck.id))).toBe(false);
+    expect(server.decks.has(deck.id)).toBe(false);
     expect(store().saveError).toBe("old");
     await vi.advanceTimersByTimeAsync(SAVE_RETRY_MS);
-    expect(memory.has(deckKey(deck.id))).toBe(true);
+    expect(server.decks.has(deck.id)).toBe(true);
     expect(store().saveError).toBeNull();
     expect(store().dirty).toBe(false);
   });
@@ -558,8 +542,7 @@ describe("useDeckStore: saveError", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const deck = makeDeck(1);
     store().loadDeck(deck);
-    const setSpy = vi.mocked(idb.set);
-    setSpy.mockRejectedValueOnce(new Error("Disk full")).mockRejectedValueOnce(new Error("Disk full"));
+    server.failNext(2, "Disk full");
     store().setTitle("Fails");
     await vi.advanceTimersByTimeAsync(AUTOSAVE_MS + SAVE_RETRY_MS);
     expect(store().saveError).toBe("Disk full");
@@ -575,15 +558,20 @@ describe("useDeckStore: saveError", () => {
 });
 
 describe("persist: hardening", () => {
-  it("saveDeck and deleteDeckById update the index through idb-keyval update()", async () => {
-    const updateSpy = vi.mocked(idb.update);
-    updateSpy.mockClear();
+  it("saveDeck makes one PUT per deck and deleteDeckById removes it from the list", async () => {
+    server.calls.length = 0;
     await saveDeck(makeDeck(1, "u1"));
-    expect(updateSpy).toHaveBeenCalledTimes(1);
-    expect(updateSpy.mock.calls[0][0]).toBe(DECK_INDEX_KEY);
+    expect(server.calls).toEqual(["PUT /api/decks/u1"]);
+    expect((await listDecks()).map((d) => d.id)).toEqual(["u1"]);
     await deleteDeckById("u1");
-    expect(updateSpy).toHaveBeenCalledTimes(2);
+    expect(server.calls).toContain("DELETE /api/decks/u1");
     expect(await listDecks()).toEqual([]);
+  });
+
+  it("surfaces the server's message when a save fails", async () => {
+    server.failNext(1, "The deck could not be saved.");
+    await expect(saveDeck(makeDeck(1, "u2"))).rejects.toThrow("The deck could not be saved.");
+    expect(server.decks.has("u2")).toBe(false);
   });
 
   it("importDeckJson refuses files over IMPORT_MAX_BYTES before reading them", async () => {
@@ -643,3 +631,4 @@ describe("persist: hardening", () => {
     await expect(importDeckJson(new File([JSON.stringify(deck2)], "x.json"))).rejects.toThrow(/logoDataUrl/);
   });
 });
+

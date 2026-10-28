@@ -1,41 +1,45 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { dataUrlBytes, deleteMedia, formatBytes, formatDuration, listMedia, totalBytes, type MediaItem } from "../media";
 
-// In-memory stand-in for IndexedDB (idb-keyval's get/set/del/update).
-const store = new Map<string, unknown>();
-vi.mock("idb-keyval", () => ({
-  get: async (k: string) => store.get(k),
-  set: async (k: string, v: unknown) => void store.set(k, v),
-  del: async (k: string) => void store.delete(k),
-  update: async (k: string, fn: (v: unknown) => unknown) => void store.set(k, fn(store.get(k))),
-}));
+const item = (id: string, addedAt: string, bytes = 1000): MediaItem => ({
+  id,
+  name: id,
+  kind: "image",
+  mime: "image/png",
+  bytes,
+  width: 10,
+  height: 10,
+  duration: null,
+  addedAt,
+  url: `https://cdn.example/${id}.png`,
+  thumb: `https://cdn.example/${id}.thumb.png`,
+});
 
-import { dataUrlBytes, deleteMedia, formatBytes, getMediaData, listMedia, mediaKey, saveMediaRecord, totalBytes, type MediaItem } from "../media";
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 
-const item = (id: string, addedAt: string, bytes = 1000): MediaItem => ({ id, name: id, mime: "image/png", bytes, width: 10, height: 10, addedAt, thumb: "data:image/png;base64,AAAA" });
+afterEach(() => vi.unstubAllGlobals());
 
-beforeEach(() => store.clear());
-
-describe("media library storage", () => {
-  it("saves an image and lists it newest first", async () => {
-    await saveMediaRecord(item("a", "2026-01-01T00:00:00.000Z"), "data:image/png;base64,AAAA");
-    await saveMediaRecord(item("b", "2026-02-01T00:00:00.000Z"), "data:image/png;base64,BBBB");
+describe("media library API", () => {
+  it("lists items newest first", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ items: [item("a", "2026-01-01T00:00:00.000Z"), item("b", "2026-02-01T00:00:00.000Z")] })));
     expect((await listMedia()).map((m) => m.id)).toEqual(["b", "a"]);
-    expect(await getMediaData("a")).toBe("data:image/png;base64,AAAA");
   });
 
-  it("replaces an item saved twice instead of duplicating it", async () => {
-    await saveMediaRecord(item("a", "2026-01-01T00:00:00.000Z"), "data:image/png;base64,AAAA");
-    await saveMediaRecord(item("a", "2026-03-01T00:00:00.000Z"), "data:image/png;base64,CCCC");
-    expect(await listMedia()).toHaveLength(1);
-    expect(await getMediaData("a")).toBe("data:image/png;base64,CCCC");
+  it("surfaces the server's error message", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ error: "Not signed in." }, 401)));
+    await expect(listMedia()).rejects.toThrow("Not signed in.");
   });
 
-  it("deletes the image and its index entry", async () => {
-    await saveMediaRecord(item("a", "2026-01-01T00:00:00.000Z"), "data:image/png;base64,AAAA");
-    await deleteMedia("a");
-    expect(await listMedia()).toEqual([]);
-    expect(store.has(mediaKey("a"))).toBe(false);
-    expect(await getMediaData("a")).toBeNull();
+  it("deletes through the API", async () => {
+    const fetchMock = vi.fn(async () => json({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    await deleteMedia("media_1");
+    expect(fetchMock).toHaveBeenCalledWith("/api/media/media_1", { method: "DELETE" });
+  });
+
+  it("fails a delete the server refused", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ error: "That item was not found." }, 404)));
+    await expect(deleteMedia("nope")).rejects.toThrow("not found");
   });
 });
 
@@ -45,6 +49,11 @@ describe("media helpers", () => {
     expect(formatBytes(512)).toBe("512 B");
     expect(formatBytes(2048)).toBe("2 KB");
     expect(formatBytes(3 * 1024 * 1024)).toBe("3.0 MB");
+  });
+
+  it("formats video durations", () => {
+    expect(formatDuration(42)).toBe("0:42");
+    expect(formatDuration(725)).toBe("12:05");
   });
 
   it("measures the payload of a base64 data URL", () => {

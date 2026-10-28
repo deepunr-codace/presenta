@@ -6,4 +6,7 @@ export type DeckActions = {
   onDuplicate: (id: string) => void;
   onExport: (id: string) => void;
   onDelete: (summary: DeckSummary) => void;
+  /** Extra menu entries; the menu only shows the ones a screen provides. */
+  onShare?: (summary: DeckSummary) => void;
+  onMove?: (summary: DeckSummary) => void;
 };

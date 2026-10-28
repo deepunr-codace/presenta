@@ -30,6 +30,14 @@ import {
 const MAX_TOKENS = 16000;
 const DEFAULT_MODEL = "gpt-4o";
 const DEFAULT_BASE_URL = "https://api.openai.com/v1";
+const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+/** What customers see instead of the provider's name when a request is served from the pooled keys. */
+const POOL_BRAND = "Presenta AI";
+
+/** Where one request goes, and how its errors are worded. */
+type Target = { baseUrl: string; model: string; brand: string; pooled: boolean };
+
+const brandOf = (auth?: AiAuth) => (auth?.provider === "openrouter" ? POOL_BRAND : "OpenAI");
 
 /** Model name sent to the Chat Completions endpoint; override with OPENAI_MODEL. */
 export function openAiModel(): string {
@@ -44,10 +52,10 @@ type ChatResponse = {
   choices?: { finish_reason?: string; message?: { content?: string | null; refusal?: string | null } }[];
 };
 
-function statusToError(status: number): AiError {
-  if (status === 401 || status === 403) return new AiError("auth", "The OpenAI API key was rejected. Check the key and try again.");
-  if (status === 429) return new AiError("rate_limit", "OpenAI is rate limited right now. Wait a moment and try again.");
-  return new AiError("api", `The OpenAI API returned an error (HTTP ${status}).`);
+function statusToError(status: number, brand: string): AiError {
+  if (status === 401 || status === 403) return new AiError("auth", `The ${brand} API key was rejected. Check the key and try again.`, status);
+  if (status === 429) return new AiError("rate_limit", `${brand} is rate limited right now. Wait a moment and try again.`, status);
+  return new AiError("api", `The ${brand} API returned an error (HTTP ${status}).`, status);
 }
 
 /** One structured-output call to the Chat Completions API; the answer is validated against `schema`. */
@@ -64,8 +72,15 @@ async function parseWithOpenAi<S extends z.ZodType>(call: {
 }): Promise<z.output<S>> {
   const apiKey = call.auth?.apiKey ?? process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) throw new AiError("auth", "No OpenAI API key is available. Add your key in Settings.");
+  const pooled = call.auth?.provider === "openrouter";
   // A visitor's key only ever goes to OpenAI itself; the configurable base URL belongs to the server's own key.
-  const baseUrl = (call.auth ? DEFAULT_BASE_URL : process.env.OPENAI_BASE_URL?.trim() || DEFAULT_BASE_URL).replace(/\/+$/, "");
+  // Pooled keys go to OpenRouter, with the model the admin chose.
+  const target: Target = {
+    baseUrl: (pooled ? OPENROUTER_BASE_URL : call.auth ? DEFAULT_BASE_URL : process.env.OPENAI_BASE_URL?.trim() || DEFAULT_BASE_URL).replace(/\/+$/, ""),
+    model: pooled ? (call.auth?.model ?? "openai/gpt-4o-mini") : openAiModel(),
+    brand: brandOf(call.auth),
+    pooled,
+  };
 
   const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
     { role: "system", content: call.system },
@@ -75,7 +90,7 @@ async function parseWithOpenAi<S extends z.ZodType>(call: {
   // Non-strict schema mode lets the model slip past a constraint now and then, so a failed
   // validation gets one retry with the issues fed back.
   for (let attempt = 0; ; attempt++) {
-    const outcome = await requestOnce(call, apiKey, baseUrl, messages);
+    const outcome = await requestOnce(call, apiKey, target, messages);
     if (outcome.ok) return outcome.data;
     if (attempt >= 1) throw new AiParseError(call.parseMessage);
     messages.push(
@@ -90,7 +105,7 @@ type Outcome<T> = { ok: true; data: T } | { ok: false; content: string; issues: 
 async function requestOnce<S extends z.ZodType>(
   call: { schema: S; name: string; refusedMessage?: string; parseMessage?: string; signal?: AbortSignal },
   apiKey: string,
-  baseUrl: string,
+  target: Target,
   messages: { role: string; content: string }[],
 ): Promise<Outcome<z.output<S>>> {
   const deadline = AbortSignal.timeout(AI_TIMEOUT_MS);
@@ -98,12 +113,16 @@ async function requestOnce<S extends z.ZodType>(
 
   let res: Response;
   try {
-    res = await fetch(`${baseUrl}/chat/completions`, {
+    res = await fetch(`${target.baseUrl}/chat/completions`, {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${apiKey}`,
+        ...(target.pooled ? { "x-title": POOL_BRAND } : {}),
+      },
       body: JSON.stringify({
-        model: openAiModel(),
-        max_completion_tokens: MAX_TOKENS,
+        model: target.model,
+        ...(target.pooled ? { max_tokens: MAX_TOKENS } : { max_completion_tokens: MAX_TOKENS }),
         messages,
         // Non-strict: zod emits optional fields that strict mode rejects, and the answer is re-validated below.
         response_format: {
@@ -114,20 +133,20 @@ async function requestOnce<S extends z.ZodType>(
       signal,
     });
   } catch (err) {
-    if (call.signal?.aborted) throw new AiError("network", "The request was cancelled before OpenAI answered.");
+    if (call.signal?.aborted) throw new AiError("network", `The request was cancelled before ${target.brand} answered.`);
     if (err instanceof DOMException && err.name === "TimeoutError") {
-      throw new AiError("network", "OpenAI took too long to answer. Try again, or ask for fewer slides.");
+      throw new AiError("network", `${target.brand} took too long to answer. Try again, or ask for fewer slides.`);
     }
-    throw new AiError("network", "Could not reach the OpenAI API. Check the server's network connection and try again.");
+    throw new AiError("network", `Could not reach ${target.brand}. Check the connection and try again.`);
   }
 
-  if (!res.ok) throw statusToError(res.status);
+  if (!res.ok) throw statusToError(res.status, target.brand);
 
   const body = (await res.json().catch(() => null)) as ChatResponse | null;
   const choice = body?.choices?.[0];
   if (choice?.message?.refusal) throw new AiRefusedError(call.refusedMessage);
   if (choice?.finish_reason === "length") {
-    throw new AiParseError("OpenAI ran out of room before finishing the answer. Ask for fewer slides or a shorter change and try again.");
+    throw new AiParseError(`${target.brand} ran out of room before finishing the answer. Ask for fewer slides or a shorter change and try again.`);
   }
   const content = choice?.message?.content;
   if (!content) throw new AiParseError(call.parseMessage);
@@ -158,8 +177,8 @@ export function openAiRevise(req: ReviseRequest, opts: AiCallOptions = {}): Prom
     name: "revision",
     system: REVISE_SYSTEM,
     user: buildReviseUserMessage(req),
-    refusedMessage: "OpenAI declined to revise the deck with this instruction. Try rephrasing it.",
-    parseMessage: "OpenAI returned a revision that could not be parsed. Please try again.",
+    refusedMessage: `${brandOf(opts.auth)} declined to revise the deck with this instruction. Try rephrasing it.`,
+    parseMessage: `${brandOf(opts.auth)} returned a revision that could not be parsed. Please try again.`,
     signal: opts.signal,
     auth: opts.auth,
   });
@@ -171,8 +190,8 @@ export function openAiSuggest(req: SuggestRequest, opts: AiCallOptions = {}): Pr
     name: "suggestions",
     system: SUGGEST_SYSTEM,
     user: buildSuggestUserMessage(req),
-    refusedMessage: "OpenAI declined to suggest answers for this question. Type your own answer instead.",
-    parseMessage: "OpenAI returned suggestions that could not be parsed. Please try again.",
+    refusedMessage: `${brandOf(opts.auth)} declined to suggest answers for this question. Type your own answer instead.`,
+    parseMessage: `${brandOf(opts.auth)} returned suggestions that could not be parsed. Please try again.`,
     signal: opts.signal,
     auth: opts.auth,
   });
@@ -184,9 +203,11 @@ export function openAiOutline(req: OutlineRequest, opts: AiCallOptions = {}): Pr
     name: "outline",
     system: OUTLINE_SYSTEM,
     user: buildOutlineUserMessage(req),
-    refusedMessage: "OpenAI declined to outline this brief. Try rephrasing it.",
-    parseMessage: "OpenAI returned an outline that could not be parsed. Please try again.",
+    refusedMessage: `${brandOf(opts.auth)} declined to outline this brief. Try rephrasing it.`,
+    parseMessage: `${brandOf(opts.auth)} returned an outline that could not be parsed. Please try again.`,
     signal: opts.signal,
     auth: opts.auth,
   });
 }
+
+

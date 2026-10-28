@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { DownloadSimple, Images, Trash, UploadSimple } from "@phosphor-icons/react";
-import { addMediaFile, deleteMedia, formatBytes, getMediaData, listMedia, totalBytes, type MediaItem } from "@/lib/media";
+import { addMediaFile, deleteMedia, formatBytes, formatDuration, listMedia, totalBytes, type MediaItem } from "@/lib/media";
 import { downloadBlob } from "@/lib/persist";
 import { timeAgo } from "@/lib/time";
 import { AppShell } from "@/components/shell/AppShell";
@@ -11,17 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ErrorNotice } from "@/components/ui-kit/ErrorNotice";
 
-/** File extension for a data URL's type. */
+/** File extension for a file's type. */
 function extFor(mime: string): string {
   return mime === "image/jpeg" ? "jpg" : mime === "image/svg+xml" ? "svg" : (mime.split("/")[1] ?? "png");
 }
 
-/** Turn a data URL into a Blob so it can be downloaded. */
-async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
-  return (await fetch(dataUrl)).blob();
-}
-
-/** Media library at /media: upload images once, then reuse them in any deck from the editor's image panel. */
+/** Media library at /media: upload images and videos once, then reuse images in any deck from the editor's image panel. */
 export function MediaScreen() {
   const { toast } = useToast();
   const [items, setItems] = useState<MediaItem[] | null>(null);
@@ -55,16 +50,16 @@ export function MediaScreen() {
   }, []);
 
   const upload = async (files: File[]) => {
-    const images = files.filter((f) => f.type.startsWith("image/"));
-    const skipped = files.length - images.length;
-    const problems: string[] = skipped ? [`${skipped} file${skipped === 1 ? " was" : "s were"} skipped because ${skipped === 1 ? "it is" : "they are"} not an image.`] : [];
-    if (!images.length) {
+    const accepted = files.filter((f) => f.type.startsWith("image/") || f.type === "video/mp4" || f.type === "video/webm");
+    const skipped = files.length - accepted.length;
+    const problems: string[] = skipped ? [`${skipped} file${skipped === 1 ? " was" : "s were"} skipped because ${skipped === 1 ? "it is" : "they are"} not an image, MP4 or WebM.`] : [];
+    if (!accepted.length) {
       setErrors(problems);
       return;
     }
     setBusy(true);
     let added = 0;
-    for (const file of images) {
+    for (const file of accepted) {
       try {
         await addMediaFile(file);
         added += 1;
@@ -75,7 +70,7 @@ export function MediaScreen() {
     setBusy(false);
     setErrors(problems);
     await refresh();
-    if (added) toast(added === 1 ? "Image added to the library." : `${added} images added to the library.`, { tone: "success" });
+    if (added) toast(added === 1 ? "Added to the library." : `${added} files added to the library.`, { tone: "success" });
   };
 
   const onDrop = (e: DragEvent) => {
@@ -85,12 +80,13 @@ export function MediaScreen() {
   };
 
   const download = async (m: MediaItem) => {
-    const data = await getMediaData(m.id);
-    if (!data) {
-      setErrors([`“${m.name}” could not be read.`]);
-      return;
+    try {
+      const res = await fetch(m.url);
+      if (!res.ok) throw new Error();
+      downloadBlob(await res.blob(), `${m.name}.${extFor(m.mime)}`);
+    } catch {
+      setErrors([`“${m.name}” could not be downloaded.`]);
     }
-    downloadBlob(await dataUrlToBlob(data), `${m.name}.${extFor(m.mime)}`);
   };
 
   const remove = async () => {
@@ -100,9 +96,9 @@ export function MediaScreen() {
     try {
       await deleteMedia(target.id);
       await refresh();
-      toast("Image deleted.");
+      toast("Deleted.");
     } catch (err) {
-      setErrors([err instanceof Error ? err.message : "Could not delete that image."]);
+      setErrors([err instanceof Error ? err.message : "Could not delete that item."]);
     }
   };
 
@@ -123,7 +119,7 @@ export function MediaScreen() {
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept="image/*,video/mp4,video/webm"
           multiple
           className="hidden"
           aria-hidden
@@ -136,8 +132,8 @@ export function MediaScreen() {
         <header className="mb-8">
           <h1 className="ps-heading">Media library</h1>
           <p className="ps-body-lg mt-2">
-            Your images, ready to reuse in any deck. Pick from here in the editor&apos;s image panel.
-            {items && count > 0 ? ` ${count} image${count === 1 ? "" : "s"} · ${formatBytes(totalBytes(items))}.` : ""}
+            Your images and videos, saved to your account. Pick images from here in the editor&apos;s image panel.
+            {items && count > 0 ? ` ${count} file${count === 1 ? "" : "s"} · ${formatBytes(totalBytes(items))}.` : ""}
           </p>
         </header>
 
@@ -169,16 +165,16 @@ export function MediaScreen() {
             <span className="ps-media-drop-icon" aria-hidden>
               <Images size={28} />
             </span>
-            <span className="ps-title">Drop images here</span>
-            <span className="ps-body">or click to choose files. PNG, JPG, WebP, GIF or SVG up to 8 MB each; large images are scaled to 1920 px.</span>
+            <span className="ps-title">Drop files here</span>
+            <span className="ps-body">or click to choose files. Images (PNG, JPG, WebP, GIF, SVG) up to 8 MB, scaled to 1920 px; videos (MP4, WebM) up to 100 MB.</span>
           </button>
         ) : (
           <>
-            <ul className="ps-media-grid" aria-label="Images" data-dragging={dragging ? "true" : undefined}>
+            <ul className="ps-media-grid" aria-label="Media" data-dragging={dragging ? "true" : undefined}>
               {items.map((m) => (
                 <li key={m.id} className="ps-media-tile">
                   <div className="ps-media-thumb">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- local data URL thumbnail */}
+                    {/* eslint-disable-next-line @next/next/no-img-element -- remote thumbnail */}
                     <img src={m.thumb} alt={m.name} loading="lazy" />
                     <div className="ps-media-actions">
                       <button type="button" className="ps-iconbtn" aria-label={`Download ${m.name}`} title="Download" onClick={() => void download(m)}>
@@ -193,6 +189,7 @@ export function MediaScreen() {
                     {m.name}
                   </p>
                   <p className="ps-cardcaption">
+                    {m.kind === "video" && m.duration ? `${formatDuration(m.duration)} · ` : ""}
                     {m.width}×{m.height} · {formatBytes(m.bytes)} · {timeAgo(m.addedAt)}
                   </p>
                 </li>
@@ -206,8 +203,8 @@ export function MediaScreen() {
       <Dialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete this image?</DialogTitle>
-            <DialogDescription>“{confirm?.name}” will be removed from the library. Slides that already use it keep their copy.</DialogDescription>
+            <DialogTitle>Delete this {confirm?.kind ?? "file"}?</DialogTitle>
+            <DialogDescription>“{confirm?.name}” will be deleted from your storage. Slides that use it will show a broken image.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirm(null)}>

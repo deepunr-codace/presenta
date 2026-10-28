@@ -3,6 +3,8 @@ export type AccountProfile = {
   email: string;
   image: string | null;
   hasPassword: boolean;
+  /** Listed in ADMIN_EMAILS: may manage Presenta AI. */
+  isAdmin?: boolean;
 };
 
 export async function fetchAccount(): Promise<AccountProfile> {

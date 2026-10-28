@@ -25,7 +25,7 @@ export function BrandKitScreen() {
       <div className="ps-page">
         <header className="mb-8">
           <h1 className="ps-heading">Brand kit</h1>
-          <p className="ps-body-lg mt-2">Set your brand once. Every new deck starts with it, and you can still change it per deck. Saved in this browser.</p>
+          <p className="ps-body-lg mt-2">Set your brand once. Every new deck starts with it, and you can still change it per deck. Saved to your account.</p>
         </header>
         {mounted ? <BrandKitEditor /> : <div className="ps-glass h-64 animate-pulse" aria-hidden />}
       </div>

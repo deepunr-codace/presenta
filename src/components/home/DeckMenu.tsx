@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowSquareOut, Copy, DotsThree, DownloadSimple, PencilSimple, Star, Trash } from "@phosphor-icons/react";
+import { ArrowSquareOut, Copy, DotsThree, DownloadSimple, FolderOpen, PencilSimple, ShareNetwork, Star, Trash } from "@phosphor-icons/react";
 import { useStarred } from "@/hooks/useStarred";
 import { toggleStarred } from "@/lib/starred";
 import type { DeckSummary } from "@/lib/persist";
@@ -28,6 +28,16 @@ export function DeckMenu({ summary, actions }: Props) {
           <DropdownMenuItem onClick={() => toggleStarred(summary.id)}>
             <Star weight={starred ? "fill" : "regular"} /> {starred ? "Remove star" : "Star"}
           </DropdownMenuItem>
+          {actions.onShare ? (
+            <DropdownMenuItem onClick={() => actions.onShare?.(summary)}>
+              <ShareNetwork /> Share
+            </DropdownMenuItem>
+          ) : null}
+          {actions.onMove ? (
+            <DropdownMenuItem onClick={() => actions.onMove?.(summary)}>
+              <FolderOpen /> Move to folder
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem onClick={() => actions.onDuplicate(summary.id)}>
             <Copy /> Duplicate
           </DropdownMenuItem>

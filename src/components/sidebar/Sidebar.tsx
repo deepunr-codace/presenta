@@ -44,7 +44,7 @@ export function Sidebar({ tabs = ["assistant", "design"], details, defaultScope,
   };
 
   const state = health ? (health.hasKey ? "claude" : "mock") : "pending";
-  const providerName = health?.provider === "openai" ? "OpenAI" : "Claude";
+  const providerName = health?.provider === "presenta" ? "Presenta AI" : health?.provider === "openai" ? "OpenAI" : "Claude";
 
   return (
     <aside className={cn("ps-sidebar", className)} aria-label="Sidebar">
@@ -69,3 +69,4 @@ export function Sidebar({ tabs = ["assistant", "design"], details, defaultScope,
     </aside>
   );
 }
+

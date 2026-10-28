@@ -11,7 +11,7 @@ type Props = {
 
 const CRUMBS = [
   { label: "Studio", href: "/" },
-  { label: "Decks", href: "/#decks" },
+  { label: "Decks", href: "/decks" },
 ];
 
 /**

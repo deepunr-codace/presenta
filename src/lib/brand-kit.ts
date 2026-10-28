@@ -1,8 +1,10 @@
 import { BrandSchema, ThemeIdSchema, type Brand, type ThemeId } from "@/lib/deck/schema";
+import { putSettings } from "@/lib/settings-api";
 
 /**
- * The saved brand kit: company, logo, accent, fonts, AI notes and a default theme, kept in this browser
- * (localStorage, "presenta:brand-kit") and applied to every new deck the wizard starts.
+ * The saved brand kit: company, logo, accent, fonts, AI notes and a default theme, applied to every new deck the
+ * wizard starts. It is saved to the signed-in account and cached in this browser (localStorage, "presenta:brand-kit")
+ * so it can be read synchronously.
  */
 
 export const BRAND_KIT_KEY = "presenta:brand-kit";
@@ -43,7 +45,18 @@ export function getBrandKit(): BrandKit | null {
   return parseBrandKit(getBrandKitRaw());
 }
 
-/** Throws when the browser refuses to store the kit (for example a full quota). */
+/** Write the kit to this browser only (used when the account's copy is pulled down). Pass null to clear it. */
+export function setBrandKitLocal(kit: BrandKit | null): void {
+  try {
+    if (kit && !isEmptyKit(kit)) window.localStorage.setItem(BRAND_KIT_KEY, JSON.stringify(kit));
+    else window.localStorage.removeItem(BRAND_KIT_KEY);
+  } catch {
+    /* ignore */
+  }
+  window.dispatchEvent(new Event(BRAND_KIT_EVENT));
+}
+
+/** Save to this browser and to the account. Throws when the browser refuses to store the kit (for example a full quota). */
 export function saveBrandKit(kit: BrandKit): void {
   if (isEmptyKit(kit)) {
     clearBrandKit();
@@ -51,13 +64,10 @@ export function saveBrandKit(kit: BrandKit): void {
   }
   window.localStorage.setItem(BRAND_KIT_KEY, JSON.stringify(kit));
   window.dispatchEvent(new Event(BRAND_KIT_EVENT));
+  void putSettings({ brandKit: kit });
 }
 
 export function clearBrandKit(): void {
-  try {
-    window.localStorage.removeItem(BRAND_KIT_KEY);
-  } catch {
-    /* ignore */
-  }
-  window.dispatchEvent(new Event(BRAND_KIT_EVENT));
+  setBrandKitLocal(null);
+  void putSettings({ brandKit: null });
 }

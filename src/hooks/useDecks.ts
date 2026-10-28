@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { listDecks, type DeckSummary } from "@/lib/persist";
 
-/** Saved decks from this browser, newest first; `null` until IndexedDB has answered. */
+/** Saved decks from the signed-in account, newest first; `null` until the server has answered. */
 export function useDecks(): DeckSummary[] | null {
   const [decks, setDecks] = useState<DeckSummary[] | null>(null);
   useEffect(() => {

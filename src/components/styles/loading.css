@@ -1,0 +1,84 @@
+/* Loading states: a thin progress bar on navigation, a soft shimmer on every placeholder, and a small animated loader.
+   The aim is that something responds the instant you click, so the app feels fast even while data is on its way. */
+
+:root, [data-theme="light"] { --shimmer: rgba(255, 255, 255, 0.55); }
+[data-theme="dark"] { --shimmer: rgba(255, 255, 255, 0.07); }
+
+/* ---- Navigation progress bar ---- */
+.ps-navbar {
+  position: fixed;
+  inset: 0 auto auto 0;
+  z-index: 100;
+  width: 100%;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--ps-spark-violet), var(--ps-spark-orange));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--ps-spark-violet) 55%, transparent);
+  transform-origin: left center;
+  transform: scaleX(0);
+  opacity: 0;
+  transition: transform 220ms ease-out, opacity 260ms ease-out 120ms;
+}
+/* It rushes to about 30% at once, then keeps creeping toward 90% so it never looks stuck. */
+.ps-navbar[data-active="true"] {
+  transform: scaleX(0.9);
+  opacity: 1;
+  transition: transform 9s cubic-bezier(0.08, 0.7, 0.2, 1), opacity 80ms ease-out;
+}
+
+/* ---- Shimmer: every placeholder that already uses Tailwind's animate-pulse gets a soft light sweep instead ---- */
+.animate-pulse {
+  position: relative;
+  overflow: hidden;
+  animation: none !important;
+}
+.animate-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(100deg, transparent 20%, var(--shimmer) 50%, transparent 80%);
+  animation: ps-sweep 1.5s ease-in-out infinite;
+}
+@keyframes ps-sweep { to { transform: translateX(100%); } }
+
+/* ---- Skeleton blocks ---- */
+.ps-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--ps-r-md, 12px);
+  background: var(--ps-plate);
+}
+.ps-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(100deg, transparent 20%, var(--shimmer) 50%, transparent 80%);
+  animation: ps-sweep 1.5s ease-in-out infinite;
+}
+/* Content fades up as it appears, so a loaded page never pops in. */
+.ps-reveal { animation: ps-reveal 320ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes ps-reveal { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ---- The loader: three bars that rise and fall in turn ---- */
+.ps-loader { display: inline-flex; height: 18px; align-items: center; gap: 4px; }
+.ps-loader > span {
+  width: 4px;
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(var(--ps-spark-violet), var(--ps-spark-orange));
+  transform-origin: center;
+  animation: ps-loader-bar 900ms ease-in-out infinite;
+}
+.ps-loader > span:nth-child(2) { animation-delay: 120ms; }
+.ps-loader > span:nth-child(3) { animation-delay: 240ms; }
+.ps-loader > span:nth-child(4) { animation-delay: 360ms; }
+@keyframes ps-loader-bar { 0%, 100% { transform: scaleY(0.3); opacity: 0.5; } 50% { transform: scaleY(1); opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse::after, .ps-skeleton::after { animation: none; }
+  .ps-loader > span { animation: none; transform: none; opacity: 0.8; }
+  .ps-reveal { animation: none; }
+  .ps-navbar[data-active="true"] { transition: opacity 80ms ease-out; transform: scaleX(0.6); }
+}

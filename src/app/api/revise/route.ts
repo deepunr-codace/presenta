@@ -1,4 +1,4 @@
-import { reviseDeck, resolveAi } from "@/lib/ai";
+import { reviseDeck, resolveAiForRequest } from "@/lib/ai";
 import { ReviseRequestSchema } from "@/lib/deck/schema";
 import { jsonError, jsonFailure, jsonOk, readJsonBody } from "../_lib/respond";
 
@@ -21,10 +21,11 @@ export async function POST(request: Request) {
     }
   }
 
-  const ai = resolveAi(request);
   try {
+    const ai = await resolveAiForRequest(request);
     return jsonOk(await reviseDeck(body.data, { signal: request.signal, ai }), ai.source);
   } catch (err) {
     return jsonFailure(err, "Unexpected error while revising the deck.");
   }
 }
+

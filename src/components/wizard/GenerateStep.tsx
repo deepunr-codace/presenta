@@ -17,7 +17,7 @@ import { generateProgress, pushProgress, writtenSlides } from "./generate-progre
 import { generationInput, useWizardStore } from "./wizard-state";
 
 const STAGES = ["Writing slides", "Designing layouts", "Applying brand", "Saving"] as const;
-const STAGE_COPY = ["Writing the slide content…", "Placing text, cards and images on each slide…", "Applying your theme, accent and fonts…", "Saving the deck to this browser…"] as const;
+const STAGE_COPY = ["Writing the slide content…", "Placing text, cards and images on each slide…", "Applying your theme, accent and fonts…", "Saving the deck to your account…"] as const;
 const ROTATE_MS = 1600;
 const HISTORY_MAX = 24;
 

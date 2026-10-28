@@ -88,7 +88,7 @@ let inflight: Promise<void> | null = null;
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 function errorMessage(err: unknown): string {
-  return err instanceof Error && err.message ? err.message : "The deck could not be saved in this browser.";
+  return err instanceof Error && err.message ? err.message : "The deck could not be saved. Check your connection.";
 }
 
 /**

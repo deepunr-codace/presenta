@@ -13,7 +13,7 @@ export function EmptyDecksCard({ onSample, busy = false }: Props) {
         <span />
       </div>
       <h3 className="ps-title">No decks yet</h3>
-      <p className="ps-body max-w-md">Describe a talk above, paste your notes, import a JSON file or open the sample. Everything stays in this browser.</p>
+      <p className="ps-body max-w-md">Describe a talk above, paste your notes, import a JSON file or open the sample. Your decks are saved to your account.</p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         <Link href="/new" className="ps-btn ps-btn-primary">
           New deck
