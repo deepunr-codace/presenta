@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { HardDrives, ShieldCheck, Sparkle, Trash, User, UsersThree, Palette, Database, Wrench, type IconProps } from "@phosphor-icons/react";
 import { AppShell } from "@/components/shell/AppShell";
 import { ErrorNotice } from "@/components/ui-kit/ErrorNotice";
@@ -15,7 +15,9 @@ import { ProfileCard } from "./ProfileCard";
 import { SecurityCard } from "./SecurityCard";
 import { DangerZoneCard } from "./DangerZoneCard";
 
-type Section = { id: string; label: string; icon: (p: IconProps) => ReactNode; admin?: boolean };
+type Icon = ComponentType<IconProps>;
+
+type Section = { id: string; label: string; icon: Icon; admin?: boolean };
 
 const SECTIONS: Section[] = [
   { id: "profile", label: "Profile", icon: User },
@@ -84,7 +86,7 @@ export function AccountScreen() {
                 {sections.map((s) => (
                   <li key={s.id} className="shrink-0">
                     <a href={`#${s.id}`} className="ps-panel-row whitespace-nowrap">
-                      {s.icon({ size: 18, weight: "light" })}
+                      <s.icon size={18} weight="light" aria-hidden />
                       <span>{s.label}</span>
                     </a>
                   </li>

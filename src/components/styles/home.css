@@ -85,9 +85,7 @@
 }
 .ps-home-hero .ps-prompt[data-hero]:focus-within {
   border-color: transparent;
-  box-shadow:
-    0 0 0 4px color-mix(in srgb, var(--ps-spark-violet) 18%, transparent),
-    0 28px 64px -28px color-mix(in srgb, var(--ps-spark-violet) 45%, transparent);
+  box-shadow: var(--ps-shadow-subtle), 0 28px 56px -32px rgba(0, 0, 0, 0.22);
 }
 .ps-home-hero .ps-prompt[data-hero] textarea { min-height: 84px; font-size: 16px; }
 .ps-home-hero .ps-send:not(:disabled) {
