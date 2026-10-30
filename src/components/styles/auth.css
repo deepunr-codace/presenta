@@ -480,3 +480,44 @@
 @media (min-width: 1024px) {
   .ps-auth-tagline { font-size: clamp(50px, 5vw, 86px); }
 }
+
+/* Phones: a scrolling stack. The video band and title sit at the top, the card follows below it. */
+@media (max-width: 1023px) {
+  .ps-auth-shell { min-height: 100dvh; height: auto; }
+  .ps-auth-video {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 330px;
+    transform: scale(1.1);
+    mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
+  }
+  .ps-auth-veil {
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.7) 60%, #000 100%);
+  }
+  .ps-auth-hero {
+    position: relative;
+    inset: auto;
+    height: 330px;
+    padding: 22px 22px 16px;
+  }
+  .ps-auth-hero-body { gap: 0; }
+  .ps-auth-tagline { font-size: 30px; line-height: 1.04; letter-spacing: -0.035em; }
+  .ps-auth-main {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    max-width: 440px;
+    margin: -40px auto 0;
+    padding: 0 16px 40px;
+    perspective: none;
+  }
+  .ps-auth-card { padding: 30px 24px 26px; }
+}
+@media (max-width: 1023px) {
+  .ps-auth-main { margin: 28px auto 0; }
+  .ps-auth-hero { height: 340px; }
+  .ps-auth-video { height: 340px; }
+}
