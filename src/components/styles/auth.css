@@ -715,3 +715,34 @@
   .ps-auth-card .ps-btn-md { height: 42px; }
   .ps-auth-card .ps-auth-google { height: 40px; }
 }
+
+/* Still image as a full-width background behind everything, no video mask or split. */
+.ps-auth-video {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: none;
+  mask-image: none;
+  -webkit-mask-image: none;
+  filter: none;
+  border-radius: 0;
+  object-fit: cover;
+}
+@media (min-width: 1024px) {
+  .ps-auth-video {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    mask-image: none;
+    -webkit-mask-image: none;
+    border-radius: 0;
+  }
+  .ps-auth-veil {
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.55) 45%, rgba(0, 0, 0, 0.7) 100%);
+  }
+}
+@media (max-width: 1023px) {
+  .ps-auth-video { height: 100%; }
+}
