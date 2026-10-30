@@ -345,10 +345,7 @@
 /* Parts of the panel keep their size instead of shrinking; only the scrolling middle gives way. */
 .ps-panel > *:not(.ps-panel-scroll), .ps-panel-scroll > * { flex-shrink: 0; }
 
-/* ---- More menu ---- */
-.ps-more-menu { padding: 6px; border-radius: 14px; background: var(--sb-bg); color: var(--ps-ink); box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.35); }
-.ps-more-menu [data-slot="dropdown-menu-item"] { gap: 12px; min-height: 36px; padding-inline: 10px; border-radius: 10px; font-size: 13px; }
-.ps-more-menu [data-slot="dropdown-menu-item"] svg { width: 18px; height: 18px; color: var(--ps-graphite); }
+/* ---- More menu: sizing only, the modern popover look lives in dropdown-menu.tsx ---- */
 .ps-more-chip { margin-left: auto; padding: 1px 6px; border-radius: 4px; background: var(--ps-ink); color: var(--ps-on-ink); font-size: 12px; font-weight: 500; line-height: 16px; }
 
 /* ---- Workspace header: greeting and workspace name ---- */

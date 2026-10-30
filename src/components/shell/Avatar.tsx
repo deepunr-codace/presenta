@@ -22,17 +22,22 @@ export function Avatar() {
       <DropdownMenuTrigger render={<button type="button" className="ps-avatar ps-focus" aria-label="Account" data-photo={photo ? "" : undefined} />}>
         {photo ? <Image src={photo} alt="" fill sizes="32px" referrerPolicy="no-referrer" /> : initialOf(user?.name, user?.email)}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52">
-        <div className="min-w-0 px-1.5 py-1">
-          <div className="truncate ps-label">{user?.name || "Signed in"}</div>
-          {user?.email ? <div className="truncate ps-caption">{user.email}</div> : null}
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="flex min-w-0 items-center gap-2.5 px-2 py-1.5">
+          <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--ps-ink-soft)] text-[12px] font-semibold text-[var(--ps-ink)]" aria-hidden>
+            {photo ? <Image src={photo} alt="" fill sizes="32px" referrerPolicy="no-referrer" /> : initialOf(user?.name, user?.email)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[13px] font-semibold text-[var(--ps-ink)]">{user?.name || "Signed in"}</div>
+            {user?.email ? <div className="truncate ps-caption">{user.email}</div> : null}
+          </div>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem render={<Link href="/account" />}>
           <Gear /> Account settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => void signOut({ callbackUrl: "/login" })}>
+        <DropdownMenuItem variant="destructive" onClick={() => void signOut({ callbackUrl: "/login" })}>
           <SignOut /> Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
