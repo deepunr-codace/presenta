@@ -811,3 +811,15 @@
 
 /* Pure black overlay over the background image. */
 .ps-auth-veil { background: rgba(0, 0, 0, 0.45) !important; }
+
+/* Focus: no card shadow, and the background darkens toward the edges so the card stands alone in a spotlight. */
+.ps-auth-card,
+.ps-auth-card:hover {
+  box-shadow: none;
+  transform: none;
+}
+@media (min-width: 1024px) {
+  .ps-auth-veil {
+    background: radial-gradient(ellipse 34% 52% at 72% 50%, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.6) 65%, #000 100%) !important;
+  }
+}
