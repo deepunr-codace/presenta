@@ -3,7 +3,8 @@
 import { useDraft } from "./useDraft";
 
 type Props = {
-  value: number;
+  /** `undefined` shows the field empty, with `placeholder` in its place (e.g. an "auto" value). */
+  value: number | undefined;
   onCommit: (n: number) => void;
   step?: number;
   min?: number;
@@ -13,11 +14,12 @@ type Props = {
   /** Display precision. */
   digits?: number;
   disabled?: boolean;
+  placeholder?: string;
 };
 
 /** Number input that commits on blur or Enter; arrow keys nudge (Shift ×10). */
-export function NumInput({ value, onCommit, step = 1, min, max, id, digits = 0, disabled, "aria-label": ariaLabel }: Props) {
-  const shown = Number.isFinite(value) ? Number(value.toFixed(digits)).toString() : "";
+export function NumInput({ value, onCommit, step = 1, min, max, id, digits = 0, disabled, placeholder, "aria-label": ariaLabel }: Props) {
+  const shown = value !== undefined && Number.isFinite(value) ? Number(value.toFixed(digits)).toString() : "";
   const [text, setText] = useDraft(shown);
   const clamp = (n: number) => Math.min(max ?? Infinity, Math.max(min ?? -Infinity, n));
   const commit = (raw: string) => {
@@ -40,6 +42,7 @@ export function NumInput({ value, onCommit, step = 1, min, max, id, digits = 0, 
       min={min}
       max={max}
       value={text}
+      placeholder={placeholder}
       disabled={disabled}
       aria-label={ariaLabel}
       onChange={(e) => setText(e.target.value)}
@@ -51,7 +54,7 @@ export function NumInput({ value, onCommit, step = 1, min, max, id, digits = 0, 
           e.preventDefault();
           const d = (e.key === "ArrowUp" ? 1 : -1) * step * (e.shiftKey ? 10 : 1);
           const base = Number(text);
-          const next = clamp((Number.isFinite(base) ? base : value) + d);
+          const next = clamp((Number.isFinite(base) ? base : (value ?? 0)) + d);
           setText(String(Number(next.toFixed(digits))));
           onCommit(next);
         }

@@ -71,8 +71,7 @@ export function TextProps({ el, theme, patch }: Props) {
         />
       </PropertyRow>
       <PropertyRow label="Line height">
-        <NumInput aria-label="Line height" value={el.style.lineHeight ?? 0} min={0} max={4} step={0.05} digits={2} onCommit={(v) => setStyle({ lineHeight: v > 0 ? v : undefined })} />
-        <span className="ps-caption">{el.style.lineHeight ? "" : "auto"}</span>
+        <NumInput aria-label="Line height" value={el.style.lineHeight} placeholder="Auto" min={0} max={4} step={0.05} digits={2} onCommit={(v) => setStyle({ lineHeight: v > 0 ? v : undefined })} />
       </PropertyRow>
       <SwitchRow label="Auto-fit" checked={el.autoFit} onChange={(autoFit) => patch({ autoFit })} />
     </PropertyGroup>

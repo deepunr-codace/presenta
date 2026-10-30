@@ -192,8 +192,8 @@ export function TemplatesScreen() {
 
         {/* Designed templates: real pre-built decks, not AI prompts. Picking one just clones the finished deck. */}
         {shownDesigned.length ? (
-          <section className="mb-10" aria-label="Designed templates">
-            <h2 className="ps-cardtitle mb-4">Designed templates</h2>
+          <section className="mb-10" aria-label="Core library">
+            <h2 className="ps-cardtitle mb-4">Core Library</h2>
             <ul className="ps-tpl-grid" aria-label="Designed templates">
               {shownDesigned.map((t) => {
                 const cover = t.deck.slides[0];
@@ -234,9 +234,9 @@ export function TemplatesScreen() {
             </ul>
           </section>
         ) : saved.length ? (
-          <section className="mb-10" aria-label="Your library">
+          <section className="mb-10" aria-label="Template network">
             <div className="mb-4 flex flex-wrap items-center gap-3">
-              <h2 className="ps-cardtitle">Your library</h2>
+              <h2 className="ps-cardtitle">Template Network</h2>
               <span className="ps-caption">
                 {saved.length} {saved.length === 1 ? "template" : "templates"}
               </span>
@@ -326,7 +326,7 @@ export function TemplatesScreen() {
             )}
           </section>
         ) : (
-          <section className="mb-10" aria-label="Your library">
+          <section className="mb-10" aria-label="Template network">
             <div className="ps-glass flex flex-wrap items-center gap-4" data-paper>
               <div className="min-w-0 flex-1">
                 <h2 className="ps-cardtitle">Bring your own template</h2>
@@ -340,8 +340,8 @@ export function TemplatesScreen() {
         )}
 
         {/* Built-in starters */}
-        <section aria-label="Built-in starters">
-          <h2 className="ps-cardtitle mb-4">Built-in starters</h2>
+        <section aria-label="Quick starters">
+          <h2 className="ps-cardtitle mb-4">Quick Starters</h2>
           {shownBuiltIn.length ? (
             <ul className="ps-tpl-grid" aria-label="Templates">
               {shownBuiltIn.map((t) => (

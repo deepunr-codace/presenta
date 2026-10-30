@@ -1,6 +1,6 @@
 import { newId } from "./ids";
 import { buildDeck } from "./layouts";
-import type { Deck, Element, Generation, Slide, ThemeId } from "./schema";
+import type { ChartElement, Deck, Element, Generation, ImageElement, Slide, ThemeId } from "./schema";
 
 /**
  * Real, pre-designed deck templates: a hand-built cover slide (gradient background, specific type treatment) plus a
@@ -192,7 +192,235 @@ function editorialMonoCover(): Slide {
   };
 }
 
+/* ---------- Aurora: a full 7-slide dark deck with blurred gradient "blob" glow ---------- */
+
+const AURORA_BG = "#0a0a0b";
+const AURORA_LINE = "rgba(243,240,234,0.16)";
+const AURORA_INK = "#f3f0ea";
+const AURORA_INK_2 = "#b9b6bf";
+const AURORA_INK_3 = "#8f8c96";
+
+/** `x`/`y` are the blob's center as a percent of the slide. */
+function auroraBlob(xPct: number, yPct: number, w: number, h: number, a: string, b: string): string {
+  return `radial-gradient(${w}px ${h}px at ${xPct}% ${yPct}%, ${a} 0%, ${b} 42%, transparent 72%)`;
+}
+
+function auroraBackground(...blobs: string[]): Slide["background"] {
+  return { kind: "gradient", css: [...blobs, `linear-gradient(${AURORA_BG}, ${AURORA_BG})`].join(", ") };
+}
+
+function auroraEyebrow(label: string, x: number, y: number, align: "left" | "right" = "left"): Element[] {
+  return [text(label, x, y, 500, 32, { color: AURORA_INK, size: 20, weight: 500, letterSpacing: 2, fontFamily: "body", align })];
+}
+
+function auroraFolio(brand: string, page: string): Element[] {
+  return [
+    text(brand, 96, 1012, 500, 28, { color: AURORA_INK_3, size: 16, weight: 500, letterSpacing: 1.5, fontFamily: "body" }),
+    text(page, 1420, 1012, 404, 28, { color: AURORA_INK_3, size: 16, weight: 500, letterSpacing: 1.5, fontFamily: "body", align: "right" }),
+  ];
+}
+
+function image(query: string, x: number, y: number, w: number, h: number): ImageElement {
+  return { id: newId("el"), type: "image", query, alt: "", fit: "cover", radius: 20, position: "50% 50%", overlay: 0, x, y, w, h, rotation: 0, z: nextZ(), locked: false, opacity: 1 };
+}
+
+function auroraCover(): Slide {
+  z = 0;
+  return {
+    id: newId("slide"),
+    layoutId: "cover",
+    background: auroraBackground(auroraBlob(50, 46, 1180, 560, "#3d6bff", "#16279a"), auroraBlob(70, 55, 760, 420, "#ff9a2e", "#b8360c"), auroraBlob(58, 46, 420, 300, "#e8399f", "#6d1766")),
+    elements: [
+      ...auroraEyebrow("NOVA COLLECTIVE", 96, 72),
+      text("&#8599;", 1800, 64, 48, 48, { color: AURORA_INK, size: 32, fontFamily: "body" }),
+      text("Strategy<br/>Briefing FY26", 96, 300, 1500, 440, { color: AURORA_INK, size: 140, weight: 600, letterSpacing: -4 }),
+      text("October 2026", 96, 950, 360, 32, { color: AURORA_INK, size: 20, weight: 500, letterSpacing: 2, fontFamily: "body" }),
+      text("Prepared for the leadership offsite", 660, 950, 600, 36, { color: AURORA_INK_2, size: 24, weight: 400, fontFamily: "body", align: "center" }),
+      text("nova.co", 1560, 950, 264, 32, { color: AURORA_INK, size: 20, weight: 500, letterSpacing: 2, fontFamily: "body", align: "right" }),
+    ],
+    notes: "",
+  };
+}
+
+function auroraAgenda(): Slide {
+  z = 0;
+  const items: [string, string][] = [["Where we stand", "03"], ["Market shift", "05"], ["The three bets", "08"], ["Resourcing", "12"], ["The ask", "14"]];
+  const rows: Element[] = items.flatMap(([title, page], i) => {
+    const y = 420 + i * 86;
+    return [
+      line(96, y, 1728, 1, AURORA_LINE),
+      text(String(i + 1).padStart(2, "0"), 96, y + 20, 100, 32, { color: AURORA_INK_3, size: 20, weight: 400, letterSpacing: 2, fontFamily: "body" }),
+      text(title, 300, y + 14, 1200, 50, { color: AURORA_INK, size: 42, weight: 500, letterSpacing: -1 }),
+      text(page, 1680, y + 20, 144, 32, { color: AURORA_INK_3, size: 20, weight: 400, fontFamily: "body", align: "right" }),
+    ];
+  });
+  const lastY = 420 + items.length * 86;
+  return {
+    id: newId("slide"),
+    layoutId: "blank",
+    background: auroraBackground(auroraBlob(2, 65, 900, 700, "#2f5cff", "#14238f"), auroraBlob(14, 78, 520, 380, "#ff9a2e", "#b8360c")),
+    elements: [
+      ...auroraEyebrow("AGENDA", 96, 96),
+      text("What we'll cover", 96, 160, 900, 140, { color: AURORA_INK, size: 88, weight: 600, letterSpacing: -2 }),
+      text("Five topics, thirty minutes, one decision at the end.", 96, 300, 700, 48, { color: AURORA_INK_2, size: 26, weight: 400, fontFamily: "body" }),
+      ...rows,
+      line(96, lastY, 1728, 1, AURORA_LINE),
+      ...auroraFolio("NOVA COLLECTIVE", "02 / 07"),
+    ],
+    notes: "",
+  };
+}
+
+function auroraTeam(): Slide {
+  z = 0;
+  const members: [string, string, string][] = [
+    ["Mira Chen", "Head of Strategy", "portrait of a confident strategy lead, studio lighting, grayscale"],
+    ["Owen Park", "VP Product", "portrait of a product executive, studio lighting, grayscale"],
+    ["Sasha Rao", "VP Growth", "portrait of a growth executive, studio lighting, grayscale"],
+    ["Leo Fontaine", "Finance Lead", "portrait of a finance lead, studio lighting, grayscale"],
+  ];
+  const colW = 384;
+  const gap = 32;
+  const cards: Element[] = members.flatMap(([name, role, query], i) => {
+    const x = 96 + i * (colW + gap);
+    return [image(query, x, 320, colW, 400), text(name, x, 744, colW, 48, { color: AURORA_INK, size: 30, weight: 500, letterSpacing: -1 }), text(role, x, 790, colW, 32, { color: AURORA_INK_3, size: 18, weight: 400, fontFamily: "body", letterSpacing: 1 })];
+  });
+  return {
+    id: newId("slide"),
+    layoutId: "blank",
+    background: auroraBackground(auroraBlob(72, 10, 1000, 520, "#e8399f", "#6d1766"), auroraBlob(90, 15, 800, 420, "#2f5cff", "#14238f")),
+    elements: [...auroraEyebrow("THE TEAM", 96, 96), text("Who's in the room", 96, 160, 1000, 140, { color: AURORA_INK, size: 72, weight: 600, letterSpacing: -2 }), ...cards, ...auroraFolio("NOVA COLLECTIVE", "03 / 07")],
+    notes: "",
+  };
+}
+
+function auroraObjectives(): Slide {
+  z = 0;
+  const cols: [string, string, string][] = [
+    ["01", "Focus", "We stop shipping sideways and commit to the two bets that move the number."],
+    ["02", "Speed", "Every team ships on a two-week cycle, no exceptions through Q2."],
+    ["03", "Proof", "Each bet carries one metric the whole company can see weekly."],
+  ];
+  const colW = 544;
+  const gap = 48;
+  const items: Element[] = cols.flatMap(([num, title, body], i) => {
+    const x = 96 + i * (colW + gap);
+    return [
+      ...(i > 0 ? [line(x - gap / 2, 500, 1, 280, AURORA_LINE)] : []),
+      text(num, x, 500, 100, 32, { color: "#e8399f", size: 20, weight: 600, letterSpacing: 2, fontFamily: "body" }),
+      text(title, x, 548, colW, 60, { color: AURORA_INK, size: 40, weight: 500, letterSpacing: -1 }),
+      text(body, x, 620, colW - 20, 160, { color: AURORA_INK_2, size: 24, weight: 400, fontFamily: "body" }),
+    ];
+  });
+  return {
+    id: newId("slide"),
+    layoutId: "blank",
+    background: auroraBackground(auroraBlob(32, 70, 1100, 460, "#2f5cff", "#14238f"), auroraBlob(72, 74, 640, 360, "#ff9a2e", "#b8360c")),
+    elements: [...auroraEyebrow("OBJECTIVES", 96, 96), text("Three things have to be true", 96, 160, 1200, 140, { color: AURORA_INK, size: 68, weight: 600, letterSpacing: -2 }), ...items, ...auroraFolio("NOVA COLLECTIVE", "04 / 07")],
+    notes: "",
+  };
+}
+
+function auroraData(): Slide {
+  z = 0;
+  const chart: ChartElement = {
+    id: newId("el"),
+    type: "chart",
+    kind: "bar",
+    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    series: [{ name: "Bookings ($M)", values: [40, 55, 48, 60, 66, 72] }],
+    x: 936,
+    y: 320,
+    w: 888,
+    h: 540,
+    rotation: 0,
+    z: nextZ(),
+    locked: false,
+    opacity: 1,
+  };
+  return {
+    id: newId("slide"),
+    layoutId: "blank",
+    background: auroraBackground(auroraBlob(68, 56, 900, 560, "#2f5cff", "#14238f"), auroraBlob(26, 68, 560, 360, "#ff9a2e", "#b8360c")),
+    elements: [
+      ...auroraEyebrow("WHERE WE STAND", 96, 96),
+      text("The numbers behind the ask", 96, 160, 760, 170, { color: AURORA_INK, size: 60, weight: 600, letterSpacing: -2 }),
+      text("4.2x", 96, 560, 500, 170, { color: "#6f8dff", size: 150, weight: 600, letterSpacing: -5 }),
+      text("Pipeline growth since the last review", 96, 710, 520, 60, { color: AURORA_INK_2, size: 26, weight: 400, fontFamily: "body" }),
+      line(96, 800, 760, 1, AURORA_LINE),
+      text("68%", 96, 832, 320, 92, { color: AURORA_INK, size: 72, weight: 600, letterSpacing: -2 }),
+      text("Win rate on qualified deals", 96, 926, 340, 56, { color: AURORA_INK_2, size: 20, weight: 400, fontFamily: "body" }),
+      text("11", 456, 832, 320, 92, { color: AURORA_INK, size: 72, weight: 600, letterSpacing: -2 }),
+      text("New logos this quarter", 456, 926, 340, 56, { color: AURORA_INK_2, size: 20, weight: 400, fontFamily: "body" }),
+      chart,
+      ...auroraFolio("NOVA COLLECTIVE", "05 / 07"),
+    ],
+    notes: "",
+  };
+}
+
+function auroraQuote(): Slide {
+  z = 0;
+  return {
+    id: newId("slide"),
+    layoutId: "blank",
+    background: { kind: "gradient", css: [auroraBlob(50, 45, 1000, 520, "rgba(47,92,255,0.28)", "rgba(20,35,143,0.28)"), auroraBlob(70, 55, 640, 380, "rgba(232,57,159,0.22)", "rgba(109,23,102,0.22)"), "linear-gradient(#111113, #111113)"].join(", ") },
+    elements: [
+      text("&ldquo;", 96, 180, 300, 260, { color: "#e8399f", size: 260, weight: 600, fontFamily: "display" }),
+      text("We closed the quarter five days faster than plan, and every region was looking at the same numbers for the first time.", 96, 420, 1480, 320, { color: AURORA_INK, size: 56, weight: 500, letterSpacing: -1 }),
+      line(96, 820, 96, 2, "#e8399f"),
+      text("Mira Chen", 224, 800, 400, 44, { color: AURORA_INK, size: 30, weight: 500, letterSpacing: -1 }),
+      text("HEAD OF STRATEGY", 224, 846, 400, 32, { color: AURORA_INK_3, size: 18, weight: 500, letterSpacing: 2, fontFamily: "body" }),
+      ...auroraFolio("NOVA COLLECTIVE", "06 / 07"),
+    ],
+    notes: "",
+  };
+}
+
+function auroraClosing(): Slide {
+  z = 0;
+  const contacts: [string, string][] = [
+    ["EMAIL", "hello@nova.co"],
+    ["DECK", "nova.co/fy26"],
+    ["NEXT", "Oct 30, 2026"],
+  ];
+  const colW = 544;
+  const gap = 48;
+  const items: Element[] = contacts.flatMap(([label, value], i) => {
+    const x = 96 + i * (colW + gap);
+    return [text(label, x, 880, colW, 28, { color: AURORA_INK_3, size: 18, weight: 500, letterSpacing: 2, fontFamily: "body" }), text(value, x, 912, colW, 56, { color: AURORA_INK, size: 36, weight: 500, letterSpacing: -1 })];
+  });
+  return {
+    id: newId("slide"),
+    layoutId: "closing",
+    background: auroraBackground(auroraBlob(50, 46, 1180, 560, "#3d6bff", "#16279a"), auroraBlob(30, 55, 760, 420, "#ff9a2e", "#b8360c"), auroraBlob(42, 46, 420, 300, "#e8399f", "#6d1766")),
+    elements: [
+      text("&#8600;", 96, 64, 48, 48, { color: AURORA_INK, size: 32, fontFamily: "body" }),
+      ...auroraEyebrow("THANK YOU", 1584, 72, "right"),
+      text("Let's<br/>build it", 420, 300, 1304, 440, { color: AURORA_INK, size: 140, weight: 600, letterSpacing: -4, align: "right" }),
+      line(96, 856, 1728, 1, AURORA_LINE),
+      ...items,
+    ],
+    notes: "",
+  };
+}
+
+function auroraDeck(): Deck {
+  const now = new Date().toISOString();
+  return {
+    id: newId("deck"),
+    title: "Aurora — Strategy Briefing",
+    themeId: "midnight",
+    slides: [auroraCover(), auroraAgenda(), auroraTeam(), auroraObjectives(), auroraData(), auroraQuote(), auroraClosing()],
+    createdAt: now,
+    updatedAt: now,
+    meta: {},
+    version: 1,
+  };
+}
+
 export const TEMPLATE_DECKS: TemplateDeckDef[] = [
+  { id: "tmpl-aurora", title: "Aurora", category: "Business", deck: auroraDeck() },
   { id: "tmpl-pitch-violet", title: "Pitch deck", category: "Business", deck: makeDeck("Pitch Deck", "midnight", violetGlowCover(), SUPPORT) },
   { id: "tmpl-startup-iridescent", title: "Startup pitch deck", category: "Business", deck: makeDeck("Startup Pitch Deck", "midnight", iridescentCover(), SUPPORT) },
   { id: "tmpl-group-project", title: "Group project", category: "Education", deck: makeDeck("Group Project", "midnight", groupProjectCover(), SUPPORT) },
