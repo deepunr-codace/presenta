@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DeckSchema, GenerationSchema, LayoutIdSchema, STAGE_H, STAGE_W, type Element, type TextElement } from "../schema";
+import { DeckSchema, GenerationSchema, LayoutIdSchema, STAGE_H, STAGE_W, ThemeIdSchema, type Element, type TextElement } from "../schema";
 import { applyLayout, buildDeck, buildSlide, LAYOUTS, LOGO_BOX } from "../layouts";
 import { getTheme, THEMES } from "../themes";
 import { newId } from "../ids";
@@ -25,7 +25,7 @@ describe("newId", () => {
 describe("themes", () => {
   it("defines every theme id with matching id field", () => {
     for (const [id, t] of Object.entries(THEMES)) expect(t.id).toBe(id);
-    expect(Object.keys(THEMES)).toHaveLength(5);
+    expect(Object.keys(THEMES).sort()).toEqual([...ThemeIdSchema.options].sort());
   });
 });
 
