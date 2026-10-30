@@ -317,3 +317,24 @@
   .ps-auth-logo { width: 120px; }
 }
 .ps-auth-card { background: #000; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* Card heading: a small brand eyebrow above a tighter gradient title. */
+.ps-auth-card .ps-auth-card-head { align-items: center; text-align: center; }
+.ps-auth-card .ps-auth-card-head::before {
+  content: "PRESENTA STUDIO";
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: #8fa2ff;
+}
+.ps-auth-card .ps-pagetitle {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  background: linear-gradient(180deg, #ffffff 0%, #c9cdd9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.ps-auth-card .ps-pagetitle { font-weight: 800; }
