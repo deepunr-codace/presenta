@@ -699,3 +699,7 @@
   .ps-auth-card .ps-auth-google { height: 42px; }
   .ps-auth-card .ps-auth-divider { margin: 0; }
 }
+@media (max-width: 1023px) {
+  .ps-auth-card .ps-auth-card-head > .ps-body { display: none; }
+  .ps-auth-card .ps-auth-foot { font-size: 13px; }
+}
