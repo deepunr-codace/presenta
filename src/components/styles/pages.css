@@ -5,34 +5,34 @@
 .ps-page > div > header.ps-page-hero {
   position: relative;
   isolation: isolate;
-  min-height: 0;
+  min-height: 174px;
   align-items: center;
   gap: 20px;
   overflow: hidden;
   margin: 0 0 24px !important;
-  padding: 26px 0 0;
-  border: 0;
-  border-radius: 0;
-  background: radial-gradient(ellipse at 78% 0%, color-mix(in srgb, var(--ps-spark-violet) 7%, transparent), transparent 42%);
+  padding: 42px 30px 26px;
+  border: 1px solid var(--ps-line);
+  border-radius: 24px;
+  background: radial-gradient(ellipse at 78% 0%, color-mix(in srgb, var(--ps-spark-violet) 6%, transparent), transparent 42%), linear-gradient(125deg, var(--ps-paper), color-mix(in srgb, var(--ps-paper) 90%, var(--ps-plate)));
   box-shadow: none;
 }
 .ps-page > header.ps-page-hero::before,
-.ps-page > div > header.ps-page-hero::before { position: absolute; top: -16px; left: 0; color: var(--ps-spark-violet); content: "PRESENTA  /  WORKSPACE"; font-size: 9px; font-weight: 700; letter-spacing: .14em; }
+.ps-page > div > header.ps-page-hero::before { position: absolute; top: 18px; left: 30px; color: var(--ps-spark-violet); content: "PRESENTA  /  WORKSPACE"; font-size: 9px; font-weight: 700; letter-spacing: .14em; }
 .ps-page > header.ps-page-hero::after,
-.ps-page > div > header.ps-page-hero::after { position: absolute; z-index: -1; top: -120px; right: 9%; width: 260px; height: 260px; border: 1px solid color-mix(in srgb, var(--ps-spark-violet) 13%, transparent); border-radius: 50%; box-shadow: 0 0 0 28px color-mix(in srgb, var(--ps-spark-violet) 2%, transparent), 0 0 0 58px color-mix(in srgb, var(--ps-spark-violet) 2%, transparent); content: ""; pointer-events: none; }
+.ps-page > div > header.ps-page-hero::after { position: absolute; z-index: -1; top: -120px; right: 9%; width: 260px; height: 260px; border: 1px solid color-mix(in srgb, var(--ps-spark-violet) 9%, transparent); border-radius: 50%; content: ""; pointer-events: none; }
 .ps-page > header.ps-page-hero h1.ps-heading,
 .ps-page > div > header.ps-page-hero h1.ps-heading { position: relative; margin: 0; font-size: clamp(30px, 3.4vw, 42px); line-height: 1.08; letter-spacing: -.04em; }
 .ps-page > header.ps-page-hero .ps-body-lg,
 .ps-page > div > header.ps-page-hero .ps-body-lg { max-width: 66ch; margin-top: 8px; color: var(--ps-smoke); font-size: 14px; line-height: 1.55; }
 .ps-page .ps-section { font-weight: 600; letter-spacing: -.02em; }
-.ps-page .ps-glass { border-radius: 21px; box-shadow: 0 8px 28px color-mix(in srgb, var(--ps-ink) 4%, transparent); }
-.ps-page .ps-glass[data-clickable]:hover { transform: translateY(-2px); box-shadow: 0 14px 34px color-mix(in srgb, var(--ps-ink) 9%, transparent); }
+.ps-page .ps-glass { border-radius: 21px; }
+.ps-page .ps-glass[data-clickable]:hover { transform: translateY(-2px); }
 .ps-page .ps-glass[data-clickable] { transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
 @media (max-width: 767px) {
   .ps-page > header.ps-page-hero,
-  .ps-page > div > header.ps-page-hero { min-height: 0; align-items: flex-start; flex-direction: column; gap: 13px; margin-bottom: 18px !important; padding: 22px 0 0; }
+  .ps-page > div > header.ps-page-hero { min-height: 0; align-items: flex-start; flex-direction: column; gap: 13px; margin-bottom: 18px !important; padding: 39px 20px 21px; border-radius: 20px; }
   .ps-page > header.ps-page-hero::before,
-  .ps-page > div > header.ps-page-hero::before { top: -14px; left: 0; font-size: 8px; }
+  .ps-page > div > header.ps-page-hero::before { top: 16px; left: 20px; font-size: 8px; }
   .ps-page > header.ps-page-hero::after,
   .ps-page > div > header.ps-page-hero::after { top: -150px; right: -50px; }
   .ps-page > header.ps-page-hero h1.ps-heading,
