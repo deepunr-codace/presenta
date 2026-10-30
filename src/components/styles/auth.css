@@ -674,18 +674,6 @@
   .ps-auth-main { margin: 20px auto 0; }
 }
 
-.ps-auth-sub {
-  margin: 14px 0 0;
-  font-size: 18px;
-  line-height: 1.4;
-  font-weight: 400;
-  letter-spacing: -0.005em;
-  color: rgba(244, 242, 239, 0.72);
-}
-@media (max-width: 1023px) {
-  .ps-auth-sub { display: none; }
-}
-
 /* Phones: a shorter card, with tighter padding, controls and spacing. */
 @media (max-width: 1023px) {
   .ps-auth-card { padding: 22px 20px 20px; gap: 16px; }
@@ -751,4 +739,10 @@
 .ps-auth-veil { background: linear-gradient(90deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0.4) 100%) !important; }
 @media (max-width: 1023px) {
   .ps-auth-veil { background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.35) 60%, rgba(0, 0, 0, 0.6) 100%) !important; }
+}
+
+/* Hero title: top-left, under the logo, where the image is dark, with a soft shadow for legibility. */
+@media (min-width: 1024px) {
+  .ps-auth-title-block { margin-top: 56px; margin-bottom: auto; }
+  .ps-auth-tagline { text-shadow: 0 2px 28px rgba(0, 0, 0, 0.75); }
 }
