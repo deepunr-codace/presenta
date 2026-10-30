@@ -338,3 +338,22 @@
   color: transparent;
 }
 .ps-auth-card .ps-pagetitle { font-weight: 800; }
+@media (min-width: 1024px) {
+  .ps-auth-video {
+    top: 16%;
+    left: 4%;
+    width: 40%;
+    height: 66%;
+    border-radius: 24px;
+    mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, #000 55%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, #000 55%, transparent 100%);
+  }
+}
+@media (min-width: 1024px) {
+  .ps-auth-veil {
+    background:
+      radial-gradient(ellipse 30% 36% at 24% 50%, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.7) 65%, #000 100%),
+      rgba(0, 0, 0, 0.35);
+  }
+  .ps-auth-video { filter: brightness(0.8) saturate(0.9); }
+}
