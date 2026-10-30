@@ -685,3 +685,17 @@
 @media (max-width: 1023px) {
   .ps-auth-sub { display: none; }
 }
+
+/* Phones: a shorter card, with tighter padding, controls and spacing. */
+@media (max-width: 1023px) {
+  .ps-auth-card { padding: 22px 20px 20px; gap: 16px; }
+  .ps-auth-card .ps-auth-card-head { gap: 4px; }
+  .ps-auth-card .ps-pagetitle { font-size: 22px; }
+  .ps-auth-card .ps-body { font-size: 13px; }
+  .ps-auth-card .ps-auth-form { gap: 10px; }
+  .ps-auth-card .ps-auth-field, .ps-auth-field { gap: 4px; }
+  .ps-auth-card .ps-input { height: 42px; font-size: 16px; }
+  .ps-auth-card .ps-btn-md { height: 44px; }
+  .ps-auth-card .ps-auth-google { height: 42px; }
+  .ps-auth-card .ps-auth-divider { margin: 0; }
+}
