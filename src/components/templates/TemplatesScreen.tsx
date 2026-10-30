@@ -5,12 +5,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Globe, Presentation, Trash, UploadSimple, UsersThree, Lock } from "@phosphor-icons/react";
 import { AppShell } from "@/components/shell/AppShell";
 import { useToast } from "@/components/shell/Toast";
-import { seedWizardFromPrompt } from "@/components/home/home-data";
+import { cloneDeck, seedWizardFromPrompt } from "@/components/home/home-data";
 import { useWizardStore } from "@/components/wizard/wizard-state";
 import { PillTabs } from "@/components/ui-kit/PillTabs";
 import { ErrorNotice } from "@/components/ui-kit/ErrorNotice";
+import { FitSlide } from "@/components/canvas/FitSlide";
 import { THEMES } from "@/lib/deck/themes";
+import { TEMPLATE_DECKS } from "@/lib/deck/template-decks";
 import type { ThemeId } from "@/lib/deck/schema";
+import { saveDeck } from "@/lib/persist";
 import { fetchTeams, type TeamSummary } from "@/lib/collab";
 import { deleteTemplate, fetchTemplates, startFromTemplate, updateTemplate, type TemplateEntry, type TemplateScope } from "@/lib/templates";
 import { CATEGORIES, TEMPLATES, type Template } from "./templates-data";
@@ -66,6 +69,7 @@ export function TemplatesScreen() {
   const [scopeFilter, setScopeFilter] = useState("all");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [busyDesignedId, setBusyDesignedId] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -94,6 +98,7 @@ export function TemplatesScreen() {
   };
 
   const shownBuiltIn = useMemo(() => (category === "All" ? TEMPLATES : TEMPLATES.filter((t) => t.category === category)), [category]);
+  const shownDesigned = useMemo(() => (category === "All" ? TEMPLATE_DECKS : TEMPLATE_DECKS.filter((t) => t.category === category)), [category]);
   const shownSaved = useMemo(
     () =>
       (saved ?? []).filter(
@@ -106,6 +111,19 @@ export function TemplatesScreen() {
     seedWizardFromPrompt(t.prompt);
     useWizardStore.getState().patchSettings({ slideCount: t.slides });
     router.push("/new");
+  };
+
+  const openDesigned = async (t: (typeof TEMPLATE_DECKS)[number]) => {
+    setBusyDesignedId(t.id);
+    setError(null);
+    try {
+      const deck = cloneDeck(t.deck, t.title);
+      await saveDeck(deck);
+      router.push(`/deck/${deck.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not start a deck from this template.");
+      setBusyDesignedId(null);
+    }
   };
 
   const openSaved = async (t: TemplateEntry) => {
@@ -171,6 +189,37 @@ export function TemplatesScreen() {
         </header>
 
         {error ? <ErrorNotice compact className="mb-6" message={error} /> : null}
+
+        {/* Designed templates: real pre-built decks, not AI prompts. Picking one just clones the finished deck. */}
+        {shownDesigned.length ? (
+          <section className="mb-10" aria-label="Designed templates">
+            <h2 className="ps-cardtitle mb-4">Designed templates</h2>
+            <ul className="ps-tpl-grid" aria-label="Designed templates">
+              {shownDesigned.map((t) => {
+                const cover = t.deck.slides[0];
+                const theme = THEMES[t.deck.themeId];
+                const busy = busyDesignedId === t.id;
+                return (
+                  <li key={t.id}>
+                    <button type="button" className="ps-tpl" onClick={() => void openDesigned(t)} disabled={busy} aria-label={`Use the ${t.title} template`}>
+                      <span className="ps-tpl-art" aria-hidden>
+                        <FitSlide slide={cover} theme={theme} className="pointer-events-none" />
+                        <span className="ps-tpl-count">{t.deck.slides.length} slides</span>
+                      </span>
+                      <span className="ps-tpl-body">
+                        <span className="ps-tpl-cat">{t.category}</span>
+                        <span className="ps-tpl-title">{t.title}</span>
+                        <span className="ps-tpl-use">
+                          {busy ? "Opening…" : "Use template"} <ArrowRight size={14} weight="bold" aria-hidden />
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : null}
 
         {/* Saved templates: mine, my teams' and the global library */}
         {saved === null ? (
