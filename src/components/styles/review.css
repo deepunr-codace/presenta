@@ -17,7 +17,7 @@
 
 /* ---------- Title row ---------- */
 
-.ps-review-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-bottom: 20px; }
+.ps-review-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 14px; }
 .ps-review-title {
   font-size: 28px;
   line-height: 1.15;
@@ -28,9 +28,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ps-review-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 6px; font-size: 13px; line-height: 18px; color: var(--ps-smoke); }
+.ps-review-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 2px; font-size: 13px; line-height: 18px; color: var(--ps-smoke); }
 .ps-review-meta-theme { display: inline-flex; align-items: center; gap: 6px; color: var(--ps-graphite); font-weight: 500; }
-.ps-review-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+.ps-review-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
 
 /* ---------- Hero: paper card ---------- */
 
