@@ -12,7 +12,7 @@ type Props = {
 export function AuthShell({ children }: Props) {
   return (
     <div className="ps-auth-shell">
-      <video className="ps-auth-video" src="/auth/login-bg.mp4" autoPlay muted loop playsInline preload="auto" aria-hidden tabIndex={-1} />
+      <video className="ps-auth-video" src="/auth/login-bg.mp4" poster="/auth/login-poster.jpg" autoPlay muted loop playsInline preload="auto" aria-hidden tabIndex={-1} />
       <div className="ps-auth-veil" aria-hidden />
       <aside className="ps-auth-hero">
         {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset, sized by CSS */}
