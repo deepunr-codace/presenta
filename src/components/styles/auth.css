@@ -259,3 +259,30 @@
   .ps-auth-card::after { display: none; }
   .ps-auth-line > span { transform: none; animation: none; }
 }
+
+/* Video in the right half under a heavy black overlay; the card sits left of centre, the logo and title on the left. */
+.ps-auth-video {
+  left: 50%;
+  width: 50%;
+  mask-image: linear-gradient(90deg, transparent 0%, #000 28%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 28%);
+}
+.ps-auth-veil {
+  background: linear-gradient(90deg, rgba(5, 5, 7, 0.9) 0%, rgba(5, 5, 7, 0.82) 50%, rgba(5, 5, 7, 0.9) 100%);
+}
+.ps-auth-main { left: 33%; }
+@media (max-width: 1023px) {
+  .ps-auth-video {
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 42%;
+    mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
+  }
+  .ps-auth-veil { background: linear-gradient(180deg, rgba(5, 5, 7, 0.88) 0%, rgba(5, 5, 7, 0.86) 45%, rgba(5, 5, 7, 0.95) 100%); }
+  .ps-auth-main { left: 50%; }
+}
+@media (min-width: 1024px) {
+  .ps-auth-title-block { margin-top: auto; margin-bottom: 28px; }
+}
