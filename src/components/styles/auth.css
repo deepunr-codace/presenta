@@ -599,3 +599,33 @@
     0 34px 60px -18px rgba(0, 0, 0, 1),
     0 64px 100px -30px rgba(4, 4, 10, 1);
 }
+
+/* Matte card: a flat near-black surface with no gloss, sheen or glass blur. */
+.ps-auth-card,
+.ps-auth-card:hover {
+  background: #0a0a0a;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: rgba(255, 255, 255, 0.05);
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+.ps-auth-card::after { display: none; }
+.ps-auth-card::before { opacity: 0; }
+.ps-auth-card:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.8),
+    0 3px 0 #000,
+    0 7px 0 #000,
+    0 34px 60px -18px rgba(0, 0, 0, 1),
+    0 64px 100px -30px rgba(0, 0, 0, 1);
+}
+.ps-auth-card {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.8),
+    0 3px 0 #000,
+    0 6px 0 #000,
+    0 26px 48px -14px rgba(0, 0, 0, 0.95),
+    0 50px 90px -26px rgba(0, 0, 0, 1);
+}
