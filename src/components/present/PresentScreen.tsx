@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowClockwise, CaretLeft, CaretRight, Check, CopySimple, DeviceMobile, GearSix, Pause, Play, ShareNetwork, SpeakerHigh, SpeakerSlash, Stop, VideoCamera, X } from "@phosphor-icons/react";
 import { QRCodeSVG } from "qrcode.react";
 import { STAGE_H, STAGE_W, type Slide } from "@/lib/deck/schema";
+import { computeAnimationPlan } from "@/lib/deck/animation";
 import { resolveTheme } from "@/lib/deck/themes";
 import { narrationText } from "@/lib/narration";
 import { useDeckEvent } from "@/hooks/useDeckEvent";
@@ -59,6 +60,9 @@ export function PresentScreen({ id }: Props) {
   // Clamp at render time so a shrinking deck never leaves the index out of range.
   const index = Math.min(rawIndex, Math.max(0, count - 1));
   const [slideDirection, setSlideDirection] = useState<"forward" | "backward">("forward");
+  // Build steps already revealed on the current slide, beyond the one that plays on entry.
+  const [step, setStep] = useState(0);
+  const extraSteps = useMemo(() => (deck ? computeAnimationPlan(deck.slides[index]).extraSteps : 0), [deck, index]);
   const [notesOpen, setNotesOpen] = useState(false);
   const [idle, setIdle] = useState(false);
   const [viewport, setViewport] = useState<{ w: number; h: number } | null>(null);
@@ -205,19 +209,40 @@ export function PresentScreen({ id }: Props) {
     else recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
   }, []);
 
-  const goTo = useCallback((target: number) => setIndex((current) => {
-    const bounded = Math.max(0, Math.min(count - 1, target));
-    if (bounded !== current) setSlideDirection(bounded > current ? "forward" : "backward");
-    return bounded;
-  }), [count]);
-  const next = useCallback(() => setIndex((i) => {
-    if (i < count - 1) setSlideDirection("forward");
-    return Math.min(count - 1, i + 1);
-  }), [count]);
-  const prev = useCallback(() => setIndex((i) => {
-    if (i > 0) setSlideDirection("backward");
-    return Math.max(0, i - 1);
-  }), []);
+  const goTo = useCallback((target: number) => {
+    setIndex((current) => {
+      const bounded = Math.max(0, Math.min(count - 1, target));
+      if (bounded !== current) setSlideDirection(bounded > current ? "forward" : "backward");
+      return bounded;
+    });
+    setStep(0);
+  }, [count]);
+  // A click (or →) first reveals the slide's remaining build steps, one at a time, before it moves on.
+  const next = useCallback(() => {
+    if (step < extraSteps) {
+      setStep((s) => s + 1);
+      return;
+    }
+    setIndex((i) => {
+      if (i < count - 1) setSlideDirection("forward");
+      return Math.min(count - 1, i + 1);
+    });
+    setStep(0);
+  }, [step, extraSteps, count]);
+  // Stepping back within a build first un-reveals; stepping back off the first step lands on the
+  // previous slide fully built, matching how presenters expect "back" to behave mid-animation.
+  const prev = useCallback(() => {
+    if (step > 0) {
+      setStep((s) => Math.max(0, s - 1));
+      return;
+    }
+    const prevIndex = Math.max(0, index - 1);
+    setIndex((i) => {
+      if (i > 0) setSlideDirection("backward");
+      return prevIndex;
+    });
+    setStep(deck ? computeAnimationPlan(deck.slides[prevIndex]).extraSteps : 0);
+  }, [step, index, deck]);
 
   const exitPresentation = useCallback(() => {
     if (remoteToken) void stopRemoteControl(id).catch(() => undefined);
@@ -485,18 +510,18 @@ export function PresentScreen({ id }: Props) {
   return (
     <div className="ps-present" data-idle={(idle && !voicePanel && !remotePanel && !pollsPanel && !sharePanel) || undefined} onClick={stageClick} data-present-root>
       <div className="ps-present-stage" style={{ height: availableH }}>
-        <div style={{ width: boxW, height: boxH, overflow: "hidden", position: "relative" }}>{slide ? <div key={slide.id} className="ps-slide-enter" data-transition={slide.transition ?? "none"} data-direction={slideDirection}><SlideRenderer slide={slide} theme={theme} scale={scale} /></div> : null}</div>
+        <div style={{ width: boxW, height: boxH, overflow: "hidden", position: "relative" }}>{slide ? <div key={slide.id} className="ps-slide-enter" data-transition={slide.transition ?? "none"} data-direction={slideDirection}><SlideRenderer slide={slide} theme={theme} scale={scale} revealedStep={step} /></div> : null}</div>
       </div>
 
       <div className="ps-present-hud" style={{ bottom: (notesOpen ? NOTES_HEIGHT : 0) + 16 }}>
         <span className="ps-present-hud-keys">Esc exit · N notes · B poll results · F fullscreen{voiceSupported ? " · V narrate" : ""}</span>
-        <button type="button" className="ps-present-ctl" onClick={control(prev)} disabled={index === 0} aria-label="Previous slide" title="Previous slide (←)">
+        <button type="button" className="ps-present-ctl" onClick={control(prev)} disabled={index === 0 && step === 0} aria-label="Previous slide" title="Previous slide (←)">
           <CaretLeft size={14} weight="bold" />
         </button>
         <span className="ps-present-hud-count" aria-live="polite">
           {index + 1} / {count}
         </span>
-        <button type="button" className="ps-present-ctl" onClick={control(next)} disabled={index >= count - 1} aria-label="Next slide" title="Next slide (→)">
+        <button type="button" className="ps-present-ctl" onClick={control(next)} disabled={index >= count - 1 && step >= extraSteps} aria-label="Next slide" title="Next slide (→)">
           <CaretRight size={14} weight="bold" />
         </button>
         {voiceSupported ? (

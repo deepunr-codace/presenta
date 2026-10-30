@@ -1,5 +1,25 @@
 import type { Metadata } from "next";
-import { DM_Sans, Inter, Inter_Tight, Outfit, Oswald, Roboto } from "next/font/google";
+import {
+  Archivo,
+  Bricolage_Grotesque,
+  Cormorant,
+  DM_Sans,
+  Fraunces,
+  Instrument_Sans,
+  Inter,
+  Inter_Tight,
+  JetBrains_Mono,
+  Manrope,
+  Montserrat,
+  Outfit,
+  Oswald,
+  Playfair_Display,
+  Plus_Jakarta_Sans,
+  Roboto,
+  Space_Grotesk,
+  Syne,
+  Unbounded,
+} from "next/font/google";
 import { Suspense, type CSSProperties, type ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
 import { AccountSync } from "@/components/shell/AccountSync";
@@ -17,6 +37,22 @@ const dmSans = DM_Sans({ variable: "--font-dm", subsets: ["latin"], weight: ["40
 const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 const oswald = Oswald({ variable: "--font-oswald", subsets: ["latin"], weight: ["300", "500", "600"] });
 const roboto = Roboto({ variable: "--font-roboto", subsets: ["latin"], weight: ["400", "500"] });
+
+/** Loaded for the 10 downloaded "studio pack" deck themes, each pairing one of these with DM Sans or Inter. */
+const spaceGrotesk = Space_Grotesk({ variable: "--font-space-grotesk", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const jetbrainsMono = JetBrains_Mono({ variable: "--font-jetbrains-mono", subsets: ["latin"], weight: ["400", "500", "700"] });
+const playfairDisplay = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], weight: ["300", "400", "500", "600"] });
+const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const plusJakartaSans = Plus_Jakarta_Sans({ variable: "--font-plus-jakarta", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const cormorant = Cormorant({ variable: "--font-cormorant", subsets: ["latin"], weight: ["400", "500", "600"] });
+const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const unbounded = Unbounded({ variable: "--font-unbounded", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const instrumentSans = Instrument_Sans({ variable: "--font-instrument-sans", subsets: ["latin"], weight: ["400", "500", "600"] });
+const syne = Syne({ variable: "--font-syne", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const bricolageGrotesque = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const studioFonts = [spaceGrotesk, jetbrainsMono, playfairDisplay, fraunces, manrope, plusJakartaSans, cormorant, montserrat, unbounded, instrumentSans, syne, bricolageGrotesque, archivo];
 
 const DESCRIPTION = "AI presentation builder: describe a deck in plain language, get a designed deck, edit anything.";
 
@@ -59,7 +95,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html
       lang="en"
       style={chromeFonts}
-      className={`${inter.variable} ${interTight.variable} ${dmSans.variable} ${outfit.variable} ${oswald.variable} ${roboto.variable} h-full antialiased`}
+      className={`${inter.variable} ${interTight.variable} ${dmSans.variable} ${outfit.variable} ${oswald.variable} ${roboto.variable} ${studioFonts.map((f) => f.variable).join(" ")} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

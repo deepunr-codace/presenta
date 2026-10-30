@@ -667,7 +667,7 @@ function auroraDeck(): Deck {
   return {
     id: newId("deck"),
     title: "Aurora — Strategy Briefing",
-    themeId: "midnight",
+    themeId: "aurora-night",
     slides: [
       auroraCover(),
       auroraAgenda(),

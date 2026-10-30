@@ -996,6 +996,16 @@ const THEME_NAMES: Record<ThemeId, string> = {
   "sky-facet": "Sky Facet",
   midnight: "Midnight",
   paper: "Paper",
+  "aurora-night": "Aurora Night",
+  "brutalist-mono": "Brutalist Mono",
+  "editorial-ivory": "Editorial Ivory",
+  "forest-calm": "Forest Calm",
+  "glass-frost": "Glass Frost",
+  "luxe-noir": "Luxe Noir",
+  "neon-grid": "Neon Grid",
+  "pop-blocks": "Pop Blocks",
+  "sunset-retro": "Sunset Retro",
+  "swiss-minimal": "Swiss Minimal",
 };
 
 const UNMAPPED = "I could not map that request in offline mode.";

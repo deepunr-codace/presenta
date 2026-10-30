@@ -10,6 +10,7 @@ import { ChartProps } from "./props/ChartProps";
 import { DeckProps } from "./props/DeckProps";
 import { IconProps } from "./props/IconProps";
 import { ImageProps } from "./props/ImageProps";
+import { MotionProps } from "./props/MotionProps";
 import { ShapeProps } from "./props/ShapeProps";
 import { SlideProps } from "./props/SlideProps";
 import { TextProps } from "./props/TextProps";
@@ -40,6 +41,7 @@ export function DesignTab() {
         {element.type === "icon" ? <IconProps el={element} theme={theme} patch={patch} /> : null}
         {element.type === "chart" ? <ChartProps el={element} patch={patch} /> : null}
         {element.type === "video" ? <VideoProps element={element} patch={patch} /> : null}
+        <MotionProps element={element} patch={patch} />
       </div>
     );
   }

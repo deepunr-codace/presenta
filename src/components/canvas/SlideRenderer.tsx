@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { STAGE_H, STAGE_W, type Slide, type Theme } from "@/lib/deck/schema";
 import { cn } from "@/lib/utils";
+import { computeAnimationPlan } from "@/lib/deck/animation";
 import { ElementView } from "./ElementView";
 import { slideTokens } from "@/lib/deck/tokens";
 import { backgroundCss } from "./tokens";
@@ -19,6 +20,11 @@ export type SlideRendererProps = {
   onEditingEnd?: () => void;
   className?: string;
   style?: CSSProperties;
+  /**
+   * Present mode only: how many build steps beyond the slide's entry step are revealed. Omit to show
+   * every element at once (editor, thumbnails, review, print) regardless of any animation set on them.
+   */
+  revealedStep?: number;
 };
 
 /**
@@ -34,10 +40,26 @@ export function SlideRenderer({
   onEditingEnd,
   className,
   style,
+  revealedStep,
 }: SlideRendererProps) {
   const tokens = useMemo(() => slideTokens(theme, slide.background), [theme, slide.background]);
   const elements = useMemo(() => [...slide.elements].sort((a, b) => a.z - b.z), [slide.elements]);
   const bg = slide.background;
+  const playback = revealedStep !== undefined;
+  const plan = useMemo(() => (playback ? computeAnimationPlan(slide) : null), [playback, slide]);
+  // The entry step plays on mount rather than being present instantly: start one step behind, then
+  // catch up a frame later so the browser has a "before" state to transition from.
+  const [mountStep, setMountStep] = useState(() => (playback ? -1 : Infinity));
+  useEffect(() => {
+    if (!playback) return;
+    const raf = requestAnimationFrame(() => setMountStep(revealedStep!));
+    return () => cancelAnimationFrame(raf);
+    // Mount-once: subsequent step changes below update immediately, no extra frame needed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (playback) setMountStep(revealedStep!);
+  }, [playback, revealedStep]);
 
   const rootStyle: CSSProperties = {
     ...tokens.vars,
@@ -63,17 +85,21 @@ export function SlideRenderer({
           <div style={{ position: "absolute", inset: 0, background: `rgba(0,0,0,${bg.overlay})` }} />
         </>
       ) : null}
-      {elements.map((el) => (
-        <ElementView
-          key={el.id}
-          element={el}
-          theme={theme}
-          slideId={slide.id}
-          interactive={interactive}
-          editing={interactive && el.type === "text" && editingElementId === el.id}
-          onEditingEnd={onEditingEnd}
-        />
-      ))}
+      {elements.map((el) => {
+        const anim = plan?.byElement.get(el.id);
+        return (
+          <ElementView
+            key={el.id}
+            element={el}
+            theme={theme}
+            slideId={slide.id}
+            interactive={interactive}
+            editing={interactive && el.type === "text" && editingElementId === el.id}
+            onEditingEnd={onEditingEnd}
+            reveal={anim ? { ...anim, visible: anim.groupIndex <= mountStep } : undefined}
+          />
+        );
+      })}
     </div>
   );
 }

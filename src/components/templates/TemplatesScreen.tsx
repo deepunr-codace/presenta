@@ -11,7 +11,10 @@ import { PillTabs } from "@/components/ui-kit/PillTabs";
 import { ErrorNotice } from "@/components/ui-kit/ErrorNotice";
 import { FitSlide } from "@/components/canvas/FitSlide";
 import { THEMES } from "@/lib/deck/themes";
-import { TEMPLATE_DECKS } from "@/lib/deck/template-decks";
+import { TEMPLATE_DECKS, type TemplateDeckDef } from "@/lib/deck/template-decks";
+import { STUDIO_PACKS } from "@/lib/deck/studio-packs";
+
+const ALL_DESIGNED_DECKS: TemplateDeckDef[] = [...TEMPLATE_DECKS, ...STUDIO_PACKS];
 import type { ThemeId } from "@/lib/deck/schema";
 import { saveDeck } from "@/lib/persist";
 import { fetchTeams, type TeamSummary } from "@/lib/collab";
@@ -98,7 +101,7 @@ export function TemplatesScreen() {
   };
 
   const shownBuiltIn = useMemo(() => (category === "All" ? TEMPLATES : TEMPLATES.filter((t) => t.category === category)), [category]);
-  const shownDesigned = useMemo(() => (category === "All" ? TEMPLATE_DECKS : TEMPLATE_DECKS.filter((t) => t.category === category)), [category]);
+  const shownDesigned = useMemo(() => (category === "All" ? ALL_DESIGNED_DECKS : ALL_DESIGNED_DECKS.filter((t) => t.category === category)), [category]);
   const shownSaved = useMemo(
     () =>
       (saved ?? []).filter(
@@ -113,7 +116,7 @@ export function TemplatesScreen() {
     router.push("/new");
   };
 
-  const openDesigned = async (t: (typeof TEMPLATE_DECKS)[number]) => {
+  const openDesigned = async (t: TemplateDeckDef) => {
     setBusyDesignedId(t.id);
     setError(null);
     try {

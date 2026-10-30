@@ -11,7 +11,23 @@ export const STAGE_H = 1080;
 
 /* ---------- Theme ---------- */
 
-export const ThemeIdSchema = z.enum(["glass-contrast", "cobalt-stripes", "sky-facet", "midnight", "paper"]);
+export const ThemeIdSchema = z.enum([
+  "glass-contrast",
+  "cobalt-stripes",
+  "sky-facet",
+  "midnight",
+  "paper",
+  "aurora-night",
+  "brutalist-mono",
+  "editorial-ivory",
+  "forest-calm",
+  "glass-frost",
+  "luxe-noir",
+  "neon-grid",
+  "pop-blocks",
+  "sunset-retro",
+  "swiss-minimal",
+]);
 export type ThemeId = z.infer<typeof ThemeIdSchema>;
 
 export type Theme = {
@@ -77,6 +93,26 @@ export const GradientCssSchema = z.string().max(2000).refine(isSafeGradient, {
 
 /* ---------- Elements ---------- */
 
+export const AnimationEffectSchema = z.enum(["none", "fade", "fly-up", "fly-down", "fly-left", "fly-right", "zoom", "wipe"]);
+export type AnimationEffect = z.infer<typeof AnimationEffectSchema>;
+
+/**
+ * `onClick` starts a new build step the presenter must advance past; `withPrevious` plays at the same
+ * time as the element before it; `afterPrevious` plays automatically right after it, no click needed.
+ * The slide's first build step always plays on entry, with no click required (matches how a title or
+ * background usually "just appears" rather than needing an extra click before anything is visible).
+ */
+export const AnimationTriggerSchema = z.enum(["onClick", "withPrevious", "afterPrevious"]);
+export type AnimationTrigger = z.infer<typeof AnimationTriggerSchema>;
+
+export const ElementAnimationSchema = z.object({
+  effect: AnimationEffectSchema.default("none"),
+  trigger: AnimationTriggerSchema.default("onClick"),
+  duration: z.number().min(0.1).max(3).default(0.5),
+  delay: z.number().min(0).max(5).default(0),
+});
+export type ElementAnimation = z.infer<typeof ElementAnimationSchema>;
+
 const Base = z.object({
   id: z.string(),
   x: z.number(),
@@ -87,6 +123,8 @@ const Base = z.object({
   z: z.number().default(0),
   locked: z.boolean().default(false),
   opacity: z.number().min(0).max(1).default(1),
+  /** Entrance animation played in Present mode; absent or `effect: "none"` means no animation. */
+  animation: ElementAnimationSchema.optional(),
 });
 
 export const TextRoleSchema = z.enum(["title", "subtitle", "heading", "body", "bullets", "caption", "quote", "number", "label"]);
