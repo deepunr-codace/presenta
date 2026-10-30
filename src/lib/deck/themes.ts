@@ -119,8 +119,8 @@ export const THEMES: Record<ThemeId, Theme> = {
     name: "Midnight",
     description: "Dark navy with a soft cobalt glow and translucent surfaces.",
     fonts: {
-      display: "var(--font-inter-tight)",
-      body: "var(--font-inter)",
+      display: "var(--font-outfit)",
+      body: "var(--font-dm)",
       displayWeight: 600,
       bodyWeight: 400,
       googleImport: "",

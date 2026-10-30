@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { PrintView } from "@/components/present/PrintView";
 
-export const metadata: Metadata = { title: "Print · Presenta Studio" };
+export const metadata: Metadata = {
+  title: "Print",
+  description: "A print-ready, one-slide-per-page view of your deck.",
+  robots: { index: false, follow: false },
+};
 
 export default async function PrintPage({
   params,

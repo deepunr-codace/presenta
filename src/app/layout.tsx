@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, Inter, Inter_Tight, Oswald, Roboto } from "next/font/google";
+import { DM_Sans, Inter, Inter_Tight, Outfit, Oswald, Roboto } from "next/font/google";
 import { Suspense, type CSSProperties, type ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
 import { AccountSync } from "@/components/shell/AccountSync";
@@ -14,12 +14,28 @@ import "./globals.css";
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 const interTight = Inter_Tight({ variable: "--font-inter-tight", subsets: ["latin"], weight: ["300", "500", "600", "700"] });
 const dmSans = DM_Sans({ variable: "--font-dm", subsets: ["latin"], weight: ["400", "500", "700"] });
+const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 const oswald = Oswald({ variable: "--font-oswald", subsets: ["latin"], weight: ["300", "500", "600"] });
 const roboto = Roboto({ variable: "--font-roboto", subsets: ["latin"], weight: ["400", "500"] });
 
+const DESCRIPTION = "AI presentation builder: describe a deck in plain language, get a designed deck, edit anything.";
+
 export const metadata: Metadata = {
-  title: "Presenta Studio",
-  description: "AI presentation builder: chat or paste, get a designed deck, edit anything.",
+  title: { default: "Presenta Studio — AI presentation builder", template: "%s · Presenta" },
+  description: DESCRIPTION,
+  applicationName: "Presenta Studio",
+  // icon.svg, apple-icon.png, favicon.ico and manifest.webmanifest are picked up automatically by filename convention.
+  openGraph: {
+    title: "Presenta Studio",
+    description: DESCRIPTION,
+    siteName: "Presenta Studio",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Presenta Studio",
+    description: DESCRIPTION,
+  },
 };
 
 /** App chrome fonts: Inter for everything (DESIGN.md §3). Inter Tight, DM Sans, Oswald and Roboto are loaded for slide themes. */
@@ -43,7 +59,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html
       lang="en"
       style={chromeFonts}
-      className={`${inter.variable} ${interTight.variable} ${dmSans.variable} ${oswald.variable} ${roboto.variable} h-full antialiased`}
+      className={`${inter.variable} ${interTight.variable} ${dmSans.variable} ${outfit.variable} ${oswald.variable} ${roboto.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

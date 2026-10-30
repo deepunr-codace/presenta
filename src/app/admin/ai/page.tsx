@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { AiAdminScreen } from "@/components/admin/AiAdminScreen";
 import { adminUser } from "@/lib/admin-guard";
 
-export const metadata: Metadata = { title: "Presenta Studio · Admin" };
+export const metadata: Metadata = { title: "Admin", description: "AI provider keys and usage.", robots: { index: false, follow: false } };
 
 export default async function Page() {
   // Everyone but a listed admin gets the same 404 as a page that does not exist.

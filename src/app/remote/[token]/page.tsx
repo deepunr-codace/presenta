@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { RemoteScreen } from "@/components/remote/RemoteScreen";
 
 export const metadata: Metadata = {
-  title: "Presentation remote · Presenta Studio",
+  title: "Presentation remote",
+  description: "Control your presentation from another device.",
   robots: { index: false, follow: false },
 };
 

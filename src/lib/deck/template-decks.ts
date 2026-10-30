@@ -267,7 +267,7 @@ function auroraAgenda(): Slide {
       text("Five topics, thirty minutes, one decision at the end.", 96, 300, 700, 48, { color: AURORA_INK_2, size: 26, weight: 400, fontFamily: "body" }),
       ...rows,
       line(96, lastY, 1728, 1, AURORA_LINE),
-      ...auroraFolio("NOVA COLLECTIVE", "02 / 07"),
+      ...auroraFolio("NOVA COLLECTIVE", "02 / 17"),
     ],
     notes: "",
   };
@@ -291,7 +291,7 @@ function auroraTeam(): Slide {
     id: newId("slide"),
     layoutId: "blank",
     background: auroraBackground(auroraBlob(72, 10, 1000, 520, "#e8399f", "#6d1766"), auroraBlob(90, 15, 800, 420, "#2f5cff", "#14238f")),
-    elements: [...auroraEyebrow("THE TEAM", 96, 96), text("Who's in the room", 96, 160, 1000, 140, { color: AURORA_INK, size: 72, weight: 600, letterSpacing: -2 }), ...cards, ...auroraFolio("NOVA COLLECTIVE", "03 / 07")],
+    elements: [...auroraEyebrow("THE TEAM", 96, 96), text("Who's in the room", 96, 160, 1000, 140, { color: AURORA_INK, size: 72, weight: 600, letterSpacing: -2 }), ...cards, ...auroraFolio("NOVA COLLECTIVE", "04 / 17")],
     notes: "",
   };
 }
@@ -318,7 +318,7 @@ function auroraObjectives(): Slide {
     id: newId("slide"),
     layoutId: "blank",
     background: auroraBackground(auroraBlob(32, 70, 1100, 460, "#2f5cff", "#14238f"), auroraBlob(72, 74, 640, 360, "#ff9a2e", "#b8360c")),
-    elements: [...auroraEyebrow("OBJECTIVES", 96, 96), text("Three things have to be true", 96, 160, 1200, 140, { color: AURORA_INK, size: 68, weight: 600, letterSpacing: -2 }), ...items, ...auroraFolio("NOVA COLLECTIVE", "04 / 07")],
+    elements: [...auroraEyebrow("OBJECTIVES", 96, 96), text("Three things have to be true", 96, 160, 1200, 140, { color: AURORA_INK, size: 68, weight: 600, letterSpacing: -2 }), ...items, ...auroraFolio("NOVA COLLECTIVE", "05 / 17")],
     notes: "",
   };
 }
@@ -355,7 +355,7 @@ function auroraData(): Slide {
       text("11", 456, 832, 320, 92, { color: AURORA_INK, size: 72, weight: 600, letterSpacing: -2 }),
       text("New logos this quarter", 456, 926, 340, 56, { color: AURORA_INK_2, size: 20, weight: 400, fontFamily: "body" }),
       chart,
-      ...auroraFolio("NOVA COLLECTIVE", "05 / 07"),
+      ...auroraFolio("NOVA COLLECTIVE", "08 / 17"),
     ],
     notes: "",
   };
@@ -373,7 +373,7 @@ function auroraQuote(): Slide {
       line(96, 820, 96, 2, "#e8399f"),
       text("Mira Chen", 224, 800, 400, 44, { color: AURORA_INK, size: 30, weight: 500, letterSpacing: -1 }),
       text("HEAD OF STRATEGY", 224, 846, 400, 32, { color: AURORA_INK_3, size: 18, weight: 500, letterSpacing: 2, fontFamily: "body" }),
-      ...auroraFolio("NOVA COLLECTIVE", "06 / 07"),
+      ...auroraFolio("NOVA COLLECTIVE", "16 / 17"),
     ],
     notes: "",
   };
@@ -407,13 +407,286 @@ function auroraClosing(): Slide {
   };
 }
 
+function auroraCard(x: number, y: number, w: number, h: number): Element {
+  return shape("rect", "rgba(243,240,234,0.045)", x, y, w, h, { stroke: AURORA_LINE, strokeWidth: 1, radius: 32 });
+}
+
+function auroraDivider(): Slide {
+  z = 0;
+  return {
+    id: newId("slide"),
+    layoutId: "section",
+    background: auroraBackground(auroraBlob(68, 30, 900, 700, "#e8399f", "#6d1766"), auroraBlob(80, 48, 700, 520, "#ff9a2e", "#b8360c")),
+    elements: [
+      ...auroraEyebrow("PART ONE", 96, 96),
+      text("01", 760, 120, 760, 420, { color: "rgba(243,240,234,0.1)", size: 320, weight: 600, letterSpacing: -6 }),
+      text("Where we<br/>stand today", 96, 560, 1200, 300, { color: AURORA_INK, size: 96, weight: 600, letterSpacing: -2 }),
+      text("A quick read on the market, the numbers and what changed since the last review.", 96, 850, 820, 70, { color: AURORA_INK_2, size: 26, weight: 400, fontFamily: "body" }),
+      ...auroraFolio("NOVA COLLECTIVE", "03 / 17"),
+    ],
+    notes: "",
+  };
+}
+
+function auroraTimeline(): Slide {
+  z = 0;
+  const ms: [string, string, string][] = [
+    ["2024", "Series A", "Closed our first institutional round and shipped v1 to early design partners."],
+    ["Q1 2025", "100 customers", "Crossed triple digits with a self-serve motion, no outbound required."],
+    ["Q3 2025", "Platform rebuild", "Replatformed onto the new data layer that powers this quarter's bets."],
+    ["Q1 2026", "Series B", "Raised to fund the three bets in this deck, led by returning investors."],
+    ["Now", "FY26 push", "Executing the plan on the next few slides."],
+  ];
+  const colW = 326;
+  const gap = 44;
+  const items: Element[] = ms.flatMap(([date, title, body], i) => {
+    const x = 96 + i * (colW + gap);
+    return [
+      shape("ellipse", AURORA_BG, x, 300, 30, 30, { stroke: "#e8399f", strokeWidth: 4 }),
+      text(date, x, 360, colW, 32, { color: AURORA_INK_3, size: 18, weight: 500, letterSpacing: 2, fontFamily: "body" }),
+      text(title, x, 400, colW, 56, { color: AURORA_INK, size: 32, weight: 500, letterSpacing: -1 }),
+      text(body, x, 460, colW - 10, 200, { color: AURORA_INK_2, size: 20, weight: 400, fontFamily: "body" }),
+    ];
+  });
+  return {
+    id: newId("slide"),
+    layoutId: "process-steps",
+    background: auroraBackground(auroraBlob(45, 68, 1300, 420, "#2f5cff", "#14238f"), auroraBlob(90, 72, 600, 340, "#e8399f", "#6d1766")),
+    elements: [
+      ...auroraEyebrow("TRACK RECORD", 96, 96),
+      text("Four years, three inflections", 96, 160, 1000, 100, { color: AURORA_INK, size: 60, weight: 600, letterSpacing: -2 }),
+      line(96, 300, 1728, 2, "rgba(111,141,255,0.5)"),
+      ...items,
+      ...auroraFolio("NOVA COLLECTIVE", "06 / 17"),
+    ],
+    notes: "",
+  };
+}
+
+function auroraProcess(): Slide {
+  z = 0;
+  const steps: [string, string, string][] = [
+    ["01", "Focus", "Cut the roadmap to the two bets that move the number this half."],
+    ["02", "Build", "Two-week cycles, one demo every Friday, no silent slips."],
+    ["03", "Launch", "Ship to 10% of accounts first, watch the metric, then expand."],
+    ["04", "Learn", "Weekly review of the one number that tells us if the bet worked."],
+  ];
+  const colW = 408;
+  const gap = 32;
+  const items: Element[] = steps.flatMap(([num, title, body], i) => {
+    const x = 96 + i * (colW + gap);
+    return [
+      auroraCard(x, 320, colW, 420),
+      text(num, x + 40, 360, 200, 110, { color: "#e8399f", size: 90, weight: 600, letterSpacing: -2 }),
+      text(title, x + 40, 490, colW - 80, 56, { color: AURORA_INK, size: 36, weight: 500, letterSpacing: -1 }),
+      text(body, x + 40, 550, colW - 80, 160, { color: AURORA_INK_2, size: 20, weight: 400, fontFamily: "body" }),
+    ];
+  });
+  return {
+    id: newId("slide"),
+    layoutId: "process-steps",
+    background: auroraBackground(auroraBlob(5, 10, 1000, 500, "#2f5cff", "#14238f"), auroraBlob(90, 72, 800, 420, "#ff9a2e", "#b8360c")),
+    elements: [...auroraEyebrow("HOW WE SHIP", 96, 96), text("Four steps, every two weeks", 96, 160, 1000, 100, { color: AURORA_INK, size: 60, weight: 600, letterSpacing: -2 }), ...items, ...auroraFolio("NOVA COLLECTIVE", "07 / 17")],
+    notes: "",
+  };
+}
+
+function auroraKpiGrid(): Slide {
+  z = 0;
+  const kpis: [string, string, string][] = [
+    ["+42%", "4.2x", "Pipeline growth"],
+    ["+9pt", "68%", "Win rate"],
+    ["+11", "11", "New logos"],
+    ["-3d", "5 days", "Time to close"],
+    ["+18%", "92%", "Net revenue retention"],
+    ["+6pt", "41", "NPS"],
+  ];
+  const colW = 544;
+  const rowH = 260;
+  const items: Element[] = kpis.flatMap(([delta, value, label], i) => {
+    const col = i % 3;
+    const row = Math.floor(i / 3);
+    const x = 96 + col * colW;
+    const y = 340 + row * rowH;
+    return [
+      ...(col > 0 ? [line(x, y, 1, 220, AURORA_LINE)] : []),
+      text(delta, x + (col > 0 ? 48 : 0), y, 200, 32, { color: "#ffb35c", size: 20, weight: 500, letterSpacing: 1, fontFamily: "body" }),
+      text(value, x + (col > 0 ? 48 : 0), y + 40, colW - 48, 140, { color: AURORA_INK, size: 104, weight: 600, letterSpacing: -4 }),
+      text(label, x + (col > 0 ? 48 : 0), y + 184, colW - 72, 48, { color: AURORA_INK_2, size: 24, weight: 400, fontFamily: "body" }),
+    ];
+  });
+  return {
+    id: newId("slide"),
+    layoutId: "stats-row",
+    background: auroraBackground(auroraBlob(55, 5, 1200, 500, "#2f5cff", "#14238f"), auroraBlob(8, 85, 600, 380, "#ff9a2e", "#b8360c")),
+    elements: [...auroraEyebrow("THE SCOREBOARD", 96, 96), text("Six numbers that matter", 96, 160, 1000, 100, { color: AURORA_INK, size: 60, weight: 600, letterSpacing: -2 }), ...items, ...auroraFolio("NOVA COLLECTIVE", "09 / 17")],
+    notes: "",
+  };
+}
+
+function auroraCaseStudy(): Slide {
+  z = 0;
+  return {
+    id: newId("slide"),
+    layoutId: "image-left",
+    background: auroraBackground(auroraBlob(2, 55, 900, 700, "#ff9a2e", "#b8360c"), auroraBlob(82, 5, 700, 500, "#2f5cff", "#14238f")),
+    elements: [
+      image("logistics dashboard on a large monitor, dim office, blue light, cinematic", 96, 96, 760, 888),
+      ...auroraEyebrow("CUSTOMER STORY", 980, 160),
+      text("Meridian Commodities cut close time by two thirds", 980, 220, 844, 220, { color: AURORA_INK, size: 56, weight: 600, letterSpacing: -2 }),
+      text("They moved from four regional ledgers to one system of record in a single quarter, with every office looking at the same numbers for the first time.", 980, 450, 760, 160, { color: AURORA_INK_2, size: 26, weight: 400, fontFamily: "body" }),
+      line(980, 700, 760, 1, AURORA_LINE),
+      text("5 days", 980, 740, 360, 92, { color: "#6f8dff", size: 72, weight: 600, letterSpacing: -2 }),
+      text("Month-end close, down from 14", 980, 834, 360, 56, { color: AURORA_INK_2, size: 18, weight: 400, fontFamily: "body" }),
+      text("$3.8B", 1340, 740, 360, 92, { color: AURORA_INK, size: 72, weight: 600, letterSpacing: -2 }),
+      text("Annual volume now on the platform", 1340, 834, 360, 56, { color: AURORA_INK_2, size: 18, weight: 400, fontFamily: "body" }),
+      ...auroraFolio("NOVA COLLECTIVE", "10 / 17"),
+    ],
+    notes: "",
+  };
+}
+
+function auroraComparison(): Slide {
+  z = 0;
+  const left = ["Four ledgers reconciled by hand", "Pricing decided per office", "Inventory counted monthly", "Reports built in spreadsheets"];
+  const right = ["One multi-entity ledger", "Global price lists, local overrides", "Perpetual inventory, lot tracking", "Dashboards refreshed hourly"];
+  const colW = 864;
+  const col = (items: string[], x: number, hi: boolean, title: string) => [
+    auroraCard(x, 320, colW, 620),
+    ...(hi ? [shape("rect", "rgba(47,92,255,0.14)", x, 320, colW, 620, { stroke: "rgba(143,162,255,0.7)", strokeWidth: 2, radius: 32 })] : []),
+    text(title, x + 64, 368, colW - 128, 56, { color: hi ? AURORA_INK : AURORA_INK_3, size: 32, weight: 500, letterSpacing: -1 }),
+    ...items.flatMap((item, i) => [line(x + 64, 452 + i * 72, colW - 128, 1, AURORA_LINE), text(item, x + 64, 472 + i * 72, colW - 128, 56, { color: hi ? AURORA_INK : AURORA_INK_3, size: 24, weight: 400, fontFamily: "body" })]),
+  ];
+  return {
+    id: newId("slide"),
+    layoutId: "comparison",
+    background: auroraBackground(auroraBlob(70, 42, 900, 700, "#2f5cff", "#14238f"), auroraBlob(90, 65, 500, 400, "#e8399f", "#6d1766")),
+    elements: [...auroraEyebrow("TODAY VS. TARGET", 96, 96), text("What changes for the business", 96, 160, 1000, 100, { color: AURORA_INK, size: 60, weight: 600, letterSpacing: -2 }), ...col(left, 96, false, "Today"), ...col(right, 960, true, "With the new system"), ...auroraFolio("NOVA COLLECTIVE", "11 / 17")],
+    notes: "",
+  };
+}
+
+function auroraPricing(): Slide {
+  z = 0;
+  const tiers: [string, string, string, string[], boolean][] = [
+    ["Starter", "$0", "/mo", ["Up to 3 seats", "Core workspace", "Community support"], false],
+    ["Growth", "$49", "/seat/mo", ["Unlimited seats", "Brand kit and templates", "Priority support"], true],
+    ["Enterprise", "Custom", "", ["SSO and audit log", "Dedicated success lead", "Custom contract terms"], false],
+  ];
+  const colW = 544;
+  const gap = 48;
+  const items: Element[] = tiers.flatMap(([name, price, period, feats, hi], i) => {
+    const x = 96 + i * (colW + gap);
+    const h = hi ? 700 : 660;
+    const y = hi ? 300 : 320;
+    return [
+      auroraCard(x, y, colW, h),
+      ...(hi ? [shape("rect", "linear-gradient(170deg, rgba(111,141,255,0.30), rgba(232,57,159,0.2) 60%, rgba(255,154,46,0.16))", x, y, colW, h, { stroke: "rgba(255,190,140,0.75)", strokeWidth: 2, radius: 32 }), ...pill("MOST POPULAR", x + colW - 260, y + 36, 220, 40, { fg: "#0a0a0b", bg: "#ffb35c" })] : []),
+      text(name.toUpperCase(), x + 56, y + 48, colW - 112, 32, { color: AURORA_INK_2, size: 18, weight: 500, letterSpacing: 2, fontFamily: "body" }),
+      text(`${price}<span style="font-size:24px;color:${AURORA_INK_3}">${period}</span>`, x + 56, y + 90, colW - 112, 110, { color: AURORA_INK, size: 72, weight: 600, letterSpacing: -3 }),
+      ...feats.flatMap((f, j) => [line(x + 56, y + 230 + j * 60, colW - 112, 1, AURORA_LINE), text(f, x + 56, y + 248 + j * 60, colW - 112, 44, { color: AURORA_INK_2, size: 20, weight: 400, fontFamily: "body" })]),
+    ];
+  });
+  return {
+    id: newId("slide"),
+    layoutId: "three-cards",
+    background: auroraBackground(auroraBlob(28, 60, 1100, 520, "#e8399f", "#6d1766"), auroraBlob(2, 75, 800, 460, "#2f5cff", "#14238f")),
+    elements: [...auroraEyebrow("PRICING", 96, 96), text("Simple plans that scale with you", 96, 160, 1000, 100, { color: AURORA_INK, size: 60, weight: 600, letterSpacing: -2 }), ...items, ...auroraFolio("NOVA COLLECTIVE", "12 / 17")],
+    notes: "",
+  };
+}
+
+function auroraTestimonials(): Slide {
+  z = 0;
+  const voices: [string, string, string][] = [
+    ["We closed the quarter five days faster than plan.", "Priya Anand", "COO, Meridian Commodities"],
+    ["The rollout paid for itself before the second invoice.", "Tomas Weber", "VP Finance, Harrow Group"],
+    ["Our team finally trusts one number instead of six.", "Aiko Sato", "Head of Ops, Kestrel Freight"],
+  ];
+  const colW = 544;
+  const gap = 48;
+  const items: Element[] = voices.flatMap(([quote, name, role], i) => {
+    const x = 96 + i * (colW + gap);
+    return [
+      auroraCard(x, 320, colW, 560),
+      text("&ldquo;", x + 48, 360, 200, 90, { color: "#e8399f", size: 90, weight: 600 }),
+      text(quote, x + 48, 440, colW - 96, 180, { color: AURORA_INK, size: 26, weight: 400, fontFamily: "body" }),
+      shape("ellipse", "conic-gradient(from 200deg, #2f5cff, #e8399f, #ff9a2e, #2f5cff)", x + 48, 740, 56, 56),
+      text(name, x + 120, 744, colW - 168, 32, { color: AURORA_INK, size: 22, weight: 500, letterSpacing: -1 }),
+      text(role, x + 120, 776, colW - 168, 28, { color: AURORA_INK_3, size: 16, weight: 400, fontFamily: "body" }),
+    ];
+  });
+  return {
+    id: newId("slide"),
+    layoutId: "three-cards",
+    background: auroraBackground(auroraBlob(28, 72, 1300, 460, "#e8399f", "#6d1766"), auroraBlob(0, 2, 700, 400, "#2f5cff", "#14238f")),
+    elements: [...auroraEyebrow("WHAT CUSTOMERS SAY", 96, 96), text("Three voices from the field", 96, 160, 1000, 100, { color: AURORA_INK, size: 60, weight: 600, letterSpacing: -2 }), ...items, ...auroraFolio("NOVA COLLECTIVE", "13 / 17")],
+    notes: "",
+  };
+}
+
+function auroraLogoWall(): Slide {
+  z = 0;
+  const logos = ["Meridian", "Harrow Group", "Kestrel Freight", "Borcelle", "Robustrade", "Ginyard", "Liceria & Co.", "Shodwe Studio"];
+  const colW = 408;
+  const rowH = 140;
+  const items: Element[] = logos.flatMap((name, i) => {
+    const col = i % 4;
+    const row = Math.floor(i / 4);
+    const x = 96 + col * colW;
+    const y = 460 + row * rowH;
+    return [auroraCard(x, y, colW - 32, rowH - 32), text(name, x, y + 40, colW - 32, 48, { color: AURORA_INK_2, size: 24, weight: 500, letterSpacing: -1, align: "center" })];
+  });
+  return {
+    id: newId("slide"),
+    layoutId: "stats-row",
+    background: auroraBackground(auroraBlob(50, 0, 1000, 500, "#2f5cff", "#14238f"), auroraBlob(50, 95, 1200, 460, "#ff9a2e", "#b8360c")),
+    elements: [...auroraEyebrow("TRUSTED BY", 96, 96), text("Teams running on Nova", 96, 160, 1000, 100, { color: AURORA_INK, size: 60, weight: 600, letterSpacing: -2 }), text("A sample of the companies that moved their operations onto the platform this year.", 96, 300, 820, 48, { color: AURORA_INK_2, size: 24, weight: 400, fontFamily: "body" }), ...items, ...auroraFolio("NOVA COLLECTIVE", "14 / 17")],
+    notes: "",
+  };
+}
+
+function auroraStatement(): Slide {
+  z = 0;
+  return {
+    id: newId("slide"),
+    layoutId: "quote",
+    background: auroraBackground(auroraBlob(30, 40, 1100, 600, "#2f5cff", "#14238f"), auroraBlob(75, 70, 700, 440, "#e8399f", "#6d1766")),
+    elements: [
+      ...auroraEyebrow("THE BOTTOM LINE", 96, 96),
+      text("One system, one number, one quarter to prove it.", 96, 360, 1600, 300, { color: AURORA_INK, size: 88, weight: 600, letterSpacing: -2 }),
+      text("Everything in this deck rolls up to a single bet: unify the data, and the rest gets easier.", 96, 700, 980, 70, { color: AURORA_INK_2, size: 28, weight: 400, fontFamily: "body" }),
+      ...auroraFolio("NOVA COLLECTIVE", "15 / 17"),
+    ],
+    notes: "",
+  };
+}
+
 function auroraDeck(): Deck {
   const now = new Date().toISOString();
   return {
     id: newId("deck"),
     title: "Aurora — Strategy Briefing",
     themeId: "midnight",
-    slides: [auroraCover(), auroraAgenda(), auroraTeam(), auroraObjectives(), auroraData(), auroraQuote(), auroraClosing()],
+    slides: [
+      auroraCover(),
+      auroraAgenda(),
+      auroraDivider(),
+      auroraTeam(),
+      auroraObjectives(),
+      auroraTimeline(),
+      auroraProcess(),
+      auroraData(),
+      auroraKpiGrid(),
+      auroraCaseStudy(),
+      auroraComparison(),
+      auroraPricing(),
+      auroraTestimonials(),
+      auroraLogoWall(),
+      auroraStatement(),
+      auroraQuote(),
+      auroraClosing(),
+    ],
     createdAt: now,
     updatedAt: now,
     meta: {},
