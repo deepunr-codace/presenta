@@ -342,30 +342,22 @@ export function TemplatesScreen() {
           </section>
         )}
 
-        {/* Built-in starters */}
+        {/* Built-in starters: no real artwork, so these are compact icon cards rather than thumbnail tiles. */}
         <section aria-label="Quick starters">
           <h2 className="ps-cardtitle mb-4">Quick Starters</h2>
           {shownBuiltIn.length ? (
-            <ul className="ps-tpl-grid" aria-label="Templates">
+            <ul className="ps-starter-grid" aria-label="Templates">
               {shownBuiltIn.map((t) => (
                 <li key={t.id}>
-                  <button type="button" className="ps-tpl" onClick={() => openStarter(t)} aria-label={`Use the ${t.title} template`}>
-                    <span className="ps-tpl-art" style={{ background: `linear-gradient(135deg, ${t.tint[0]}, ${t.tint[1]})` }} aria-hidden>
-                      <span className="ps-tpl-slide">
-                        <span className="ps-tpl-icon">{t.icon}</span>
-                        <i style={{ width: "58%" }} />
-                        <i style={{ width: "82%" }} />
-                        <i style={{ width: "44%" }} />
-                      </span>
-                      <span className="ps-tpl-count">{t.slides} slides</span>
+                  <button type="button" className="ps-starter" onClick={() => openStarter(t)} aria-label={`Use the ${t.title} template`}>
+                    <span className="ps-starter-icon" style={{ background: `linear-gradient(135deg, ${t.tint[0]}, ${t.tint[1]})` }} aria-hidden>
+                      {t.icon}
                     </span>
-                    <span className="ps-tpl-body">
-                      <span className="ps-tpl-cat">{t.category}</span>
-                      <span className="ps-tpl-title">{t.title}</span>
-                      <span className="ps-tpl-desc">{t.description}</span>
-                      <span className="ps-tpl-use">
-                        Use template <ArrowRight size={14} weight="bold" aria-hidden />
-                      </span>
+                    <span className="ps-starter-title">{t.title}</span>
+                    <span className="ps-starter-desc">{t.description}</span>
+                    <span className="ps-starter-foot">
+                      <span className="ps-starter-cat">{t.category}</span>
+                      <span className="ps-starter-count">{t.slides} slides</span>
                     </span>
                   </button>
                 </li>

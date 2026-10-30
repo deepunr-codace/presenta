@@ -1,8 +1,9 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { ArrowRight, CircleNotch, Sparkle, WifiSlash } from "@phosphor-icons/react";
 import { useAiHealth } from "@/hooks/useAiHealth";
+import { suggestPromptCompletion } from "@/lib/suggest-prompt";
 import { useApiKeyDialog } from "./api-key-dialog-store";
 
 export type PromptBoxProps = {
@@ -49,7 +50,26 @@ export const PromptBox = forwardRef<PromptBoxHandle, PromptBoxProps>(function Pr
   const openKeyDialog = useApiKeyDialog((s) => s.setOpen);
   const pill: "Offline" | "Claude" | "OpenAI" | "Presenta Studio" | null = footerPill ?? (health ? (health.hasKey ? (health.provider === "presenta" ? "Presenta Studio" : health.provider === "openai" ? "OpenAI" : "Claude") : "Offline") : null);
 
+  // Ghost-text continuation: offered only while the caret sits at the very end of the text, so accepting it
+  // never clobbers something typed mid-sentence.
+  const [caretAtEnd, setCaretAtEnd] = useState(true);
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+
   useImperativeHandle(ref, () => ({ focus: () => areaRef.current?.focus() }), []);
+
+  useEffect(() => {
+    if (!caretAtEnd || disabled || busy) {
+      setSuggestion(null);
+      return;
+    }
+    const t = window.setTimeout(() => setSuggestion(suggestPromptCompletion(text)), 220);
+    return () => window.clearTimeout(t);
+  }, [text, caretAtEnd, disabled, busy]);
+
+  const syncCaret = () => {
+    const el = areaRef.current;
+    if (el) setCaretAtEnd(el.selectionStart === el.value.length && el.selectionEnd === el.value.length);
+  };
 
   const setText = (next: string) => {
     if (!controlled) setInner(next);
@@ -63,7 +83,25 @@ export const PromptBox = forwardRef<PromptBoxHandle, PromptBoxProps>(function Pr
     if (!controlled) setInner("");
   };
 
+  const acceptSuggestion = () => {
+    if (!suggestion) return;
+    const next = (text + suggestion).slice(0, maxLength);
+    setText(next);
+    setSuggestion(null);
+    requestAnimationFrame(() => {
+      const el = areaRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(next.length, next.length);
+    });
+  };
+
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Tab" && suggestion && !e.shiftKey) {
+      e.preventDefault();
+      acceptSuggestion();
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       submit();
@@ -72,7 +110,39 @@ export const PromptBox = forwardRef<PromptBoxHandle, PromptBoxProps>(function Pr
 
   return (
     <div className={className ? `ps-prompt ${className}` : "ps-prompt"} data-hero={hero ? "" : undefined} onClick={(e) => e.target === e.currentTarget && areaRef.current?.focus()}>
-      <textarea ref={areaRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} placeholder={placeholder} rows={rows} maxLength={maxLength} disabled={disabled} autoFocus={autoFocus} aria-label={ariaLabel} />
+      <div className="ps-prompt-ghost-wrap">
+        <div className="ps-prompt-ghost" aria-hidden>
+          <span className="ps-prompt-ghost-typed">{text || placeholder}</span>
+          {suggestion && text ? (
+            <button type="button" className="ps-prompt-ghost-suggestion" tabIndex={-1} onClick={acceptSuggestion} title="Click or press Tab to accept">
+              {suggestion}
+            </button>
+          ) : null}
+        </div>
+        <textarea
+          ref={areaRef}
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            syncCaret();
+          }}
+          onKeyDown={onKey}
+          onKeyUp={syncCaret}
+          onClick={syncCaret}
+          onSelect={syncCaret}
+          placeholder={placeholder}
+          rows={rows}
+          maxLength={maxLength}
+          disabled={disabled}
+          autoFocus={autoFocus}
+          aria-label={ariaLabel}
+        />
+      </div>
+      {suggestion && text ? (
+        <p className="ps-prompt-ghost-hint">
+          <Sparkle size={12} weight="fill" aria-hidden /> Presenta Studio suggests a refinement — press <kbd>Tab</kbd> or click it to accept
+        </p>
+      ) : null}
       {starters}
       <div className="ps-prompt-footer" data-secondary={onSecondarySubmit ? "true" : undefined}>
         {pill ? (

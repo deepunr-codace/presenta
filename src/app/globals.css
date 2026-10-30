@@ -255,9 +255,12 @@
     --ps-page-x: 64px;
     --ps-page-b: 96px;
     width: 100%;
-    max-width: calc(1280px + 2 * var(--ps-page-x));
+    max-width: calc(1600px + 2 * var(--ps-page-x));
     margin: 0 auto;
     padding: 40px var(--ps-page-x) var(--ps-page-b);
+  }
+  @media (min-width: 1800px) {
+    .ps-page { max-width: calc(1880px + 2 * var(--ps-page-x)); }
   }
 
   /* Top nav: wordmark, links, "Soon" tags, mode toggle and avatar on the canvas with a hairline below. */
@@ -514,6 +517,49 @@
   }
   .ps-prompt-footer { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
   .ps-prompt-footer[data-secondary="true"] { flex-wrap: wrap; }
+
+  /* Ghost-text continuation: an invisible mirror behind the textarea carries the suggestion tail so it lines up
+     exactly after the caret. Only the suggestion span is interactive (click to accept); the rest is decorative. */
+  .ps-prompt-ghost-wrap { position: relative; width: 100%; }
+  .ps-prompt-ghost {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    pointer-events: none;
+  }
+  .ps-prompt-ghost-typed { color: transparent; }
+  .ps-prompt-ghost-suggestion {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: 0;
+    color: var(--ps-spark-violet);
+    opacity: 0.55;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+  .ps-prompt-ghost-suggestion:hover { opacity: 0.8; text-decoration: underline; }
+  .ps-prompt-ghost-wrap textarea { position: relative; }
+  .ps-prompt-ghost-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: var(--ps-ash);
+  }
+  .ps-prompt-ghost-hint svg { color: var(--ps-spark-violet); flex-shrink: 0; }
+  .ps-prompt-ghost-hint kbd { padding: 1px 6px; border: 1px solid var(--ps-line-2); border-radius: 5px; background: var(--ps-plate); font-family: inherit; font-size: 11px; }
   .ps-prompt[data-hero] {
     padding: 24px;
     border-color: transparent;

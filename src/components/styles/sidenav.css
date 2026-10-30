@@ -2,26 +2,19 @@
    Clean light surfaces, a soft neutral active state, spring hover effects and a staggered entrance.
    Type is kept small: 13 px rows, 12 px labels, weights 400 to 600. */
 
-:root, [data-theme="light"] {
-  --sb-rail: #eaf1fb;
-  --sb-bg: #f8fafd;
-  --sb-border: #dbe5f3;
-  --sb-hover: #eef3fa;
-  --sb-press: #dce7f8;
-  --rail-hover: rgba(11, 47, 115, 0.07);
-  --rail-tile: #d8e5f8;
-  --rail-accent: #0b2f73;
-  --sb-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-[data-theme="dark"] {
-  --sb-rail: #0b0b0b;
-  --sb-bg: #101010;
-  --sb-border: #222222;
-  --sb-hover: #181818;
-  --sb-press: #242424;
+/* The sidebar surface (rail + panel) is pure matte black in both themes, with no dividing line
+   between it and the page or between the rail and the panel. --sb-border still draws the hairlines
+   *inside* the panel (between groups) and in the dialogs below; those aren't the vertical line removed here. */
+:root, [data-theme="light"], [data-theme="dark"] {
+  --sb-rail: #000000;
+  --sb-bg: #000000;
+  --sb-border: #1c1c1c;
+  --sb-hover: #161616;
+  --sb-press: #202020;
   --rail-hover: rgba(255, 255, 255, 0.07);
-  --rail-tile: #242424;
+  --rail-tile: #202020;
   --rail-accent: #f4f2ef;
+  --sb-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .ps-shell[data-sidebar] {
@@ -36,7 +29,6 @@
   z-index: 2;
   display: flex;
   min-height: 0;
-  border-right: 1px solid var(--sb-border);
   background: var(--sb-bg);
 }
 
@@ -58,7 +50,6 @@
 .ps-sidenav[data-variant="full"] .ps-rail {
   position: relative;
   z-index: 1;
-  border-right: 1px solid var(--sb-border);
 }
 
 .ps-rail-logo {
@@ -68,7 +59,7 @@
   transition: transform 320ms var(--sb-spring), filter 200ms ease-out;
   animation: ps-rail-pop 520ms var(--sb-spring) both;
 }
-.ps-rail-logo:hover { transform: rotate(-8deg) scale(1.1); filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--ps-spark-violet) 35%, transparent)); }
+.ps-rail-logo:hover { transform: rotate(-8deg) scale(1.1); }
 .ps-rail-logo:active { transform: scale(0.94); }
 
 .ps-rail-items { display: flex; flex: 1; flex-direction: column; align-items: center; gap: 6px; }
@@ -151,7 +142,7 @@
   animation: ps-panel-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
   transition: width 240ms cubic-bezier(0.22, 1, 0.36, 1), padding 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease-out, visibility 0s linear 0s;
 }
-.ps-panel-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; padding: 12px; border: 1px solid var(--sb-border); border-radius: 16px; background: var(--sb-hover); box-shadow: 0 6px 16px -12px rgba(0, 0, 0, 0.3); }
+.ps-panel-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; padding: 12px; border: 1px solid var(--sb-border); border-radius: 16px; background: var(--sb-hover); }
 .ps-panel-avatar {
   display: inline-flex;
   width: 40px;
@@ -285,7 +276,6 @@
 }
 /* ---- Open and close the panel ---- */
 .ps-panel[data-open="false"] { width: 0; padding-inline: 0; opacity: 0; visibility: hidden; pointer-events: none; transition: width 240ms cubic-bezier(0.22, 1, 0.36, 1), padding 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 120ms ease-out, visibility 0s linear 240ms; }
-.ps-sidenav:has(.ps-panel[data-open="false"]) .ps-rail { border-right: 0; }
 .ps-panel-close,
 .ps-rail-expand { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--ps-smoke); cursor: pointer; transition: background 140ms ease-out, color 140ms ease-out, transform 280ms var(--sb-spring); }
 .ps-panel-close { width: 32px; height: 32px; border-radius: 10px; }
@@ -373,7 +363,6 @@
   justify-content: center;
   border-radius: 10px;
   background: conic-gradient(from 0deg, var(--ps-spark-violet), #c026d3, var(--ps-spark-orange), var(--ps-spark-violet));
-  box-shadow: 0 6px 14px -8px var(--ps-spark-violet);
   animation: ps-ws-spin 9s linear infinite;
 }
 .ps-rail-logo .ps-ws-orb > span {
@@ -441,7 +430,7 @@
 .ps-ai-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .ps-ai-ring circle { fill: none; stroke-width: 3.5; }
 .ps-ai-ring-track { stroke: color-mix(in srgb, var(--ps-ink) 10%, var(--sb-border)); }
-.ps-ai-ring-fill { stroke: url(#ps-ai-ring-grad); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--ai-3) 55%, transparent)); transition: stroke-dasharray 420ms cubic-bezier(0.22, 1, 0.36, 1); }
+.ps-ai-ring-fill { stroke: url(#ps-ai-ring-grad); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dasharray 420ms cubic-bezier(0.22, 1, 0.36, 1); }
 .ps-ai-bolt { transition: fill 200ms ease-out; }
 .ps-panel-ai[data-tone="off"] .ps-ai-bolt, .ps-panel-ai[data-tone="idle"] .ps-ai-bolt { fill: var(--ps-ash); }
 .ps-ai-body { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
@@ -450,7 +439,7 @@
 .ps-ai-meta-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ps-ai-bars { display: inline-flex; flex-shrink: 0; align-items: center; gap: 3px; }
 .ps-ai-bar { width: 5px; height: 9px; border-radius: 1.5px; background: color-mix(in srgb, var(--bar) 22%, transparent); transition: background 200ms ease-out; }
-.ps-ai-bar[data-on="true"] { background: var(--bar); box-shadow: 0 0 6px color-mix(in srgb, var(--bar) 50%, transparent); }
+.ps-ai-bar[data-on="true"] { background: var(--bar); }
 .ps-ai-bar:nth-child(1) { --bar: var(--ai-1); }
 .ps-ai-bar:nth-child(2) { --bar: var(--ai-2); }
 .ps-ai-bar:nth-child(3) { --bar: var(--ai-3); }
