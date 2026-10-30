@@ -760,3 +760,15 @@
 
 /* No brand eyebrow above the card heading. */
 .ps-auth-card .ps-auth-card-head::before { content: none; display: none; }
+
+/* One vertical rhythm for the whole card: every element is separated by the same 16px. */
+.ps-auth-card,
+.ps-auth-card .ps-auth-card-head,
+.ps-auth-card .ps-auth-form,
+.ps-auth-card .ps-auth-field { gap: 16px; }
+.ps-auth-card .ps-auth-card-logo,
+.ps-auth-card-logo { margin: 0 auto; }
+.ps-auth-card .ps-auth-card-head { gap: 6px; }
+.ps-auth-card .ps-auth-divider { margin: 0; }
+.ps-auth-card .ps-auth-field { gap: 6px; }
+.ps-auth-card .ps-auth-foot { margin: 0; }
