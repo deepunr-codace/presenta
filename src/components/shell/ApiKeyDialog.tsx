@@ -8,6 +8,8 @@ import type { AiProvider } from "@/lib/ai/auth";
 import { useAiHealth } from "@/hooks/useAiHealth";
 import { useApiKeyDialog } from "./api-key-dialog-store";
 
+type Tab = "presenta" | AiProvider;
+
 const PROVIDERS: { id: AiProvider; label: string; hint: string; docs: string }[] = [
   { id: "openai", label: "OpenAI", hint: "sk-…", docs: "https://platform.openai.com/api-keys" },
   { id: "anthropic", label: "Anthropic", hint: "sk-ant-…", docs: "https://console.anthropic.com/settings/keys" },
@@ -33,16 +35,21 @@ export function ApiKeyDialog() {
 function KeyForm({ onClose }: { onClose: () => void }) {
   const health = useAiHealth();
   const [initial] = useState(getStoredKey);
-  const [provider, setProvider] = useState<AiProvider>(initial?.provider ?? "openai");
+  const [provider, setProvider] = useState<Tab>(initial?.provider ?? "presenta");
   const [value, setValue] = useState("");
   const [remember, setRemember] = useState(initial?.remember ?? true);
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<{ provider: AiProvider; apiKey: string } | null>(initial);
 
-  const meta = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[0];
+  const meta = PROVIDERS.find((p) => p.id === provider);
+  const usePresenta = () => {
+    clearStoredKey();
+    onClose();
+  };
 
   const save = () => {
+    if (provider === "presenta") return;
     try {
       setStoredKey({ provider, apiKey: value, remember });
       onClose();
@@ -93,6 +100,9 @@ function KeyForm({ onClose }: { onClose: () => void }) {
         ) : null}
 
         <div className="ps-keydialog-seg" role="radiogroup" aria-label="Provider">
+          <button type="button" role="radio" aria-checked={provider === "presenta"} data-active={provider === "presenta" ? "true" : undefined} onClick={() => setProvider("presenta")}>
+            Presenta
+          </button>
           {PROVIDERS.map((p) => (
             <button key={p.id} type="button" role="radio" aria-checked={provider === p.id} data-active={provider === p.id ? "true" : undefined} onClick={() => setProvider(p.id)}>
               {p.label}
@@ -100,48 +110,52 @@ function KeyForm({ onClose }: { onClose: () => void }) {
           ))}
         </div>
 
-        <label className="ps-keydialog-field">
-          <span>{meta.label} API key</span>
-          <span className="ps-keydialog-input">
-            <input
-              type={show ? "text" : "password"}
-              value={value}
-              onChange={(e) => {
-                setValue(e.target.value);
-                setError(null);
-              }}
-              placeholder={saved ? "Paste a new key to replace it" : meta.hint}
-              autoComplete="off"
-              spellCheck={false}
-              autoCapitalize="off"
-              aria-invalid={error ? true : undefined}
-              onKeyDown={(e) => e.key === "Enter" && value.trim() && save()}
-            />
-            <button type="button" className="ps-iconbtn" aria-label={show ? "Hide key" : "Show key"} onClick={() => setShow((v) => !v)}>
-              {show ? <EyeSlash size={16} /> : <Eye size={16} />}
-            </button>
-          </span>
-        </label>
-        {error ? (
-          <p className="ps-keydialog-error" role="alert">
-            {error}
-          </p>
+        {provider !== "presenta" && meta ? (
+          <>
+            <label className="ps-keydialog-field">
+              <span>{meta.label} API key</span>
+              <span className="ps-keydialog-input">
+                <input
+                  type={show ? "text" : "password"}
+                  value={value}
+                  onChange={(e) => {
+                    setValue(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder={saved ? "Paste a new key to replace it" : meta.hint}
+                  autoComplete="off"
+                  spellCheck={false}
+                  autoCapitalize="off"
+                  aria-invalid={error ? true : undefined}
+                  onKeyDown={(e) => e.key === "Enter" && value.trim() && save()}
+                />
+                <button type="button" className="ps-iconbtn" aria-label={show ? "Hide key" : "Show key"} onClick={() => setShow((v) => !v)}>
+                  {show ? <EyeSlash size={16} /> : <Eye size={16} />}
+                </button>
+              </span>
+            </label>
+            {error ? (
+              <p className="ps-keydialog-error" role="alert">
+                {error}
+              </p>
+            ) : null}
+
+            <label className="ps-keydialog-check">
+              <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+              Remember on this device
+            </label>
+
+            <p className="ps-keydialog-note">
+              <LockKey size={14} aria-hidden />
+              <span>
+                Your key stays in this browser and is sent only with your own requests, over HTTPS. We never store or log it.{" "}
+                <a href={meta.docs} target="_blank" rel="noreferrer noopener">
+                  Get a {meta.label} key
+                </a>
+              </span>
+            </p>
+          </>
         ) : null}
-
-        <label className="ps-keydialog-check">
-          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-          Remember on this device
-        </label>
-
-        <p className="ps-keydialog-note">
-          <LockKey size={14} aria-hidden />
-          <span>
-            Your key stays in this browser and is sent only with your own requests, over HTTPS. We never store or log it.{" "}
-            <a href={meta.docs} target="_blank" rel="noreferrer noopener">
-              Get a {meta.label} key
-            </a>
-          </span>
-        </p>
 
         <DialogFooter>
           {saved ? (
@@ -152,9 +166,15 @@ function KeyForm({ onClose }: { onClose: () => void }) {
           <button type="button" className="ps-btn" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="ps-btn ps-btn-primary" onClick={save} disabled={!value.trim()}>
-            Save key
-          </button>
+          {provider === "presenta" ? (
+            <button type="button" className="ps-btn ps-btn-primary" onClick={usePresenta}>
+              Use Presenta Studio
+            </button>
+          ) : (
+            <button type="button" className="ps-btn ps-btn-primary" onClick={save} disabled={!value.trim()}>
+              Save key
+            </button>
+          )}
         </DialogFooter>
     </>
   );

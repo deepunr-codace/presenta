@@ -12,9 +12,16 @@ const SLIDES = [
 
 const INTERVAL_MS = 4500;
 
+/** Horizontal offset of a card from centre, in stage widths; the cards further out sit closer together. */
+function offset(d: number): number {
+  const dist = Math.abs(d);
+  const step = dist === 0 ? 0 : dist === 1 ? 10.5 : 19;
+  return Math.sign(d) * step;
+}
+
 /** Coverflow of cards standing on the floor of the backdrop. It advances on its own, pauses on hover or focus, and can be steered. */
 export function FloorCarousel() {
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(2);
   const [paused, setPaused] = useState(false);
   const total = SLIDES.length;
 
@@ -41,7 +48,7 @@ export function FloorCarousel() {
               aria-hidden={d !== 0}
               style={{
                 background: s.tone,
-                transform: `translate(-50%, -50%) translateX(${d * 10}cqw) scale(${dist === 0 ? 1 : dist === 1 ? 0.86 : 0.74})`,
+                transform: `translate(-50%, -50%) translateX(${offset(d)}cqw) scale(${dist === 0 ? 1 : dist === 1 ? 0.82 : 0.66})`,
                 opacity: dist > 2 ? 0 : 1,
                 filter: `brightness(${dist === 0 ? 1 : dist === 1 ? 0.72 : 0.45})`,
                 zIndex: 10 - dist,

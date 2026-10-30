@@ -350,7 +350,7 @@
   left: 50%;
   z-index: -2;
   width: max(100cqw, 211.7cqh);
-  aspect-ratio: 1825 / 862;
+  aspect-ratio: 1821 / 864;
   transform: translate(-50%, -50%);
   container-type: size;
 }
@@ -379,14 +379,14 @@
 
 /* The floor: cards on a coverflow, centred on the platform (about 64% across, 53% down the stage). */
 .ps-floor { position: absolute; inset: 0; }
-.ps-floor-track { position: absolute; left: 64%; top: 53%; width: 0; height: 0; }
+.ps-floor-track { position: absolute; left: 50%; top: 52%; width: 0; height: 0; }
 .ps-floor-card {
   position: absolute;
   left: 0;
   top: 0;
   display: flex;
-  height: 42cqh;
-  width: 31.5cqh;
+  height: 38cqh;
+  width: 27.4cqh;
   flex-direction: column;
   justify-content: space-between;
   padding: 3.5cqh 3cqh;
@@ -403,7 +403,7 @@
 .ps-floor-controls {
   position: absolute;
   left: 50%;
-  top: 81%;
+  top: 80%;
   display: flex;
   align-items: center;
   gap: 10px;
