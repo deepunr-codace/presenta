@@ -368,3 +368,73 @@
   color: transparent;
 }
 .ps-auth-card .ps-auth-card-head::before { font-size: 11px; letter-spacing: 0.24em; }
+
+/* Bigger card with a 3D tilt: it leans back on desktop, straightens a little on hover, and sits on layered depth shadows. */
+.ps-auth-main { max-width: 480px; perspective: 1400px; }
+.ps-auth-card {
+  padding: 48px 46px 42px;
+  border-radius: 30px;
+  transform: perspective(1400px) rotateY(-8deg) rotateX(4deg);
+  transform-style: preserve-3d;
+  transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 500ms ease;
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.06) inset,
+    0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.6),
+    0 18px 30px -10px rgba(0, 0, 0, 0.8),
+    0 50px 90px -24px rgba(0, 0, 0, 0.95);
+  animation: ps-auth-rise-3d 900ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.ps-auth-card:hover {
+  transform: perspective(1400px) rotateY(-3deg) rotateX(2deg) translateZ(8px);
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.08) inset,
+    0 1px 0 rgba(255, 255, 255, 0.14),
+    0 4px 8px rgba(0, 0, 0, 0.6),
+    0 26px 40px -12px rgba(0, 0, 0, 0.85),
+    0 70px 110px -30px rgba(0, 0, 0, 1);
+}
+@keyframes ps-auth-rise-3d {
+  from { opacity: 0; transform: perspective(1400px) rotateY(-8deg) rotateX(22deg) translateY(60px); }
+  to { opacity: 1; transform: perspective(1400px) rotateY(-8deg) rotateX(4deg); }
+}
+.ps-auth-card .ps-pagetitle { font-size: 52px; }
+.ps-auth-card .ps-body { font-size: 15px; }
+.ps-auth-card .ps-input { height: 48px; font-size: 15px; }
+.ps-auth-card .ps-btn-md { height: 50px; font-size: 15px; }
+.ps-auth-card .ps-auth-google { height: 48px; }
+@media (max-width: 1023px) {
+  .ps-auth-main { max-width: 440px; perspective: none; }
+  .ps-auth-card, .ps-auth-card:hover {
+    transform: none;
+    padding: 36px 28px 32px;
+    animation: ps-auth-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ps-auth-card, .ps-auth-card:hover { transform: none; animation: none; transition: none; }
+}
+
+/* Card heading back to a standard size and plain colour. */
+.ps-auth-card .ps-pagetitle {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: #f4f2ef;
+}
+.ps-auth-card .ps-body { font-size: 14px; }
+
+/* Hero title: bigger and bolder. */
+@media (min-width: 1024px) {
+  .ps-auth-tagline {
+    font-size: clamp(56px, 5.6vw, 96px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.045em;
+  }
+}
+.ps-auth-tagline { font-weight: 800; }
