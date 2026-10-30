@@ -808,3 +808,6 @@
 /* "Create an account" link without underline. */
 .ps-auth-card .ps-auth-foot a,
 .ps-auth-foot a { text-decoration: none; }
+
+/* Pure black overlay over the background image. */
+.ps-auth-veil { background: rgba(0, 0, 0, 0.45) !important; }
