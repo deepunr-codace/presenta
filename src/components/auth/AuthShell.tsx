@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 type Props = {
   children: ReactNode;
@@ -18,13 +18,6 @@ export function AuthShell({ children }: Props) {
       <aside className="ps-auth-hero">
         {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset, sized by CSS */}
         <img className="ps-auth-logo" src="/brand/presenta-wordmark.png" alt="Presenta" />
-        <div className="ps-auth-title-block">
-          <p className="ps-auth-tagline">
-            <span className="ps-auth-line"><span style={{ "--i": 0 } as CSSProperties}>Redefine the art</span></span>
-            <span className="ps-auth-line ps-auth-line-accent"><span style={{ "--i": 1 } as CSSProperties}>of influence.</span></span>
-          </p>
-        </div>
-        <p className="ps-auth-legal">Presenta Studio</p>
       </aside>
       <main className="ps-auth-main">{children}</main>
     </div>
