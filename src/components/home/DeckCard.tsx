@@ -42,7 +42,7 @@ export function DeckCard({ summary, actions, extra, dragProps }: Props) {
       <DeckThumb deck={deck} />
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-[14px] leading-5 font-medium text-[var(--ps-ink)]">{title}</h3>
+          <h3 className="truncate text-[14.5px] leading-5 font-semibold text-[var(--ps-ink)]">{title}</h3>
           <div className="mt-0.5">
             <DeckMeta summary={summary} deck={deck} />
           </div>

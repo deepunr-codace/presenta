@@ -383,16 +383,12 @@
     height: 1px;
     border-radius: inherit;
     background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ps-spark-violet) 18%, var(--ps-line)) 24%, color-mix(in srgb, var(--ps-spark-violet) 32%, var(--ps-line)) 50%, color-mix(in srgb, var(--ps-spark-violet) 18%, var(--ps-line)) 76%, transparent);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--ps-spark-violet) 12%, transparent);
     content: "";
     pointer-events: none;
     opacity: .8;
-    transition: opacity 160ms ease-out, box-shadow 160ms ease-out;
+    transition: opacity 160ms ease-out;
   }
-  .ps-glass[data-clickable]:hover::before {
-    opacity: 1;
-    box-shadow: 0 0 16px color-mix(in srgb, var(--ps-spark-violet) 22%, transparent);
-  }
+  .ps-glass[data-clickable]:hover::before { opacity: 1; }
   .ps-glass[data-paper] {
     border-color: var(--ps-line);
     background: var(--ps-paper);
@@ -400,7 +396,7 @@
   .ps-glass[data-hero] { padding: 32px; border-radius: var(--ps-r-card-lg); }
   .ps-glass[data-clickable] { cursor: pointer; text-align: left; }
   .ps-glass[data-clickable]:hover { background: var(--ps-plate); }
-  .ps-glass[data-paper][data-clickable]:hover { background: var(--ps-paper); box-shadow: var(--ps-shadow-subtle); }
+  .ps-glass[data-paper][data-clickable]:hover { background: var(--ps-paper); border-color: var(--ps-line-2); }
   .ps-glass[data-active="true"] { box-shadow: 0 0 0 2px var(--ps-ink); }
   .ps-glass-head {
     display: flex;
@@ -411,7 +407,7 @@
   }
   .ps-glass-action { display: flex; align-items: center; gap: 6px; margin-left: auto; }
   .ps-cardtitle { font-size: 16px; line-height: 1.4; font-weight: 400; letter-spacing: 0; color: var(--ps-ink); }
-  .ps-cardcaption { font-size: 12px; line-height: 1.5; letter-spacing: 0; color: var(--ps-ash); }
+  .ps-cardcaption { font-size: 12px; line-height: 1.5; letter-spacing: 0; color: var(--ps-graphite); }
 
   /* Tile: a small paper card inside a taupe card (outline rows, theme tiles, suggestion blocks). */
   .ps-tile {
@@ -590,17 +586,17 @@
     align-items: center;
     gap: 5px;
     padding: 0 9px;
-    border: 0;
+    border: 1px solid var(--ps-line-2);
     border-radius: var(--ps-r-pill);
     background: var(--ps-plate);
     font-size: 12px;
     line-height: 1.5;
-    font-weight: 400;
+    font-weight: 500;
     letter-spacing: 0;
-    color: var(--ps-graphite);
+    color: var(--ps-ink);
     white-space: nowrap;
   }
-  .ps-pill svg { width: 12px; height: 12px; }
+  .ps-pill svg { width: 12px; height: 12px; color: var(--ps-spark-violet); }
   .ps-pill[data-tone="success"] { color: var(--ps-success); }
   .ps-pill[data-tone="warning"] { color: var(--ps-warning); }
   .ps-pill[data-tone="soon"] { color: var(--ps-ash); }

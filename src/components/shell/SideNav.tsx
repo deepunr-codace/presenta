@@ -55,7 +55,7 @@ const RAIL: RailItem[] = [
   { label: "Media", href: "/media", icon: Images, key: "media" },
   { label: "Teams", href: "/teams", icon: Users, key: "teams" },
   { label: "Brand", href: "/brand", icon: Palette, key: "brand" },
-  { label: "Labs", href: "/labs", icon: FlaskConical, key: "labs", isNew: true },
+  { label: "Labs", href: "/labs", icon: FlaskConical, key: "labs" },
 ];
 
 /** Destinations in the More menu. A `key` makes the More icon show as active while that page is open. */

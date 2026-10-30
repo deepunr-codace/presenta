@@ -14,7 +14,7 @@ export function DeckMeta({ summary, deck }: Props) {
   const theme = deck ? resolveTheme(deck) : getTheme(summary.themeId);
   return (
     <p className="ps-cardcaption flex items-center gap-1.5">
-      <span className="inline-block size-2.5 shrink-0 rounded-full ring-1 ring-[var(--ps-line-2)]" style={{ background: `linear-gradient(135deg, ${theme.swatch[0]} 50%, ${theme.swatch[1]} 50%)` }} aria-hidden />
+      <span className="inline-block size-3 shrink-0 rounded-full ring-2 ring-[var(--ps-paper)] shadow-none" style={{ background: `linear-gradient(135deg, ${theme.swatch[0]} 50%, ${theme.swatch[1]} 50%)` }} aria-hidden />
       <span className="truncate">
         {theme.name} · {summary.slideCount} slide{summary.slideCount === 1 ? "" : "s"} · {timeAgo(summary.updatedAt)}
       </span>
