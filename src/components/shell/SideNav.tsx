@@ -260,20 +260,20 @@ function WorkspaceLinks({ active }: { active?: NavKey }) {
       <PanelRow icon={PlayingCardsFan} href="/decks" active={active === "decks"}>
         My decks
       </PanelRow>
+      <PanelRow icon={LayoutPanelTop} href="/templates" active={active === "templates"}>
+        Templates
+      </PanelRow>
+      <PanelRow icon={Folder} href="/decks#folders-title">
+        Folders
+      </PanelRow>
+      <PanelRow icon={Images} href="/media" active={active === "media"}>
+        Media library
+      </PanelRow>
       <PanelRow icon={Share2} href="/decks#shared-decks-title">
         Shared with me
       </PanelRow>
       <PanelRow icon={Users} href="/teams" active={active === "teams"}>
         Teams
-      </PanelRow>
-      <PanelRow icon={Folder} href="/decks#folders-title">
-        Folders
-      </PanelRow>
-      <PanelRow icon={LayoutPanelTop} href="/templates" active={active === "templates"}>
-        Templates
-      </PanelRow>
-      <PanelRow icon={Images} href="/media" active={active === "media"}>
-        Media library
       </PanelRow>
       <PanelRow icon={Palette} href="/brand" active={active === "brand"}>
         Brand kit
