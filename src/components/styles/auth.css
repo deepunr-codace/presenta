@@ -772,3 +772,35 @@
 .ps-auth-card .ps-auth-divider { margin: 0; }
 .ps-auth-card .ps-auth-field { gap: 6px; }
 .ps-auth-card .ps-auth-foot { margin: 0; }
+
+/* Rounded 3D card with no visible border: the border matches the card colour and the depth comes from tonal bevels. */
+.ps-auth-card,
+.ps-auth-card:hover {
+  border: 1px solid #0a0a0a;
+  border-top-color: #0a0a0a;
+  border-left-color: #0a0a0a;
+  border-right-color: #0a0a0a;
+  border-bottom-color: #0a0a0a;
+  background: #0a0a0a;
+  box-shadow:
+    inset 0 1px 0 #161616,
+    inset 1px 0 0 #121212,
+    inset -1px 0 0 #050505,
+    inset 0 -2px 0 #050505,
+    0 3px 0 #000,
+    0 6px 0 #000,
+    0 26px 48px -14px rgba(0, 0, 0, 0.95),
+    0 50px 90px -26px rgba(0, 0, 0, 1);
+}
+.ps-auth-card:hover {
+  box-shadow:
+    inset 0 1px 0 #1a1a1a,
+    inset 1px 0 0 #141414,
+    inset -1px 0 0 #050505,
+    inset 0 -2px 0 #050505,
+    0 3px 0 #000,
+    0 7px 0 #000,
+    0 34px 60px -18px rgba(0, 0, 0, 1),
+    0 64px 100px -30px rgba(0, 0, 0, 1);
+}
+.ps-auth-card::before { opacity: 0; }
