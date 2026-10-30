@@ -332,3 +332,123 @@
   background-clip: text;
   color: transparent;
 }
+
+/* Hero backdrop and floor carousel. The stage keeps the backdrop's own proportions, so the carousel stays on the
+   floor at every screen size. Positions are percentages of the stage. */
+.ps-auth-hero {
+  position: relative;
+  container-type: size;
+  height: 300px;
+  overflow: hidden;
+  padding: 0;
+  background: #07070a;
+  isolation: isolate;
+}
+.ps-auth-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: -2;
+  width: max(100cqw, 211.7cqh);
+  aspect-ratio: 1825 / 862;
+  transform: translate(-50%, -50%);
+  container-type: size;
+}
+.ps-auth-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+.ps-auth-veil { z-index: -1; }
+.ps-auth-hero-body {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 22px 18px;
+  pointer-events: none;
+}
+.ps-auth-hero-body > * { pointer-events: auto; }
+.ps-auth-logo { width: 160px; }
+.ps-auth-title-block { padding: 28px 0 0; }
+.ps-auth-legal { display: none; }
+
+/* The floor: cards on a coverflow, centred on the platform (about 64% across, 53% down the stage). */
+.ps-floor { position: absolute; inset: 0; }
+.ps-floor-track { position: absolute; left: 64%; top: 53%; width: 0; height: 0; }
+.ps-floor-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  height: 42cqh;
+  width: 31.5cqh;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 3.5cqh 3cqh;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.6cqh;
+  color: #f4f2ef;
+  box-shadow: 0 2cqh 5cqh -2cqh rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1), filter 500ms ease, opacity 500ms ease;
+}
+.ps-floor-num { font-size: 2.2cqh; letter-spacing: 0.08em; opacity: 0.8; }
+.ps-floor-title { font-size: 3.6cqh; line-height: 1.08; font-weight: 500; letter-spacing: -0.01em; }
+.ps-floor-arrow { font-size: 3cqh; opacity: 0.85; }
+.ps-floor-controls {
+  position: absolute;
+  left: 50%;
+  top: 81%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+.ps-floor-nav {
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 9999px;
+  background: rgba(7, 7, 10, 0.5);
+  color: #f4f2ef;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ps-floor-nav:hover { background: rgba(255, 255, 255, 0.15); }
+.ps-floor-dots { display: flex; gap: 6px; }
+.ps-floor-dots button {
+  width: 6px;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+}
+.ps-floor-dots button[data-active="true"] { width: 18px; background: #f4f2ef; }
+.ps-floor-nav:focus-visible, .ps-floor-dots button:focus-visible { outline: 2px solid #8fa2ff; outline-offset: 2px; }
+
+@media (min-width: 1024px) {
+  .ps-auth-hero { height: 100dvh; }
+  .ps-auth-hero-body { padding: 48px 56px; }
+  .ps-auth-logo { width: min(260px, 22vw); }
+  .ps-auth-legal { display: block; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ps-floor-card { transition: none; }
+}
+@media (min-width: 1024px) {
+  .ps-auth-veil {
+    background: linear-gradient(90deg, rgba(7, 7, 10, 0.8) 0%, rgba(7, 7, 10, 0.25) 42%, rgba(7, 7, 10, 0) 62%);
+  }
+}
+@media (max-width: 1023px) {
+  .ps-floor-controls { display: none; }
+}

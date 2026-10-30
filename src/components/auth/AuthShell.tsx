@@ -1,19 +1,24 @@
 import type { CSSProperties, ReactNode } from "react";
+import { FloorCarousel } from "./FloorCarousel";
 
 type Props = {
   children: ReactNode;
 };
 
 /**
- * Shared frame for /login and /signup. On wide screens the product film fills a left panel with the logo and a
- * short pitch; the form sits in a calm column on the right. Narrow screens stack them, with the film as a band
- * above the form. Reduced-motion visitors get the film paused on its first frame.
+ * Shared frame for /login and /signup. The gallery backdrop fills the left panel with a card carousel standing on
+ * its floor; the logo and title sit over it. The form is a narrow card in the right column. Narrow screens stack
+ * the panel above the form.
  */
 export function AuthShell({ children }: Props) {
   return (
     <div className="ps-auth-shell">
       <aside className="ps-auth-hero">
-        <video className="ps-auth-video" src="/auth/login-bg.mp4" autoPlay muted loop playsInline preload="auto" aria-hidden tabIndex={-1} />
+        <div className="ps-auth-stage" aria-hidden>
+          {/* eslint-disable-next-line @next/next/no-img-element -- decorative backdrop, sized to the stage */}
+          <img className="ps-auth-bg" src="/auth/login-bg.png" alt="" />
+          <FloorCarousel />
+        </div>
         <div className="ps-auth-veil" aria-hidden />
         <div className="ps-auth-hero-body">
           {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset, sized by CSS */}
@@ -25,8 +30,8 @@ export function AuthShell({ children }: Props) {
               <span className="ps-auth-line ps-auth-line-accent"><span style={{ "--i": 1 } as CSSProperties}>of influence.</span></span>
             </p>
           </div>
+          <p className="ps-auth-legal">Presenta Studio · AI presentation builder</p>
         </div>
-        <p className="ps-auth-legal">Presenta Studio · AI presentation builder</p>
       </aside>
       <main className="ps-auth-main">{children}</main>
     </div>
