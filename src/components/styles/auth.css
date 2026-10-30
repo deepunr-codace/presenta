@@ -746,3 +746,9 @@
 @media (max-width: 1023px) {
   .ps-auth-video { height: 100%; }
 }
+
+/* Clearer background: a lighter overlay. */
+.ps-auth-veil { background: linear-gradient(90deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0.4) 100%) !important; }
+@media (max-width: 1023px) {
+  .ps-auth-veil { background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.35) 60%, rgba(0, 0, 0, 0.6) 100%) !important; }
+}
