@@ -57,6 +57,8 @@ export function SignupScreen() {
   return (
     <AuthShell>
       <div className="ps-auth-card">
+        {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset, sized by CSS */}
+        <img className="ps-auth-card-logo" src="/brand/presenta-wordmark.png" alt="Presenta" />
         <div className="ps-auth-card-head">
           <h1 className="ps-pagetitle">Create your account</h1>
           <p className="ps-body">Free to start — your decks save to your account from the first slide.</p>

@@ -751,3 +751,9 @@
 @media (min-width: 1024px) {
   .ps-auth-legal { align-self: flex-end; text-align: right; }
 }
+
+/* Logo sits at the top of the login and signup cards. */
+.ps-auth-card-logo { display: block; width: 170px; height: auto; margin: 0 auto 10px; }
+@media (max-width: 1023px) {
+  .ps-auth-card-logo { width: 140px; }
+}
