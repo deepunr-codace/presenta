@@ -129,7 +129,7 @@
   display: block;
   width: min(220px, 60vw);
   height: auto;
-  filter: drop-shadow(0 8px 26px rgba(47, 92, 255, 0.35));
+  filter: none;
 }
 .ps-auth-legal {
   margin: 0;
@@ -149,7 +149,7 @@
 @media (min-width: 1024px) {
   .ps-auth-shell {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 380px;
+    grid-template-columns: minmax(0, 1fr) minmax(440px, 480px);
   }
   .ps-auth-hero {
     height: auto;
@@ -161,17 +161,30 @@
   }
   .ps-auth-hero-body {
     flex: 1;
-    justify-content: center;
+    justify-content: space-between;
     gap: 40px;
   }
-  .ps-auth-logo { width: min(340px, 30vw); }
+  .ps-auth-logo { width: min(260px, 22vw); }
+  .ps-auth-title-block {
+    position: relative;
+    isolation: isolate;
+    align-self: stretch;
+    padding: 48px 0 8px;
+  }
+  .ps-auth-title-scrim {
+    position: absolute;
+    inset: -40px -56px -24px -56px;
+    z-index: -1;
+    background: radial-gradient(ellipse at 30% 60%, rgba(7, 7, 10, 0.85) 0%, rgba(7, 7, 10, 0.55) 45%, transparent 75%);
+    pointer-events: none;
+  }
   .ps-auth-tagline {
     margin: 0;
-    font-size: clamp(48px, 5.4vw, 92px);
-    line-height: 0.98;
-    letter-spacing: -0.045em;
+    font-size: clamp(30px, 2.9vw, 46px);
+    line-height: 1.06;
+    letter-spacing: -0.03em;
     font-weight: 600;
-    text-transform: uppercase;
+    text-transform: none;
   }
   .ps-auth-line { display: block; overflow: hidden; padding-bottom: 0.06em; }
   .ps-auth-line > span {
@@ -186,7 +199,13 @@
     background-clip: text;
     color: transparent;
   }
-  .ps-auth-main { padding: 40px 36px; background: #0a0a0b; border-left: 1px solid rgba(255, 255, 255, 0.07); }
+  .ps-auth-main {
+    padding: 48px 44px;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(47, 92, 255, 0.14), transparent 60%),
+      linear-gradient(180deg, #0d0d11, #0a0a0b);
+    border-left: 1px solid rgba(255, 255, 255, 0.07);
+  }
 }
 
 .ps-auth-card .ps-pagetitle { color: #f4f2ef; font-size: 28px; letter-spacing: -0.02em; }
@@ -212,9 +231,9 @@
 .ps-auth-card {
   position: relative;
   width: 100%;
-  max-width: 300px;
-  padding: 26px 24px 22px;
-  border-radius: 22px;
+  max-width: 400px;
+  padding: 40px 38px 34px;
+  border-radius: 28px;
   background: linear-gradient(170deg, rgba(24, 24, 30, 0.9), rgba(12, 12, 16, 0.95));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   overflow: hidden;
@@ -253,9 +272,13 @@
   from { opacity: 0; transform: translateY(18px) scale(0.98); }
   to { opacity: 1; transform: none; }
 }
-.ps-auth-card .ps-pagetitle { font-size: 22px; }
-.ps-auth-card .ps-body { font-size: 13px; }
-.ps-auth-card .ps-auth-form { gap: 12px; }
+.ps-auth-card .ps-pagetitle { font-size: 26px; letter-spacing: -0.025em; }
+.ps-auth-card .ps-body { font-size: 14px; line-height: 1.55; }
+.ps-auth-card .ps-auth-form { gap: 16px; }
+.ps-auth-card .ps-auth-card-head { gap: 8px; margin-bottom: 4px; }
+.ps-auth-card .ps-input { height: 44px; border-radius: 12px; font-size: 14px; }
+.ps-auth-card .ps-btn-md { height: 46px; border-radius: 14px; font-size: 14px; font-weight: 600; }
+.ps-auth-card .ps-auth-google { height: 44px; border-radius: 14px; }
 @media (prefers-reduced-motion: reduce) {
   .ps-auth-card, .ps-auth-card::before, .ps-auth-card::after { animation: none; }
   .ps-auth-card::after { display: none; }

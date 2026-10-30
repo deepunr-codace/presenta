@@ -18,11 +18,13 @@ export function AuthShell({ children }: Props) {
         <div className="ps-auth-hero-body">
           {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset, sized by CSS */}
           <img className="ps-auth-logo" src="/brand/presenta-wordmark.png" alt="Presenta" />
-          <p className="ps-auth-tagline">
-            <span className="ps-auth-line"><span style={{ "--i": 0 } as CSSProperties}>Redefine</span></span>
-            <span className="ps-auth-line"><span style={{ "--i": 1 } as CSSProperties}>The Art</span></span>
-            <span className="ps-auth-line ps-auth-line-accent"><span style={{ "--i": 2 } as CSSProperties}>Of Influence.</span></span>
-          </p>
+          <div className="ps-auth-title-block">
+            <span className="ps-auth-title-scrim" aria-hidden />
+            <p className="ps-auth-tagline">
+              <span className="ps-auth-line"><span style={{ "--i": 0 } as CSSProperties}>Redefine the art</span></span>
+              <span className="ps-auth-line ps-auth-line-accent"><span style={{ "--i": 1 } as CSSProperties}>of influence.</span></span>
+            </p>
+          </div>
         </div>
         <p className="ps-auth-legal">Presenta Studio · AI presentation builder</p>
       </aside>
