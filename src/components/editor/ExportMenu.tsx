@@ -15,7 +15,7 @@ type Props = {
 export function ExportMenu({ onExport, disabled = false, busy = false }: Props) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<button type="button" className="ps-btn" disabled={disabled || busy} />}>
+      <DropdownMenuTrigger render={<button type="button" className="ps-btn ps-btn-ghost" disabled={disabled || busy} />}>
         <DownloadSimple size={12} />
         {busy ? "Exporting…" : "Export"}
       </DropdownMenuTrigger>

@@ -15,6 +15,12 @@
 }
 .ps-editor-body { display: flex; flex: 1; min-height: 0; }
 
+/* The editor owns its own scrolling (stage, filmstrip, sidebar each scroll internally); the outer page column
+   must not also scroll, or the sidebar only ever reaches the height of the tallest internal region instead of
+   the full viewport. */
+.ps-content.ps-deck-shell { overflow: hidden; min-height: 0; }
+.ps-content.ps-deck-shell > .ps-content-body { min-height: 0; }
+
 /* ---------- Tool row: 48 px on canvas, bottom hairline ---------- */
 
 .ps-toolbar {

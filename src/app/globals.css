@@ -250,17 +250,19 @@
   .ps-content-body > * {
     min-width: 0;
   }
-  /* Page column: 1280 px max with 64 px gutters (24 px under 1024 px). */
+  /* Page column: shared with the breadcrumb bar (--ps-page-w) so both sit at the same inner width and stay
+     left-aligned with each other; 64 px gutters (24 px under 1024 px). */
+  :root { --ps-page-w: 1480px; }
+  @media (min-width: 1800px) {
+    :root { --ps-page-w: 1760px; }
+  }
   .ps-page {
     --ps-page-x: 64px;
     --ps-page-b: 96px;
     width: 100%;
-    max-width: calc(1600px + 2 * var(--ps-page-x));
+    max-width: calc(var(--ps-page-w) + 2 * var(--ps-page-x));
     margin: 0 auto;
     padding: 40px var(--ps-page-x) var(--ps-page-b);
-  }
-  @media (min-width: 1800px) {
-    .ps-page { max-width: calc(1880px + 2 * var(--ps-page-x)); }
   }
 
   /* Top nav: wordmark, links, "Soon" tags, mode toggle and avatar on the canvas with a hairline below. */
@@ -342,7 +344,7 @@
     align-items: center;
     gap: 12px 16px;
     width: 100%;
-    max-width: calc(1280px + 2 * var(--ps-page-x, 64px));
+    max-width: calc(var(--ps-page-w, 1480px) + 2 * var(--ps-page-x, 64px));
     margin: 0 auto;
     padding: 20px var(--ps-page-x, 64px) 0;
   }

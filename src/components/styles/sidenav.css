@@ -489,7 +489,7 @@
   .ps-rail-item { width: 56px; }
   .ps-rail-icon { width: 40px; height: 36px; }
   .ps-rail-foot { gap: 10px; padding-top: 14px; }
-  .ps-panel { width: 236px; padding: 16px 12px 0; }
+  .ps-panel { width: 252px; padding: 16px 12px 0; }
   .ps-panel .ps-panel-foot { margin: 0 -12px; padding: 8px 12px; }
   .ps-panel .ps-panel-row { height: 32px; padding: 0 12px; }
   .ps-panel-recent-link { padding: 6px 12px; }
@@ -498,4 +498,9 @@
   .ps-ws { padding: 4px 6px 14px; margin-bottom: 10px; }
   .ps-panel-ai { padding: 10px 12px; }
   .ps-ai-ring { width: 42px; height: 42px; }
+}
+
+/* ---- Very large screens: a slightly wider panel still, to match the roomier page column ---- */
+@media (min-width: 1800px) {
+  .ps-panel { width: 268px; }
 }

@@ -120,15 +120,15 @@ export function DeckActions({ id, mode }: Props) {
   return (
     <>
       {/* Group related actions to keep the deck header focused. */}
-      <button type="button" className="ps-btn px-2 sm:px-3" onClick={() => setShareOpen(true)} disabled={!deck} aria-label="Share this deck" title="Share this deck">
+      <button type="button" className="ps-btn ps-btn-ghost px-2 sm:px-3" onClick={() => setShareOpen(true)} disabled={!deck} aria-label="Share this deck" title="Share this deck">
         <ShareNetwork size={12} weight="bold" /><span className="hidden sm:inline">Share</span>
       </button>
-      {mode === "review" ? <Link href={editHref(id)} className="ps-btn px-2 sm:px-3" aria-label="Open in the editor" title="Open in the editor">
+      {mode === "review" ? <Link href={editHref(id)} className="ps-btn ps-btn-ghost px-2 sm:px-3" aria-label="Open in the editor" title="Open in the editor">
         <PencilSimple size={12} weight="bold" /><span className="hidden sm:inline">Edit</span>
       </Link> : null}
       <span className="hidden sm:contents">
         <DropdownMenu>
-          <DropdownMenuTrigger render={<button type="button" className="ps-btn ps-btn-grouped" disabled={!deck} />}>
+          <DropdownMenuTrigger render={<button type="button" className="ps-btn ps-btn-ghost" disabled={!deck} />}>
             <DotsThree size={16} weight="bold" /> More <CaretDown size={12} />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-48">
@@ -142,7 +142,7 @@ export function DeckActions({ id, mode }: Props) {
           </DropdownMenuContent>
         </DropdownMenu>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<button type="button" className="ps-btn ps-btn-grouped" disabled={!deck} />}>
+          <DropdownMenuTrigger render={<button type="button" className="ps-btn ps-btn-ghost" disabled={!deck} />}>
             <GoogleLogo size={12} weight="bold" /> Integrations <CaretDown size={12} />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-48">
@@ -155,7 +155,7 @@ export function DeckActions({ id, mode }: Props) {
       </span>
       <span className="sm:hidden">
         <DropdownMenu>
-          <DropdownMenuTrigger render={<button type="button" className="ps-btn ps-btn-grouped px-2" aria-label="More deck actions" disabled={!deck} />}>
+          <DropdownMenuTrigger render={<button type="button" className="ps-btn ps-btn-ghost px-2" aria-label="More deck actions" disabled={!deck} />}>
             <DotsThree size={18} weight="bold" /><span>More</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="ps-mobile-action-menu min-w-56">
@@ -189,9 +189,10 @@ export function DeckActions({ id, mode }: Props) {
           </DropdownMenuContent>
         </DropdownMenu>
       </span>
-      <button type="button" className="ps-btn px-2 sm:px-3" onClick={() => void rehearse()} disabled={!deck} aria-label="Rehearse this deck with Presenter Coach" title="Rehearse this deck with Presenter Coach">
+      <button type="button" className="ps-btn ps-btn-ghost px-2 sm:px-3" onClick={() => void rehearse()} disabled={!deck} aria-label="Rehearse this deck with Presenter Coach" title="Rehearse this deck with Presenter Coach">
         <Microphone size={13} weight="bold" /><span className="hidden sm:inline">Rehearse</span>
       </button>
+      <span className="ps-toolbar-sep" aria-hidden />
       <button type="button" className="ps-btn ps-btn-primary" onClick={() => void present()} disabled={!deck} title={mode === "edit" ? "Open in presentation mode" : "Present from the first slide"}>
         <Play size={12} weight="fill" />
         Present
