@@ -22,6 +22,7 @@ export function AuthShell({ children }: Props) {
             <span className="ps-auth-line"><span style={{ "--i": 0 } as CSSProperties}>Redefine the art</span></span>
             <span className="ps-auth-line ps-auth-line-accent"><span style={{ "--i": 1 } as CSSProperties}>of influence.</span></span>
           </p>
+          <p className="ps-auth-sub">Where great ideas find their form.</p>
         </div>
         <p className="ps-auth-legal">Presenta Studio · AI presentation builder</p>
       </aside>

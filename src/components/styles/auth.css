@@ -662,3 +662,26 @@
 @media (min-width: 1024px) {
   .ps-auth-tagline { font-size: clamp(38px, 3.6vw, 60px); }
 }
+
+/* Phones: only the logo and the login card. */
+@media (max-width: 1023px) {
+  .ps-auth-video,
+  .ps-auth-veil,
+  .ps-auth-title-block,
+  .ps-auth-legal { display: none; }
+  .ps-auth-hero { height: auto; padding: 28px 22px 8px; }
+  .ps-auth-logo { width: 130px; }
+  .ps-auth-main { margin: 20px auto 0; }
+}
+
+.ps-auth-sub {
+  margin: 14px 0 0;
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  color: rgba(244, 242, 239, 0.72);
+}
+@media (max-width: 1023px) {
+  .ps-auth-sub { display: none; }
+}
