@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 type Props = {
   children: ReactNode;
@@ -15,6 +15,12 @@ export function AuthShell({ children }: Props) {
       {/* eslint-disable-next-line @next/next/no-img-element -- decorative backdrop, sized by CSS */}
       <img className="ps-auth-video" src="/auth/login-poster.png" alt="" aria-hidden />
       <div className="ps-auth-veil" aria-hidden />
+      <div className="ps-auth-title-block">
+        <p className="ps-auth-tagline">
+          <span className="ps-auth-line"><span style={{ "--i": 0 } as CSSProperties}>Redefine the art</span></span>
+          <span className="ps-auth-line ps-auth-line-accent"><span style={{ "--i": 1 } as CSSProperties}>of influence.</span></span>
+        </p>
+      </div>
       <main className="ps-auth-main">{children}</main>
     </div>
   );

@@ -882,3 +882,17 @@
     0 8px 18px -4px rgba(0, 0, 0, 0.95),
     0 30px 60px -18px #000;
 }
+
+/* Title at the bottom left of the page on desktop; hidden on phones. */
+.ps-auth-title-block {
+  position: absolute;
+  left: 56px;
+  bottom: 56px;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+@media (max-width: 1023px) {
+  .ps-auth-title-block { display: none; }
+}
