@@ -186,19 +186,6 @@
     font-weight: 600;
     text-transform: none;
   }
-  .ps-auth-line { display: block; overflow: hidden; padding-bottom: 0.06em; }
-  .ps-auth-line > span {
-    display: inline-block;
-    transform: translateY(105%);
-    animation: ps-auth-line-in 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    animation-delay: calc(180ms + var(--i, 0) * 140ms);
-  }
-  .ps-auth-line-accent > span {
-    background: linear-gradient(100deg, #8fa2ff 0%, #e8399f 50%, #ff9a2e 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
   .ps-auth-main {
     padding: 48px 44px;
     background:
@@ -287,4 +274,61 @@
 @keyframes ps-auth-line-in { to { transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) {
   .ps-auth-line > span { transform: none; animation: none; }
+}
+
+/* Phones and small tablets: a compact film band with the logo at the top and the title at the bottom, then the
+   form card below with tighter spacing and touch-sized controls. */
+@media (max-width: 1023px) {
+  .ps-auth-hero {
+    height: 300px;
+    padding: 22px 22px 18px;
+  }
+  .ps-auth-hero-body {
+    flex: 1;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .ps-auth-logo { width: 160px; }
+  .ps-auth-veil {
+    background: linear-gradient(180deg, rgba(7, 7, 10, 0.25) 0%, rgba(7, 7, 10, 0.2) 35%, rgba(7, 7, 10, 0.92) 100%);
+  }
+  .ps-auth-title-block { padding: 28px 0 0; }
+  .ps-auth-title-scrim { inset: -24px -24px -12px -24px; }
+  .ps-auth-tagline { font-size: 28px; line-height: 1.08; }
+  .ps-auth-legal { display: none; }
+  .ps-auth-main {
+    padding: 28px 18px 40px;
+    background: #0a0a0b;
+  }
+  .ps-auth-card {
+    max-width: 440px;
+    padding: 28px 22px 24px;
+    border-radius: 22px;
+  }
+  .ps-auth-card .ps-pagetitle { font-size: 22px; }
+  .ps-auth-card .ps-body { font-size: 13px; }
+  .ps-auth-card .ps-auth-form { gap: 12px; }
+  .ps-auth-card .ps-input { height: 46px; font-size: 16px; }
+  .ps-auth-card .ps-btn-md { height: 48px; }
+  .ps-auth-card .ps-auth-google { height: 46px; }
+}
+@media (max-width: 380px) {
+  .ps-auth-hero { height: 260px; }
+  .ps-auth-logo { width: 136px; }
+  .ps-auth-tagline { font-size: 24px; }
+}
+
+/* Title lines: each line rises into place; static under reduced motion. */
+.ps-auth-line { display: block; overflow: hidden; padding-bottom: 0.06em; }
+.ps-auth-line > span {
+  display: inline-block;
+  transform: translateY(105%);
+  animation: ps-auth-line-in 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(180ms + var(--i, 0) * 140ms);
+}
+.ps-auth-line-accent > span {
+  background: linear-gradient(100deg, #8fa2ff 0%, #e8399f 50%, #ff9a2e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
