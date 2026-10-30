@@ -2,19 +2,30 @@
    Clean light surfaces, a soft neutral active state, spring hover effects and a staggered entrance.
    Type is kept small: 13 px rows, 12 px labels, weights 400 to 600. */
 
-/* The sidebar surface (rail + panel) is pure matte black in both themes, with no dividing line
-   between it and the page or between the rail and the panel. --sb-border still draws the hairlines
-   *inside* the panel (between groups) and in the dialogs below; those aren't the vertical line removed here. */
-:root, [data-theme="light"], [data-theme="dark"] {
+/* The rail and the panel are two different shades of the theme's base (no dividing line between them or the
+   page): in light mode the rail is a soft off-white and the panel a pop of pure white; in dark mode the rail is
+   pure black and the panel a touch lighter. --sb-border still draws the hairlines *inside* the panel (between
+   groups) and in the dialogs below. */
+:root, [data-theme="light"] {
+  --sb-rail: #f4f3f0;
+  --sb-bg: #ffffff;
+  --sb-border: #eceae5;
+  --sb-hover: #f0efec;
+  --sb-press: #e6e4de;
+  --rail-hover: rgba(0, 0, 0, 0.06);
+  --rail-tile: #e6e4de;
+  --rail-accent: #111111;
+  --sb-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+[data-theme="dark"] {
   --sb-rail: #000000;
-  --sb-bg: #000000;
+  --sb-bg: #0d0d0d;
   --sb-border: #1c1c1c;
   --sb-hover: #161616;
   --sb-press: #202020;
   --rail-hover: rgba(255, 255, 255, 0.07);
   --rail-tile: #202020;
   --rail-accent: #f4f2ef;
-  --sb-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .ps-shell[data-sidebar] {
