@@ -746,3 +746,8 @@
   .ps-auth-title-block { margin-top: 56px; margin-bottom: auto; }
   .ps-auth-tagline { text-shadow: 0 2px 28px rgba(0, 0, 0, 0.75); }
 }
+
+/* Footer label: bottom right on desktop. */
+@media (min-width: 1024px) {
+  .ps-auth-legal { align-self: flex-end; text-align: right; }
+}
