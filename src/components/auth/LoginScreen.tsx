@@ -7,7 +7,6 @@ import { signIn } from "next-auth/react";
 import { AuthShell } from "./AuthShell";
 import { GoogleButton } from "./GoogleButton";
 import { ErrorNotice } from "@/components/ui-kit/ErrorNotice";
-import { Mark } from "@/components/shell/Mark";
 
 export function LoginScreen() {
   const params = useSearchParams();
@@ -38,9 +37,6 @@ export function LoginScreen() {
   return (
     <AuthShell>
       <div className="ps-auth-card">
-        <div className="ps-auth-mark-mobile">
-          <Mark size={32} />
-        </div>
         <div className="ps-auth-card-head">
           <h1 className="ps-pagetitle">Welcome back</h1>
           <p className="ps-body">Log in to pick up your decks where you left off.</p>

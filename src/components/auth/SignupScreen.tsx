@@ -6,7 +6,6 @@ import { signIn } from "next-auth/react";
 import { AuthShell } from "./AuthShell";
 import { GoogleButton } from "./GoogleButton";
 import { ErrorNotice } from "@/components/ui-kit/ErrorNotice";
-import { Mark } from "@/components/shell/Mark";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -58,9 +57,6 @@ export function SignupScreen() {
   return (
     <AuthShell>
       <div className="ps-auth-card">
-        <div className="ps-auth-mark-mobile">
-          <Mark size={32} />
-        </div>
         <div className="ps-auth-card-head">
           <h1 className="ps-pagetitle">Create your account</h1>
           <p className="ps-body">Free to start — your decks save to your account from the first slide.</p>

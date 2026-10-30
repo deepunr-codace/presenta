@@ -1,42 +1,28 @@
 import type { ReactNode } from "react";
-import { Lightning, Shapes, Sparkle } from "@phosphor-icons/react";
-import { Mark } from "@/components/shell/Mark";
-
-const VALUE_PROPS = [
-  { icon: <Sparkle size={16} />, text: "Describe a deck in plain language and watch it build itself." },
-  { icon: <Shapes size={16} />, text: "Every slide stays fully editable — text, layout, theme, brand." },
-  { icon: <Lightning size={16} />, text: "Export to PDF or PowerPoint the moment it's ready." },
-];
 
 type Props = {
   children: ReactNode;
 };
 
-/** Shared full-screen frame for /login and /signup: a branding panel on wide screens, the form centred on narrow ones. */
+/**
+ * Shared frame for /login and /signup: the product film runs full-bleed behind a glass card, the logo sits above
+ * the form, and a slow light sweep moves over the glass. Reduced-motion visitors get a still frame instead.
+ */
 export function AuthShell({ children }: Props) {
   return (
     <div className="ps-auth-shell">
-      <aside className="ps-auth-panel">
-        <div className="ps-wordmark">
-          <Mark size={28} />
-          Presenta
+      <video className="ps-auth-video" src="/auth/login-bg.mp4" autoPlay muted loop playsInline preload="auto" aria-hidden tabIndex={-1} />
+      <div className="ps-auth-veil" aria-hidden />
+      <div className="ps-auth-glow ps-auth-glow-a" aria-hidden />
+      <div className="ps-auth-glow ps-auth-glow-b" aria-hidden />
+      <main className="ps-auth-main">
+        <div className="ps-auth-logo">
+          {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset, sized by CSS */}
+          <img src="/brand/presenta-logo.png" alt="Presenta" />
         </div>
-        <div className="ps-auth-panel-body">
-          <p className="ps-display ps-auth-headline">
-            Your next deck, <span className="ps-accent">already designed</span>.
-          </p>
-          <ul className="ps-auth-props">
-            {VALUE_PROPS.map((p, i) => (
-              <li key={i}>
-                <span className="ps-iconchip">{p.icon}</span>
-                <span className="ps-body-lg">{p.text}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <p className="ps-caption">Presenta Studio — AI presentation builder</p>
-      </aside>
-      <main className="ps-auth-main">{children}</main>
+        {children}
+        <p className="ps-auth-legal">Presenta Studio · AI presentation builder</p>
+      </main>
     </div>
   );
 }

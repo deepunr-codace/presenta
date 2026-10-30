@@ -12,8 +12,9 @@ export default auth((req) => {
   const isLoggedIn = Boolean(req.auth);
   const isPublicRoute = PUBLIC_ROUTES.has(pathname);
   const isPublicShare = /^\/s\/[A-Za-z0-9_-]{20,80}$/.test(pathname);
+  const isPublicAsset = pathname.startsWith("/auth/") || pathname.startsWith("/brand/");
 
-  if (!isLoggedIn && !isPublicRoute && !isPublicShare) {
+  if (!isLoggedIn && !isPublicRoute && !isPublicShare && !isPublicAsset) {
     const url = new URL("/login", req.nextUrl);
     url.searchParams.set("from", pathname);
     return NextResponse.redirect(url);
