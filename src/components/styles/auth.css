@@ -89,26 +89,15 @@
   text-underline-offset: 2px;
 }
 
-/* Two columns from 1024 px: the film panel on the left, the form on a calm dark column on the right.
-   Below that the panel becomes a band above the form. */
+
+/* Full-bleed video behind everything. The login card sits left of centre; the logo and title sit in the corners. */
 .ps-auth-shell {
-  display: flex;
-  min-height: 100dvh;
-  flex-direction: column;
-  background: #0a0a0b;
-  color: #f4f2ef;
-}
-.ps-auth-hero {
   position: relative;
-  display: flex;
-  height: 260px;
-  flex-shrink: 0;
-  flex-direction: column;
-  justify-content: space-between;
+  min-height: 100dvh;
   overflow: hidden;
-  padding: 28px 28px 20px;
-  isolation: isolate;
   background: #07070a;
+  color: #f4f2ef;
+  isolation: isolate;
 }
 .ps-auth-video {
   position: absolute;
@@ -117,112 +106,78 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transform: scale(1.18);
 }
 .ps-auth-veil {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(180deg, rgba(7, 7, 10, 0.35) 0%, rgba(7, 7, 10, 0.1) 35%, rgba(7, 7, 10, 0.85) 100%);
+  background:
+    linear-gradient(180deg, rgba(7, 7, 10, 0.55) 0%, rgba(7, 7, 10, 0.15) 35%, rgba(7, 7, 10, 0.75) 100%),
+    radial-gradient(ellipse at 38% 50%, rgba(7, 7, 10, 0.1) 0%, rgba(7, 7, 10, 0.6) 75%);
 }
-.ps-auth-hero-body { display: flex; flex-direction: column; gap: 18px; }
-.ps-auth-logo {
-  display: block;
-  width: min(220px, 60vw);
-  height: auto;
-  filter: none;
+.ps-auth-hero {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 26px 24px 22px;
+  pointer-events: none;
 }
+.ps-auth-hero > * { pointer-events: auto; }
+.ps-auth-logo { width: 160px; }
+.ps-auth-title-block { position: relative; isolation: isolate; }
+.ps-auth-title-scrim { display: none; }
+.ps-auth-tagline {
+  margin: 0;
+  font-size: clamp(30px, 2.9vw, 46px);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+}
+.ps-auth-line { display: block; overflow: hidden; padding-bottom: 0.06em; }
+.ps-auth-line > span {
+  display: inline-block;
+  transform: translateY(105%);
+  animation: ps-auth-line-in 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(180ms + var(--i, 0) * 140ms);
+}
+.ps-auth-line-accent > span {
+  background: linear-gradient(100deg, #8fa2ff 0%, #e8399f 50%, #ff9a2e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@keyframes ps-auth-line-in { to { transform: translateY(0); } }
 .ps-auth-legal {
   margin: 0;
   font-size: 12px;
   letter-spacing: 0.04em;
   color: rgba(244, 242, 239, 0.6);
 }
+
+/* The form: a glass card, left of centre on wide screens. */
 .ps-auth-main {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 24px 40px;
+  position: absolute;
+  top: 50%;
+  left: 40%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 400px;
+  padding: 0 16px;
 }
-
-@media (min-width: 1024px) {
-  .ps-auth-shell {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(440px, 480px);
-  }
-  .ps-auth-hero {
-    height: auto;
-    min-height: 100dvh;
-    padding: 48px 56px;
-  }
-  .ps-auth-veil {
-    background: linear-gradient(90deg, rgba(7, 7, 10, 0.82) 0%, rgba(7, 7, 10, 0.45) 55%, rgba(7, 7, 10, 0.15) 100%), linear-gradient(180deg, rgba(7, 7, 10, 0.2) 0%, rgba(7, 7, 10, 0.7) 100%);
-  }
-  .ps-auth-hero-body {
-    flex: 1;
-    justify-content: space-between;
-    gap: 40px;
-  }
-  .ps-auth-logo { width: min(260px, 22vw); }
-  .ps-auth-title-block {
-    position: relative;
-    isolation: isolate;
-    align-self: stretch;
-    padding: 48px 0 8px;
-  }
-  .ps-auth-title-scrim {
-    position: absolute;
-    inset: -40px -56px -24px -56px;
-    z-index: -1;
-    background: radial-gradient(ellipse at 30% 60%, rgba(7, 7, 10, 0.85) 0%, rgba(7, 7, 10, 0.55) 45%, transparent 75%);
-    pointer-events: none;
-  }
-  .ps-auth-tagline {
-    margin: 0;
-    font-size: clamp(30px, 2.9vw, 46px);
-    line-height: 1.06;
-    letter-spacing: -0.03em;
-    font-weight: 600;
-    text-transform: none;
-  }
-  .ps-auth-main {
-    padding: 48px 44px;
-    background:
-      radial-gradient(ellipse at 50% 0%, rgba(47, 92, 255, 0.14), transparent 60%),
-      linear-gradient(180deg, #0d0d11, #0a0a0b);
-    border-left: 1px solid rgba(255, 255, 255, 0.07);
-  }
-}
-
-.ps-auth-card .ps-pagetitle { color: #f4f2ef; font-size: 28px; letter-spacing: -0.02em; }
-.ps-auth-card .ps-body { color: rgba(244, 242, 239, 0.7); }
-.ps-auth-card .ps-label { color: rgba(244, 242, 239, 0.82); }
-.ps-auth-card .ps-input {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.14);
-  color: #f4f2ef;
-}
-.ps-auth-card .ps-input::placeholder { color: rgba(244, 242, 239, 0.4); }
-.ps-auth-card .ps-input:focus { border-color: #8fa2ff; box-shadow: 0 0 0 3px rgba(79, 110, 255, 0.28); }
-.ps-auth-card .ps-btn-primary { background: #f4f2ef; border-color: #f4f2ef; color: #0a0a0b; }
-.ps-auth-card .ps-btn-primary:hover:not(:disabled) { background: #ffffff; border-color: #ffffff; }
-.ps-auth-card .ps-auth-google { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.14); color: #f4f2ef; }
-.ps-auth-card .ps-auth-google:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.28); }
-.ps-auth-card .ps-auth-divider::before, .ps-auth-card .ps-auth-divider::after { background: rgba(255, 255, 255, 0.12); }
-.ps-auth-card .ps-auth-divider span { color: rgba(244, 242, 239, 0.5); }
-.ps-auth-card .ps-auth-foot { color: rgba(244, 242, 239, 0.7); }
-.ps-auth-card .ps-auth-foot a { color: #f4f2ef; }
-
-/* Right column as a narrow, animated side card: entrance rise, a slowly turning light border and a sheen. */
 .ps-auth-card {
   position: relative;
   width: 100%;
-  max-width: 400px;
-  padding: 40px 38px 34px;
-  border-radius: 28px;
-  background: linear-gradient(170deg, rgba(24, 24, 30, 0.9), rgba(12, 12, 16, 0.95));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  max-width: none;
+  padding: 36px 34px 30px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 26px;
+  background: linear-gradient(170deg, rgba(20, 20, 26, 0.86), rgba(10, 10, 14, 0.9));
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
   overflow: hidden;
   animation: ps-auth-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -237,7 +192,7 @@
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask-composite: exclude;
-  opacity: 0.55;
+  opacity: 0.5;
   animation: ps-auth-spin 9s linear infinite;
 }
 .ps-auth-card::after {
@@ -259,196 +214,48 @@
   from { opacity: 0; transform: translateY(18px) scale(0.98); }
   to { opacity: 1; transform: none; }
 }
-.ps-auth-card .ps-pagetitle { font-size: 26px; letter-spacing: -0.025em; }
-.ps-auth-card .ps-body { font-size: 14px; line-height: 1.55; }
+.ps-auth-card .ps-pagetitle { color: #f4f2ef; font-size: 26px; letter-spacing: -0.025em; }
+.ps-auth-card .ps-body { color: rgba(244, 242, 239, 0.7); font-size: 14px; line-height: 1.55; }
+.ps-auth-card .ps-label { color: rgba(244, 242, 239, 0.82); }
 .ps-auth-card .ps-auth-form { gap: 16px; }
 .ps-auth-card .ps-auth-card-head { gap: 8px; margin-bottom: 4px; }
-.ps-auth-card .ps-input { height: 44px; border-radius: 12px; font-size: 14px; }
+.ps-auth-card .ps-input {
+  height: 44px;
+  border-radius: 12px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f4f2ef;
+}
+.ps-auth-card .ps-input::placeholder { color: rgba(244, 242, 239, 0.4); }
+.ps-auth-card .ps-input:focus { border-color: #8fa2ff; box-shadow: 0 0 0 3px rgba(79, 110, 255, 0.28); }
 .ps-auth-card .ps-btn-md { height: 46px; border-radius: 14px; font-size: 14px; font-weight: 600; }
-.ps-auth-card .ps-auth-google { height: 44px; border-radius: 14px; }
-@media (prefers-reduced-motion: reduce) {
-  .ps-auth-card, .ps-auth-card::before, .ps-auth-card::after { animation: none; }
-  .ps-auth-card::after { display: none; }
-}
-
-@keyframes ps-auth-line-in { to { transform: translateY(0); } }
-@media (prefers-reduced-motion: reduce) {
-  .ps-auth-line > span { transform: none; animation: none; }
-}
-
-/* Phones and small tablets: a compact film band with the logo at the top and the title at the bottom, then the
-   form card below with tighter spacing and touch-sized controls. */
-@media (max-width: 1023px) {
-  .ps-auth-hero {
-    height: 300px;
-    padding: 22px 22px 18px;
-  }
-  .ps-auth-hero-body {
-    flex: 1;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  .ps-auth-logo { width: 160px; }
-  .ps-auth-veil {
-    background: linear-gradient(180deg, rgba(7, 7, 10, 0.25) 0%, rgba(7, 7, 10, 0.2) 35%, rgba(7, 7, 10, 0.92) 100%);
-  }
-  .ps-auth-title-block { padding: 28px 0 0; }
-  .ps-auth-title-scrim { inset: -24px -24px -12px -24px; }
-  .ps-auth-tagline { font-size: 28px; line-height: 1.08; }
-  .ps-auth-legal { display: none; }
-  .ps-auth-main {
-    padding: 28px 18px 40px;
-    background: #0a0a0b;
-  }
-  .ps-auth-card {
-    max-width: 440px;
-    padding: 28px 22px 24px;
-    border-radius: 22px;
-  }
-  .ps-auth-card .ps-pagetitle { font-size: 22px; }
-  .ps-auth-card .ps-body { font-size: 13px; }
-  .ps-auth-card .ps-auth-form { gap: 12px; }
-  .ps-auth-card .ps-input { height: 46px; font-size: 16px; }
-  .ps-auth-card .ps-btn-md { height: 48px; }
-  .ps-auth-card .ps-auth-google { height: 46px; }
-}
-@media (max-width: 380px) {
-  .ps-auth-hero { height: 260px; }
-  .ps-auth-logo { width: 136px; }
-  .ps-auth-tagline { font-size: 24px; }
-}
-
-/* Title lines: each line rises into place; static under reduced motion. */
-.ps-auth-line { display: block; overflow: hidden; padding-bottom: 0.06em; }
-.ps-auth-line > span {
-  display: inline-block;
-  transform: translateY(105%);
-  animation: ps-auth-line-in 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  animation-delay: calc(180ms + var(--i, 0) * 140ms);
-}
-.ps-auth-line-accent > span {
-  background: linear-gradient(100deg, #8fa2ff 0%, #e8399f 50%, #ff9a2e 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-/* Hero backdrop and floor carousel. The stage keeps the backdrop's own proportions, so the carousel stays on the
-   floor at every screen size. Positions are percentages of the stage. */
-.ps-auth-hero {
-  position: relative;
-  container-type: size;
-  height: 300px;
-  overflow: hidden;
-  padding: 0;
-  background: #07070a;
-  isolation: isolate;
-}
-.ps-auth-stage {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: -2;
-  width: max(100cqw, 211.7cqh);
-  aspect-ratio: 1821 / 864;
-  transform: translate(-50%, -50%);
-  container-type: size;
-}
-.ps-auth-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-}
-.ps-auth-veil { z-index: -1; }
-.ps-auth-hero-body {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 22px 22px 18px;
-  pointer-events: none;
-}
-.ps-auth-hero-body > * { pointer-events: auto; }
-.ps-auth-logo { width: 160px; }
-.ps-auth-title-block { padding: 28px 0 0; }
-.ps-auth-legal { display: none; }
-
-/* The floor: cards on a coverflow, centred on the platform (about 64% across, 53% down the stage). */
-.ps-floor { position: absolute; inset: 0; }
-.ps-floor-track { position: absolute; left: 50%; top: 52%; width: 0; height: 0; }
-.ps-floor-card {
-  position: absolute;
-  left: 0;
-  top: 0;
-  display: flex;
-  height: 38cqh;
-  width: 27.4cqh;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 3.5cqh 3cqh;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 1.6cqh;
-  color: #f4f2ef;
-  box-shadow: 0 2cqh 5cqh -2cqh rgba(0, 0, 0, 0.7);
-  overflow: hidden;
-  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1), filter 500ms ease, opacity 500ms ease;
-}
-.ps-floor-num { font-size: 2.2cqh; letter-spacing: 0.08em; opacity: 0.8; }
-.ps-floor-title { font-size: 3.6cqh; line-height: 1.08; font-weight: 500; letter-spacing: -0.01em; }
-.ps-floor-arrow { font-size: 3cqh; opacity: 0.85; }
-.ps-floor-controls {
-  position: absolute;
-  left: 50%;
-  top: 80%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  transform: translateX(-50%);
-  pointer-events: auto;
-}
-.ps-floor-nav {
-  width: 26px;
-  height: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 9999px;
-  background: rgba(7, 7, 10, 0.5);
-  color: #f4f2ef;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-}
-.ps-floor-nav:hover { background: rgba(255, 255, 255, 0.15); }
-.ps-floor-dots { display: flex; gap: 6px; }
-.ps-floor-dots button {
-  width: 6px;
-  height: 6px;
-  padding: 0;
-  border: 0;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.35);
-  cursor: pointer;
-}
-.ps-floor-dots button[data-active="true"] { width: 18px; background: #f4f2ef; }
-.ps-floor-nav:focus-visible, .ps-floor-dots button:focus-visible { outline: 2px solid #8fa2ff; outline-offset: 2px; }
+.ps-auth-card .ps-btn-primary { background: #f4f2ef; border-color: #f4f2ef; color: #0a0a0b; }
+.ps-auth-card .ps-btn-primary:hover:not(:disabled) { background: #ffffff; border-color: #ffffff; }
+.ps-auth-card .ps-auth-google { height: 44px; border-radius: 14px; background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.14); color: #f4f2ef; }
+.ps-auth-card .ps-auth-google:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.28); }
+.ps-auth-card .ps-auth-divider::before, .ps-auth-card .ps-auth-divider::after { background: rgba(255, 255, 255, 0.12); }
+.ps-auth-card .ps-auth-divider span { color: rgba(244, 242, 239, 0.5); }
+.ps-auth-card .ps-auth-foot { color: rgba(244, 242, 239, 0.7); }
+.ps-auth-card .ps-auth-foot a { color: #f4f2ef; }
 
 @media (min-width: 1024px) {
-  .ps-auth-hero { height: 100dvh; }
-  .ps-auth-hero-body { padding: 48px 56px; }
+  .ps-auth-hero { padding: 48px 56px; }
   .ps-auth-logo { width: min(260px, 22vw); }
   .ps-auth-legal { display: block; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .ps-floor-card { transition: none; }
-}
-@media (min-width: 1024px) {
-  .ps-auth-veil {
-    background: linear-gradient(90deg, rgba(7, 7, 10, 0.8) 0%, rgba(7, 7, 10, 0.25) 42%, rgba(7, 7, 10, 0) 62%);
-  }
-}
+
+/* Phones: the card centres on the screen, the logo and title stay in the corners. */
 @media (max-width: 1023px) {
-  .ps-floor-controls { display: none; }
+  .ps-auth-main { left: 50%; top: 52%; }
+  .ps-auth-hero { padding: 22px 22px 18px; }
+  .ps-auth-logo { width: 140px; }
+  .ps-auth-tagline { font-size: 28px; line-height: 1.08; }
+  .ps-auth-legal { display: none; }
+  .ps-auth-card { padding: 28px 22px 24px; border-radius: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ps-auth-card, .ps-auth-card::before, .ps-auth-card::after { animation: none; }
+  .ps-auth-card::after { display: none; }
+  .ps-auth-line > span { transform: none; animation: none; }
 }
