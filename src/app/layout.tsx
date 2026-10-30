@@ -23,6 +23,7 @@ import {
 import { Suspense, type CSSProperties, type ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
 import { AccountSync } from "@/components/shell/AccountSync";
+import { SessionWatch } from "@/components/shell/SessionWatch";
 import { MiniDeck } from "@/components/shell/MiniDeck";
 import { TeamMessengerProvider } from "@/components/teams/TeamMessengerProvider";
 import { NavProgress } from "@/components/shell/NavProgress";
@@ -107,6 +108,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </Suspense>
         <SessionProvider>
           <AccountSync />
+          <SessionWatch />
           <ThemeModeProvider>
             <TooltipProvider delay={200}>
               <ToastProvider>
