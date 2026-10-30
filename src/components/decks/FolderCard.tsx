@@ -16,13 +16,29 @@ type Props = {
   onDropItem: (kind: "deck" | "folder", id: string, into: Folder) => void;
 };
 
-/** A classic file-manager folder: a darker back tab behind a lighter front panel. */
+/** A glossy 3D-rendered folder: amber gradient shell with a stack of papers peeking out the top. */
 function FolderGlyph() {
   return (
     <svg viewBox="0 0 64 54" className="ps-folder-glyph" aria-hidden>
-      <path d="M6 8h13.9a5 5 0 0 1 3.6 1.5L28.5 14H50a6 6 0 0 1 6 6v4H6z" fill="var(--ps-folder-back)" />
-      <path d="M5 18h54v22.5a6 6 0 0 1-6 6H11a6 6 0 0 1-6-6z" fill="var(--ps-ink)" />
-      <path d="M5 19.5h54" stroke="var(--ps-paper)" strokeOpacity="0.22" strokeWidth="1.5" />
+      <defs>
+        <linearGradient id="ps-folder-back-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f3b53c" />
+          <stop offset="1" stopColor="#e39a1c" />
+        </linearGradient>
+        <linearGradient id="ps-folder-front-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffcf5c" />
+          <stop offset="1" stopColor="#f5a81f" />
+        </linearGradient>
+      </defs>
+      <path d="M6 8h13.9a5 5 0 0 1 3.6 1.5L28.5 14H50a6 6 0 0 1 6 6v4H6z" fill="url(#ps-folder-back-grad)" />
+      <rect x="15" y="4" width="26" height="16" rx="2" fill="#fdfdfb" />
+      <rect x="15" y="4" width="26" height="16" rx="2" fill="none" stroke="#e7e4da" strokeWidth="1" />
+      <line x1="19" y1="9" x2="37" y2="9" stroke="#bcd4f0" strokeWidth="1.6" strokeLinecap="round" />
+      <line x1="19" y1="13" x2="33" y2="13" stroke="#d7dde6" strokeWidth="1.6" strokeLinecap="round" />
+      <line x1="19" y1="17" x2="35" y2="17" stroke="#d7dde6" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M5 18h54v22.5a6 6 0 0 1-6 6H11a6 6 0 0 1-6-6z" fill="url(#ps-folder-front-grad)" />
+      <path d="M5 18h54v4H5z" fill="#fff" fillOpacity="0.35" />
+      <path d="M5 40.5v-4h54v4a6 6 0 0 1-6 6H11a6 6 0 0 1-6-6z" fill="#b5700c" fillOpacity="0.18" />
     </svg>
   );
 }
