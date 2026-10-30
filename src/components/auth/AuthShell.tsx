@@ -17,7 +17,7 @@ export function AuthShell({ children }: Props) {
         <div className="ps-auth-veil" aria-hidden />
         <div className="ps-auth-hero-body">
           {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset, sized by CSS */}
-          <img className="ps-auth-logo" src="/brand/presenta-logo.png" alt="Presenta" />
+          <img className="ps-auth-logo" src="/brand/presenta-wordmark.png" alt="Presenta" />
           <div className="ps-auth-pitch">
             <p className="ps-auth-headline">
               Your next deck, <span className="ps-auth-accent">already designed</span>.

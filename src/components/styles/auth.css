@@ -150,7 +150,7 @@
 @media (min-width: 1024px) {
   .ps-auth-shell {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    grid-template-columns: minmax(0, 1fr) 380px;
   }
   .ps-auth-hero {
     height: auto;
@@ -175,15 +175,9 @@
     color: transparent;
   }
   .ps-auth-sub { margin: 0; max-width: 42ch; font-size: 17px; line-height: 1.55; color: rgba(244, 242, 239, 0.78); }
-  .ps-auth-main { padding: 48px 56px; background: #0a0a0b; }
+  .ps-auth-main { padding: 40px 36px; background: #0a0a0b; border-left: 1px solid rgba(255, 255, 255, 0.07); }
 }
 
-.ps-auth-card {
-  position: relative;
-  width: 100%;
-  max-width: 400px;
-  padding: 8px 0;
-}
 .ps-auth-card .ps-pagetitle { color: #f4f2ef; font-size: 28px; letter-spacing: -0.02em; }
 .ps-auth-card .ps-body { color: rgba(244, 242, 239, 0.7); }
 .ps-auth-card .ps-label { color: rgba(244, 242, 239, 0.82); }
@@ -202,3 +196,56 @@
 .ps-auth-card .ps-auth-divider span { color: rgba(244, 242, 239, 0.5); }
 .ps-auth-card .ps-auth-foot { color: rgba(244, 242, 239, 0.7); }
 .ps-auth-card .ps-auth-foot a { color: #f4f2ef; }
+
+/* Right column as a narrow, animated side card: entrance rise, a slowly turning light border and a sheen. */
+.ps-auth-card {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  padding: 26px 24px 22px;
+  border-radius: 22px;
+  background: linear-gradient(170deg, rgba(24, 24, 30, 0.9), rgba(12, 12, 16, 0.95));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  animation: ps-auth-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ps-auth-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--ps-auth-angle, 0deg), #2f5cff, #e8399f, #ff9a2e, #2f5cff);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0.55;
+  animation: ps-auth-spin 9s linear infinite;
+}
+.ps-auth-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.06) 50%, transparent 65%);
+  transform: translateX(-100%);
+  animation: ps-auth-sheen 6s ease-in-out 1s infinite;
+  pointer-events: none;
+}
+@property --ps-auth-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes ps-auth-spin { to { --ps-auth-angle: 360deg; } }
+@keyframes ps-auth-sheen {
+  0%, 55% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes ps-auth-rise {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.ps-auth-card .ps-pagetitle { font-size: 22px; }
+.ps-auth-card .ps-body { font-size: 13px; }
+.ps-auth-card .ps-auth-form { gap: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .ps-auth-card, .ps-auth-card::before, .ps-auth-card::after { animation: none; }
+  .ps-auth-card::after { display: none; }
+}
