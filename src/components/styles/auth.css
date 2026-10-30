@@ -703,3 +703,15 @@
   .ps-auth-card .ps-auth-card-head > .ps-body { display: none; }
   .ps-auth-card .ps-auth-foot { font-size: 13px; }
 }
+
+/* Small laptops (wide but short screens): a more compact card so it fits without scrolling. */
+@media (min-width: 1024px) and (max-height: 820px) {
+  .ps-auth-card { padding: 28px 30px 24px; gap: 14px; }
+  .ps-auth-card .ps-auth-card-head { gap: 4px; }
+  .ps-auth-card .ps-pagetitle { font-size: 22px; }
+  .ps-auth-card .ps-auth-card-head > .ps-body { display: none; }
+  .ps-auth-card .ps-auth-form { gap: 10px; }
+  .ps-auth-card .ps-input { height: 40px; font-size: 14px; }
+  .ps-auth-card .ps-btn-md { height: 42px; }
+  .ps-auth-card .ps-auth-google { height: 40px; }
+}
