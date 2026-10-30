@@ -757,3 +757,6 @@
 @media (max-width: 1023px) {
   .ps-auth-card-logo { width: 140px; }
 }
+
+/* No brand eyebrow above the card heading. */
+.ps-auth-card .ps-auth-card-head::before { content: none; display: none; }
