@@ -656,3 +656,6 @@
 .ps-auth-card:hover {
   transform: translateY(-3px);
 }
+@media (min-width: 1024px) {
+  .ps-auth-tagline { font-size: clamp(44px, 4.4vw, 74px); }
+}
