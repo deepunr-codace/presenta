@@ -59,11 +59,7 @@
   position: relative;
   z-index: 1;
   border-right: 1px solid var(--sb-border);
-  /* The icon rail sits proud of the panel: a groove shadow onto the panel and a shaded bevel inside its edge. */
-  box-shadow: 8px 0 16px -14px rgba(0, 0, 0, 0.5), inset -8px 0 12px -14px rgba(0, 0, 0, 0.45);
 }
-[data-theme="dark"] .ps-sidenav[data-variant="full"] .ps-rail { box-shadow: 8px 0 18px -14px rgba(0, 0, 0, 0.8), inset -8px 0 12px -12px rgba(0, 0, 0, 0.55), inset -1px 0 0 rgba(255, 255, 255, 0.04); }
-.ps-sidenav:has(.ps-panel[data-open="false"]) .ps-rail { box-shadow: none; }
 
 .ps-rail-logo {
   display: inline-flex;
