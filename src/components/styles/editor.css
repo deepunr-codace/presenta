@@ -31,7 +31,8 @@
 }
 .ps-toolbar-main, .ps-toolbar-right { display: flex; min-width: 0; align-items: center; gap: 8px; }
 .ps-toolbar-main { flex: 1 1 auto; }
-.ps-toolbar-right { flex: 0 0 auto; gap: 12px; margin-left: auto; padding-left: 16px; }
+.ps-toolbar-right { flex: 0 0 auto; flex-shrink: 0; gap: 12px; margin-left: auto; padding-left: 16px; }
+.ps-toolbar-actions { flex-shrink: 0; }
 .ps-toolbar-sep { width: 1px; height: 16px; margin: 0 4px; flex-shrink: 0; background: var(--ps-line); }
 .ps-toolbar-title {
   max-width: min(300px, 24vw);

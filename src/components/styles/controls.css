@@ -6,11 +6,13 @@
 /* Outline pill by default: canvas fill, ink text, 1 px line-2 border. */
 .ps-btn {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   gap: 8px;
   height: 36px;
   padding: 0 16px;
+  box-sizing: border-box;
   border-radius: var(--ps-r-pill);
   border: 1px solid var(--ps-line-2);
   background: var(--ps-canvas);
@@ -46,10 +48,12 @@
 /* Icon button: 32 px ghost circle; outline variant adds the line-2 border on canvas. */
 .ps-iconbtn {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
+  box-sizing: border-box;
   border-radius: var(--ps-r-pill);
   border: 1px solid transparent;
   background: transparent;
