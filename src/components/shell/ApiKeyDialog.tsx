@@ -43,6 +43,7 @@ function KeyForm({ onClose }: { onClose: () => void }) {
   const [saved, setSaved] = useState<{ provider: AiProvider; apiKey: string } | null>(initial);
 
   const meta = PROVIDERS.find((p) => p.id === provider);
+  const presentaActive = Boolean(health?.hasKey && health.provider === "presenta" && !health.byok);
   const usePresenta = () => {
     clearStoredKey();
     onClose();
@@ -71,27 +72,6 @@ function KeyForm({ onClose }: { onClose: () => void }) {
           <DialogDescription>Use Presenta Studio for free, or bring your own AI key.</DialogDescription>
         </DialogHeader>
 
-        <section className="ps-keydialog-studio" aria-label="Presenta Studio">
-          <div className="ps-keydialog-studio-head">
-            <span className="ps-keydialog-studio-mark" aria-hidden>
-              <Sparkle size={14} weight="fill" />
-            </span>
-            <strong>Presenta Studio</strong>
-            <span className="ps-keydialog-studio-tag">Included</span>
-          </div>
-          <p className="ps-keydialog-studio-lead">Our built-in AI. Nothing to set up: sign in and every deck, outline and revision runs on Presenta Studio.</p>
-          <ul className="ps-keydialog-studio-list">
-            <li>Free daily allowance of AI requests, shared across decks and revisions</li>
-            <li>The allowance resets every day</li>
-            <li>No key, no billing, no setup</li>
-          </ul>
-          {health?.quota && !health.byok ? (
-            <p className="ps-keydialog-studio-quota">
-              <span>{Math.max(health.quota.limit - health.quota.used, 0)}</span> of {health.quota.limit} free requests left today
-            </p>
-          ) : null}
-          <p className="ps-keydialog-studio-foot">Adding your own key below removes the daily limit and uses your own account.</p>
-        </section>
 
         {saved ? (
           <p className="ps-keydialog-saved" role="status">
@@ -155,6 +135,27 @@ function KeyForm({ onClose }: { onClose: () => void }) {
               </span>
             </p>
           </>
+        ) : null}
+
+        {provider === "presenta" ? (
+          <div className="ps-keydialog-presenta">
+            <div className="ps-keydialog-presenta-head">
+              <span className="ps-keydialog-presenta-name">
+                <span className="ps-keydialog-studio-mark" aria-hidden>
+                  <Sparkle size={12} weight="fill" />
+                </span>
+                Presenta Studio
+              </span>
+              {presentaActive ? <span className="ps-keydialog-active">Active</span> : <span className="ps-keydialog-idle">Not in use</span>}
+            </div>
+            {health?.quota && !health.byok ? (
+              <p className="ps-keydialog-usage">
+                <span>{Math.max(health.quota.limit - health.quota.used, 0)}</span> of {health.quota.limit} free requests left today
+              </p>
+            ) : (
+              <p className="ps-keydialog-usage-muted">Sign in to see your daily usage.</p>
+            )}
+          </div>
         ) : null}
 
         <DialogFooter>

@@ -30,3 +30,13 @@
 .ps-keydialog-studio-quota { margin: 0; font-size: 13px; color: var(--fg-muted); }
 .ps-keydialog-studio-quota span { font-size: 18px; font-weight: 600; color: var(--fg-text); margin-right: 4px; }
 .ps-keydialog-studio-foot { margin: 0; font-size: 12px; line-height: 1.5; color: var(--fg-muted); }
+
+.ps-keydialog-presenta { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 10px; background: var(--fg-sub); border: 1px solid var(--fg-border); }
+.ps-keydialog-presenta-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 600; color: var(--fg-text); }
+.ps-keydialog-presenta-name { display: inline-flex; align-items: center; gap: 8px; }
+.ps-keydialog-active, .ps-keydialog-idle { padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+.ps-keydialog-active { background: color-mix(in srgb, #22c55e 18%, transparent); color: #4ade80; }
+.ps-keydialog-idle { background: var(--fg-border); color: var(--fg-muted); }
+.ps-keydialog-usage { margin: 0; font-size: 13px; color: var(--fg-muted); }
+.ps-keydialog-usage span { font-size: 18px; font-weight: 600; color: var(--fg-text); margin-right: 4px; }
+.ps-keydialog-usage-muted { margin: 0; font-size: 12px; color: var(--fg-muted); }
