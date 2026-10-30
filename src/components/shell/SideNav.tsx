@@ -60,7 +60,7 @@ const RAIL: RailItem[] = [
 /** Destinations in the More menu. A `key` makes the More icon show as active while that page is open. */
 const MORE_KEYS: NavKey[] = ["trash", "labs"];
 
-const RECENT_LIMIT = 5;
+const RECENT_LIMIT = 3;
 const STARRED_LIMIT = 5;
 
 /* ---------- panel open or closed (kept in this browser) ---------- */
