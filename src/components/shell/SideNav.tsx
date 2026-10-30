@@ -55,10 +55,11 @@ const RAIL: RailItem[] = [
   { label: "Media", href: "/media", icon: Images, key: "media" },
   { label: "Teams", href: "/teams", icon: Users, key: "teams" },
   { label: "Brand", href: "/brand", icon: Palette, key: "brand" },
+  { label: "Labs", href: "/labs", icon: FlaskConical, key: "labs", isNew: true },
 ];
 
 /** Destinations in the More menu. A `key` makes the More icon show as active while that page is open. */
-const MORE_KEYS: NavKey[] = ["trash", "labs"];
+const MORE_KEYS: NavKey[] = ["trash"];
 
 const RECENT_LIMIT = 3;
 const STARRED_LIMIT = 5;
@@ -154,10 +155,6 @@ function RailMore({ active }: { active?: NavKey }) {
         <span className="ps-rail-label">More</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="right" align="end" sideOffset={12} className="ps-more-menu w-60">
-        <DropdownMenuItem onClick={() => router.push("/labs")}>
-          <FlaskConical /> Labs <span className="ps-more-chip">New</span>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => router.push("/trash")}>
           <Trash2 /> Trash
         </DropdownMenuItem>
