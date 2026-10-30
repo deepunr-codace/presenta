@@ -107,12 +107,12 @@
 .ps-rail-item:hover:not([aria-disabled="true"]) .ps-rail-label { color: var(--ps-ink); }
 .ps-rail-item:active:not([aria-disabled="true"]) .ps-rail-icon { background: var(--rail-tile); transform: translateY(0) scale(0.94); box-shadow: none; }
 
-/* Active: icon colour only — brand blue, no tile */
+/* Active: same light grey tile as hover, no accent colour */
 .ps-rail-item[data-active="true"] .ps-rail-label { font-weight: 600; }
-.ps-rail-item[data-active="true"] .ps-rail-icon { background: transparent; box-shadow: none; }
-.ps-rail-item[data-active="true"] .ps-rail-icon svg { color: var(--ps-spark-violet); }
+.ps-rail-item[data-active="true"] .ps-rail-icon { background: var(--rail-hover); box-shadow: none; }
+.ps-rail-item[data-active="true"] .ps-rail-icon svg { color: var(--ps-ink); }
 .ps-rail-item[data-active="true"]:hover:not([aria-disabled="true"]) .ps-rail-icon { background: var(--rail-hover); }
-.ps-rail-item[data-active="true"]:hover:not([aria-disabled="true"]) .ps-rail-icon svg { color: var(--ps-spark-violet); }
+.ps-rail-item[data-active="true"]:hover:not([aria-disabled="true"]) .ps-rail-icon svg { color: var(--ps-ink); }
 
 /* Disabled: dimmed, no hover lift */
 .ps-rail-item[aria-disabled="true"] { cursor: default; color: var(--ps-smoke); opacity: 0.8; }
