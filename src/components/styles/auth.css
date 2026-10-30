@@ -804,3 +804,7 @@
     0 64px 100px -30px rgba(0, 0, 0, 1);
 }
 .ps-auth-card::before { opacity: 0; }
+
+/* "Create an account" link without underline. */
+.ps-auth-card .ps-auth-foot a,
+.ps-auth-foot a { text-decoration: none; }
