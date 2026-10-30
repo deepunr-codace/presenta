@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeSlash, LockKey } from "@phosphor-icons/react";
+import { Eye, EyeSlash, LockKey, Sparkle } from "@phosphor-icons/react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { clearStoredKey, getStoredKey, maskKey, setStoredKey } from "@/lib/ai-key";
 import type { AiProvider } from "@/lib/ai/auth";
@@ -61,12 +61,30 @@ function KeyForm({ onClose }: { onClose: () => void }) {
     <>
         <DialogHeader>
           <DialogTitle>API key</DialogTitle>
-          <DialogDescription>
-            {health?.serverKey && health.hasKey && !health.byok
-              ? health.provider === "presenta" ? "Presenta Studio is included free with your account, with a daily allowance. Add your own key to remove the limit." : "This workspace already has AI turned on. Add your own key to use your account instead."
-              : "Presenta uses your own AI account to write decks. Without a key you get the offline demo."}
-          </DialogDescription>
+          <DialogDescription>Use Presenta Studio for free, or bring your own AI key.</DialogDescription>
         </DialogHeader>
+
+        <section className="ps-keydialog-studio" aria-label="Presenta Studio">
+          <div className="ps-keydialog-studio-head">
+            <span className="ps-keydialog-studio-mark" aria-hidden>
+              <Sparkle size={14} weight="fill" />
+            </span>
+            <strong>Presenta Studio</strong>
+            <span className="ps-keydialog-studio-tag">Included</span>
+          </div>
+          <p className="ps-keydialog-studio-lead">Our built-in AI. Nothing to set up: sign in and every deck, outline and revision runs on Presenta Studio.</p>
+          <ul className="ps-keydialog-studio-list">
+            <li>Free daily allowance of AI requests, shared across decks and revisions</li>
+            <li>The allowance resets every day</li>
+            <li>No key, no billing, no setup</li>
+          </ul>
+          {health?.quota && !health.byok ? (
+            <p className="ps-keydialog-studio-quota">
+              <span>{Math.max(health.quota.limit - health.quota.used, 0)}</span> of {health.quota.limit} free requests left today
+            </p>
+          ) : null}
+          <p className="ps-keydialog-studio-foot">Adding your own key below removes the daily limit and uses your own account.</p>
+        </section>
 
         {saved ? (
           <p className="ps-keydialog-saved" role="status">

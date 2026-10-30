@@ -19,3 +19,14 @@
 .ps-keydialog .ps-btn { height: 32px; padding: 0 14px; border-radius: 8px; font-size: 13px; }
 .ps-keydialog .ps-btn-primary { background: var(--fg-blue); border-color: var(--fg-blue); color: #fff; }
 .ps-keydialog .ps-btn-primary:hover:not(:disabled) { background: var(--fg-blue-press); border-color: var(--fg-blue-press); }
+
+/* Presenta Studio: the included free tier, shown first in the key dialog. */
+.ps-keydialog-studio { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 12px; background: linear-gradient(150deg, color-mix(in srgb, #4c7dff 14%, transparent), color-mix(in srgb, #e8399f 8%, transparent)); border: 1px solid color-mix(in srgb, #4c7dff 26%, transparent); }
+.ps-keydialog-studio-head { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--fg-text); }
+.ps-keydialog-studio-mark { display: inline-grid; width: 24px; height: 24px; place-items: center; border-radius: 7px; background: linear-gradient(135deg, #2f5cff, #e8399f); color: #fff; }
+.ps-keydialog-studio-tag { margin-left: auto; padding: 2px 8px; border-radius: 9999px; background: var(--fg-sub); font-size: 11px; font-weight: 600; color: var(--fg-text); }
+.ps-keydialog-studio-lead { margin: 0; font-size: 13px; line-height: 1.5; color: var(--fg-muted); }
+.ps-keydialog-studio-list { margin: 0; padding: 0 0 0 16px; font-size: 13px; line-height: 1.6; color: var(--fg-text); display: flex; flex-direction: column; gap: 2px; }
+.ps-keydialog-studio-quota { margin: 0; font-size: 13px; color: var(--fg-muted); }
+.ps-keydialog-studio-quota span { font-size: 18px; font-weight: 600; color: var(--fg-text); margin-right: 4px; }
+.ps-keydialog-studio-foot { margin: 0; font-size: 12px; line-height: 1.5; color: var(--fg-muted); }
