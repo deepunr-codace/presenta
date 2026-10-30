@@ -11,9 +11,11 @@ import type { ChartElement, Deck, Element, Generation, ImageElement, Slide, Them
 let z = 0;
 const nextZ = () => z++;
 
+/** `letterSpacing` is in px-equivalent units at the given size; the schema stores it as em, so it is converted below. */
 type TextOpts = { color?: string; weight?: number; size?: number; align?: "left" | "center" | "right"; letterSpacing?: number; fontFamily?: "display" | "body" };
 
 function text(html: string, x: number, y: number, w: number, h: number, opts: TextOpts = {}): Element {
+  const size = opts.size ?? 28;
   return {
     id: newId("el"),
     type: "text",
@@ -30,7 +32,7 @@ function text(html: string, x: number, y: number, w: number, h: number, opts: Te
     align: opts.align ?? "left",
     valign: "top",
     autoFit: false,
-    style: { color: opts.color, fontWeight: opts.weight ?? 700, fontSize: opts.size ?? 28, letterSpacing: opts.letterSpacing, fontFamily: opts.fontFamily ?? "display" },
+    style: { color: opts.color, fontWeight: opts.weight ?? 700, fontSize: size, letterSpacing: opts.letterSpacing !== undefined ? opts.letterSpacing / size : undefined, fontFamily: opts.fontFamily ?? "display" },
   };
 }
 
