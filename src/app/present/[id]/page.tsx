@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PresentScreen } from "@/components/present/PresentScreen";
+import { resolveDeckRouteId } from "@/lib/deck/resolve-route";
 
 export const metadata: Metadata = {
   title: "Present",
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
 
 export default async function PresentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <PresentScreen id={id} />;
+  return <PresentScreen id={await resolveDeckRouteId(id)} />;
 }

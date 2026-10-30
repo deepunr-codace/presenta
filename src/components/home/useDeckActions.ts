@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { deckSlug } from "@/components/editor/deck-slug";
+import { deckSegment } from "@/lib/deck/links";
+import { deckUrlSlug } from "@/lib/deck/slug";
 import { useToast } from "@/components/shell/Toast";
 import { downloadBlob, exportDeckJson, importDeckFile, loadDeckById, saveDeck, trashDeck, type DeckSummary } from "@/lib/persist";
 import type { DeckActions } from "./deck-actions";
@@ -33,8 +35,8 @@ export function useDeckActions(refresh: () => Promise<void>) {
 
   const actions = useMemo<DeckActions>(
     () => ({
-      onOpen: (id) => router.push(`/deck/${id}`),
-      onEdit: (id) => router.push(`/edit/${id}`),
+      onOpen: (id, slug) => router.push(`/deck/${deckSegment(id, slug)}`),
+      onEdit: (id, slug) => router.push(`/edit/${deckSegment(id, slug)}`),
       onDuplicate: (id) =>
         void run("Duplicating…", async () => {
           const deck = await loadDeckById(id);
@@ -71,7 +73,7 @@ export function useDeckActions(refresh: () => Promise<void>) {
       void run("Importing…", async () => {
         const deck = await importDeckFile(file);
         await saveDeck(deck);
-        router.push(`/deck/${deck.id}`);
+        router.push(`/deck/${deckUrlSlug(deck.title, deck.id)}`);
       });
     },
     [run, router],

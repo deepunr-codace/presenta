@@ -157,6 +157,7 @@ export async function moveDeck(userId: string, deckId: string, folderId: string 
 
 export type DriveDeck = {
   id: string;
+  slug: string;
   title: string;
   updatedAt: string;
   slideCount: number;
@@ -176,6 +177,7 @@ export type DriveDeck = {
 
 type DriveRow = {
   id: string;
+  slug: string;
   title: string;
   updated_at: string;
   slide_count: number;
@@ -193,7 +195,7 @@ type DriveRow = {
 export async function listDriveDecks(userId: string): Promise<DriveDeck[]> {
   await ensureDriveTables();
   const rows = (await sql()`
-    SELECT d.id, d.title, d.updated_at, d.slide_count, d.theme_id, d.folder_id, d.size_bytes,
+    SELECT d.id, d.slug, d.title, d.updated_at, d.slide_count, d.theme_id, d.folder_id, d.size_bytes,
       (SELECT COUNT(*)::int FROM deck_shares s WHERE s.owner_id = d.user_id AND s.deck_id = d.id AND s.kind = 'user' AND NOT s.via_link) AS people,
       (SELECT COUNT(*)::int FROM deck_shares s WHERE s.owner_id = d.user_id AND s.deck_id = d.id AND s.via_link) AS link_viewers,
       COALESCE((SELECT array_agg(s.grantee_id) FROM deck_shares s WHERE s.owner_id = d.user_id AND s.deck_id = d.id AND s.kind = 'team'), ARRAY[]::text[]) AS team_ids,
@@ -204,6 +206,7 @@ export async function listDriveDecks(userId: string): Promise<DriveDeck[]> {
   `) as DriveRow[];
   return rows.map((r) => ({
     id: r.id,
+    slug: r.slug,
     title: r.title,
     updatedAt: iso(r.updated_at),
     slideCount: r.slide_count,

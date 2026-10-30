@@ -25,11 +25,11 @@ export function DeckCard({ summary, actions, extra, dragProps }: Props) {
   return (
     <GlassCard
       as="li"
-      onClick={() => actions.onOpen(summary.id)}
+      onClick={() => actions.onOpen(summary.id, summary.slug)}
       onKeyDown={(e) => {
         if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();
-          actions.onOpen(summary.id);
+          actions.onOpen(summary.id, summary.slug);
         }
       }}
       tabIndex={0}

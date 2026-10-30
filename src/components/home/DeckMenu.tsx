@@ -19,10 +19,10 @@ export function DeckMenu({ summary, actions }: Props) {
           <DotsThree size={16} weight="bold" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuItem onClick={() => actions.onOpen(summary.id)}>
+          <DropdownMenuItem onClick={() => actions.onOpen(summary.id, summary.slug)}>
             <ArrowSquareOut /> Open
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => actions.onEdit(summary.id)}>
+          <DropdownMenuItem onClick={() => actions.onEdit(summary.id, summary.slug)}>
             <PencilSimple /> Edit
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => toggleStarred(summary.id)}>

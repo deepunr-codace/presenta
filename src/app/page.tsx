@@ -6,6 +6,8 @@ import { Presentation, Stack } from "@phosphor-icons/react";
 import { SAMPLE_DECK } from "@/lib/deck/sample";
 import { trashDeck, downloadBlob, exportDeckJson, importDeckFile, listDecks, loadDeckById, saveDeck, type DeckSummary } from "@/lib/persist";
 import { deckSlug } from "@/components/editor/deck-slug";
+import { deckSegment } from "@/lib/deck/links";
+import { deckUrlSlug } from "@/lib/deck/slug";
 import { queueAgentPrompt } from "@/lib/agent";
 import { DeckCard } from "@/components/home/DeckCard";
 import { DeleteDeckDialog } from "@/components/home/DeleteDeckDialog";
@@ -78,14 +80,14 @@ export default function HomePage() {
     }
   }, []);
 
-  const openDeck = useCallback((id: string) => router.push(`/deck/${id}`), [router]);
-  const editDeck = useCallback((id: string) => router.push(`/edit/${id}`), [router]);
+  const openDeck = useCallback((id: string, slug?: string) => router.push(`/deck/${deckSegment(id, slug)}`), [router]);
+  const editDeck = useCallback((id: string, slug?: string) => router.push(`/edit/${deckSegment(id, slug)}`), [router]);
 
   const openSample = () =>
     run("Opening sample…", async () => {
       const deck = cloneDeck(SAMPLE_DECK);
       await saveDeck(deck);
-      openDeck(deck.id);
+      openDeck(deck.id, deckUrlSlug(deck.title, deck.id));
     });
 
   const onImportFile = (file: File | undefined) => {
@@ -93,7 +95,7 @@ export default function HomePage() {
     void run("Importing…", async () => {
       const deck = await importDeckFile(file);
       await saveDeck(deck);
-      openDeck(deck.id);
+      openDeck(deck.id, deckUrlSlug(deck.title, deck.id));
     });
   };
 

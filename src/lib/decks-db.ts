@@ -1,11 +1,13 @@
 import { ensureUsersTable, sql } from "@/lib/auth/db";
 import { DeckSchema, type Deck } from "@/lib/deck/schema";
 import { newId } from "@/lib/deck/ids";
+import { deckUrlSlug } from "@/lib/deck/slug";
 
 /** Decks and per-account settings, stored in Postgres. Every query is scoped to the signed-in user's id. */
 
 export type DeckSummaryRow = {
   id: string;
+  slug: string;
   title: string;
   updatedAt: string;
   slideCount: number;
@@ -13,12 +15,12 @@ export type DeckSummaryRow = {
   trashedAt: string | null;
 };
 
-type SummaryDbRow = { id: string; title: string; updated_at: string; slide_count: number; theme_id: string; trashed_at: string | null };
+type SummaryDbRow = { id: string; slug: string; title: string; updated_at: string; slide_count: number; theme_id: string; trashed_at: string | null };
 
 const iso = (v: string | Date) => new Date(v).toISOString();
 
 function toSummary(r: SummaryDbRow): DeckSummaryRow {
-  return { id: r.id, title: r.title, updatedAt: iso(r.updated_at), slideCount: r.slide_count, themeId: r.theme_id, trashedAt: r.trashed_at ? iso(r.trashed_at) : null };
+  return { id: r.id, slug: r.slug, title: r.title, updatedAt: iso(r.updated_at), slideCount: r.slide_count, themeId: r.theme_id, trashedAt: r.trashed_at ? iso(r.trashed_at) : null };
 }
 
 let ensured: Promise<void> | null = null;
@@ -60,6 +62,15 @@ export function ensureDeckTables(): Promise<void> {
       .then(() => sql()`ALTER TABLE decks ADD COLUMN IF NOT EXISTS size_bytes INTEGER NOT NULL DEFAULT 0`)
       // Decks saved before sizes were tracked get theirs filled in once; afterwards this touches no rows.
       .then(() => sql()`UPDATE decks SET size_bytes = octet_length(data::text) WHERE size_bytes = 0`)
+      .then(() => sql()`ALTER TABLE decks ADD COLUMN IF NOT EXISTS slug TEXT`)
+      // Friendly URL slug for decks saved before this column existed: title + the id's last 6 chars.
+      .then(() => sql()`
+        UPDATE decks SET slug =
+          COALESCE(NULLIF(trim(both '-' from regexp_replace(lower(title), '[^a-z0-9]+', '-', 'g')), ''), 'deck')
+          || '-' || lower(COALESCE(NULLIF(regexp_replace(right(id, 6), '[^a-zA-Z0-9]+', '', 'g'), ''), 'deck'))
+        WHERE slug IS NULL
+      `)
+      .then(() => sql()`CREATE INDEX IF NOT EXISTS decks_slug ON decks (slug)`)
       .then(() => sql()`CREATE INDEX IF NOT EXISTS decks_user_updated ON decks (user_id, updated_at DESC)`)
       .then(
         () => sql()`
@@ -81,8 +92,8 @@ export function ensureDeckTables(): Promise<void> {
 export async function listDeckRows(userId: string, trashed: boolean): Promise<DeckSummaryRow[]> {
   await ensureDeckTables();
   const rows = (trashed
-    ? await sql()`SELECT id, title, updated_at, slide_count, theme_id, trashed_at FROM decks WHERE user_id = ${userId} AND trashed_at IS NOT NULL ORDER BY trashed_at DESC`
-    : await sql()`SELECT id, title, updated_at, slide_count, theme_id, trashed_at FROM decks WHERE user_id = ${userId} AND trashed_at IS NULL ORDER BY updated_at DESC`) as SummaryDbRow[];
+    ? await sql()`SELECT id, slug, title, updated_at, slide_count, theme_id, trashed_at FROM decks WHERE user_id = ${userId} AND trashed_at IS NOT NULL ORDER BY trashed_at DESC`
+    : await sql()`SELECT id, slug, title, updated_at, slide_count, theme_id, trashed_at FROM decks WHERE user_id = ${userId} AND trashed_at IS NULL ORDER BY updated_at DESC`) as SummaryDbRow[];
   return rows.map(toSummary);
 }
 
@@ -100,14 +111,26 @@ export async function getDeckData(userId: string, id: string): Promise<unknown |
   return rows[0]?.data ?? null;
 }
 
-/** Insert or replace a deck. A save never changes whether the deck is in the trash. */
+/**
+ * Resolves a URL path segment that may be either a deck's real id or its friendly slug (e.g.
+ * `q3-investor-update-bif7lp`) to its owner and real id, the same way deck ids are looked up
+ * elsewhere: globally, not scoped to the viewer, since access control runs separately afterwards.
+ */
+export async function findDeckLocation(idOrSlug: string): Promise<{ ownerId: string; id: string; slug: string } | null> {
+  await ensureDeckTables();
+  const rows = (await sql()`SELECT user_id, id, slug FROM decks WHERE id = ${idOrSlug} OR slug = ${idOrSlug} LIMIT 1`) as { user_id: string; id: string; slug: string }[];
+  return rows[0] ? { ownerId: rows[0].user_id, id: rows[0].id, slug: rows[0].slug } : null;
+}
+
+/** Insert or replace a deck. A save never changes whether the deck is in the trash, and never changes an existing deck's slug. */
 export async function upsertDeck(userId: string, deck: Deck): Promise<void> {
   await ensureDeckTables();
   const json = JSON.stringify(deck);
   const size = Buffer.byteLength(json);
+  const slug = deckUrlSlug(deck.title, deck.id);
   await sql()`
-    INSERT INTO decks (user_id, id, title, theme_id, slide_count, data, size_bytes, created_at, updated_at)
-    VALUES (${userId}, ${deck.id}, ${deck.title}, ${deck.themeId}, ${deck.slides.length}, ${json}::jsonb, ${size}, ${deck.createdAt}, ${deck.updatedAt})
+    INSERT INTO decks (user_id, id, slug, title, theme_id, slide_count, data, size_bytes, created_at, updated_at)
+    VALUES (${userId}, ${deck.id}, ${slug}, ${deck.title}, ${deck.themeId}, ${deck.slides.length}, ${json}::jsonb, ${size}, ${deck.createdAt}, ${deck.updatedAt})
     ON CONFLICT (user_id, id) DO UPDATE SET
       title = EXCLUDED.title,
       theme_id = EXCLUDED.theme_id,

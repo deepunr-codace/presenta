@@ -29,7 +29,7 @@ export function DeckListRow({ summary, actions, location, badge }: Props) {
         e.dataTransfer.effectAllowed = "move";
       }}
     >
-      <button type="button" className="flex min-w-0 items-center gap-2 text-left" onClick={() => actions.onOpen(summary.id)}>
+      <button type="button" className="flex min-w-0 items-center gap-2 text-left" onClick={() => actions.onOpen(summary.id, summary.slug)}>
         <Presentation size={18} weight="light" className="shrink-0 text-[var(--ps-ink)]" aria-hidden />
         <span className="truncate text-[14px] font-medium text-[var(--ps-ink)]">{title}</span>
       </button>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CoachScreen } from "@/components/coach/CoachScreen";
+import { resolveDeckRouteId } from "@/lib/deck/resolve-route";
 
 export const metadata: Metadata = {
   title: "Presenter coach",
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
 
 export default async function CoachPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <CoachScreen id={id} />;
+  return <CoachScreen id={await resolveDeckRouteId(id)} />;
 }

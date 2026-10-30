@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DeckShell } from "@/components/editor/DeckShell";
 import { ReviewScreen } from "@/components/review/ReviewScreen";
+import { resolveDeckRouteId } from "@/lib/deck/resolve-route";
 
 export const metadata: Metadata = {
   title: "Review deck",
@@ -9,7 +10,8 @@ export const metadata: Metadata = {
 };
 
 export default async function DeckPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  const { id: idOrSlug } = await params;
+  const id = await resolveDeckRouteId(idOrSlug);
   return (
     <DeckShell id={id}>
       <ReviewScreen id={id} />

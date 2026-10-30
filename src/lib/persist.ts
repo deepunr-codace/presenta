@@ -23,6 +23,8 @@ const MIN_EXTERNALIZE_CHARS = 100 * 1024;
 
 export type DeckSummary = {
   id: string;
+  /** Friendly URL slug, e.g. "q3-investor-update-bif7lp"; stable even after the deck is renamed. */
+  slug: string;
   title: string;
   updatedAt: string;
   slideCount: number;

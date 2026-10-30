@@ -19,7 +19,7 @@ export function LastEditedCard({ summary }: Props) {
       icon={icon}
       value={<span className="block min-w-0 max-w-full truncate text-[22px] leading-9">{title}</span>}
       caption={`${timeAgo(summary.updatedAt)} · ${summary.slideCount} slide${summary.slideCount === 1 ? "" : "s"}`}
-      action={<ArrowButton label={`Open ${title}`} href={`/deck/${summary.id}`} />}
+      action={<ArrowButton label={`Open ${title}`} href={`/deck/${summary.slug || summary.id}`} />}
     />
   );
 }

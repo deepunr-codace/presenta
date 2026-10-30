@@ -202,7 +202,7 @@ function PanelRow({ icon: IconC, children, href, active, soon, trailing, onClick
 function DeckLink({ deck, icon: IconC }: { deck: DeckSummary; icon: Icon }) {
   return (
     <li>
-      <Link href={`/deck/${deck.id}`} className="ps-panel-recent-link" title={deck.title || "Untitled deck"}>
+      <Link href={`/deck/${deck.slug || deck.id}`} className="ps-panel-recent-link" title={deck.title || "Untitled deck"}>
         <IconC size={15} strokeWidth={1.75} aria-hidden />
         <span className="min-w-0 flex-1">
           <span className="block truncate">{deck.title || "Untitled deck"}</span>

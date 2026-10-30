@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } fro
 import { ArrowRight, CaretRight, FolderOpen, FolderPlus, HardDrives, ListBullets, MagnifyingGlass, Plus, Sparkle, SquaresFour, UploadSimple } from "@phosphor-icons/react";
 import { fetchSharedDecks, fetchTeams, type SharedDeck, type TeamSummary } from "@/lib/collab";
 import { SAMPLE_DECK } from "@/lib/deck/sample";
+import { deckUrlSlug } from "@/lib/deck/slug";
 import { childrenOf, createFolder, deleteFolder, fetchFolders, fetchStorage, moveDeckToFolder, moveFolder, pathLabel, pathTo, renameFolder, type Folder, type StorageUsage } from "@/lib/drive";
 import { listDecks, saveDeck, type DeckSummary } from "@/lib/persist";
 import { useStarred } from "@/hooks/useStarred";
@@ -189,7 +190,7 @@ export function DecksScreen() {
     try {
       const deck = cloneDeck(SAMPLE_DECK);
       await saveDeck(deck);
-      router.push(`/deck/${deck.id}`);
+      router.push(`/deck/${deckUrlSlug(deck.title, deck.id)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not open the sample.");
     }

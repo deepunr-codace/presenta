@@ -96,7 +96,7 @@ function PaletteBody({ onClose, go, openKey, openShortcuts }: { onClose: () => v
       { id: "key", group: "Go to", label: "API key", hint: "Settings", icon: Key, run: openKey },
       { id: "shortcuts", group: "Go to", label: "Keyboard shortcuts", icon: Keyboard, run: openShortcuts },
     ];
-    const deckEntries: Entry[] = decks.map((d) => ({ id: `deck-${d.id}`, group: "Decks", label: d.title || "Untitled deck", hint: timeAgo(d.updatedAt), icon: Presentation, run: () => go(`/deck/${d.id}`) }));
+    const deckEntries: Entry[] = decks.map((d) => ({ id: `deck-${d.id}`, group: "Decks", label: d.title || "Untitled deck", hint: timeAgo(d.updatedAt), icon: Presentation, run: () => go(`/deck/${d.slug || d.id}`) }));
     const templateEntries: Entry[] = TEMPLATES.map((t) => ({ id: `tpl-${t.id}`, group: "Templates", label: t.title, hint: `${t.slides} slides`, icon: Layout, run: () => go("/templates") }));
     const q = query.trim().toLowerCase();
     const all = [...pages, ...deckEntries, ...templateEntries];
