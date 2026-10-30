@@ -286,3 +286,33 @@
 @media (min-width: 1024px) {
   .ps-auth-title-block { margin-top: auto; margin-bottom: 28px; }
 }
+
+/* Pure black page; the video moves to the left half and the sign-in card to the right. */
+.ps-auth-shell { background: #000; }
+.ps-auth-video {
+  left: 0;
+  width: 50%;
+  mask-image: linear-gradient(270deg, transparent 0%, #000 28%);
+  -webkit-mask-image: linear-gradient(270deg, transparent 0%, #000 28%);
+}
+.ps-auth-veil {
+  background: linear-gradient(270deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.82) 50%, rgba(0, 0, 0, 0.9) 100%);
+}
+.ps-auth-main { left: 73%; }
+@media (max-width: 1023px) {
+  .ps-auth-video {
+    left: 0;
+    width: 100%;
+    mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
+  }
+  .ps-auth-veil { background: linear-gradient(180deg, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.86) 45%, rgba(0, 0, 0, 0.95) 100%); }
+  .ps-auth-main { left: 50%; }
+}
+.ps-auth-logo { width: 190px; }
+@media (min-width: 1024px) {
+  .ps-auth-logo { width: min(190px, 15vw); }
+}
+@media (max-width: 1023px) {
+  .ps-auth-logo { width: 120px; }
+}
