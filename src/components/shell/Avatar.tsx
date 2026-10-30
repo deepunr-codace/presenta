@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { Gear, SignOut } from "@phosphor-icons/react";
@@ -10,15 +11,16 @@ function initialOf(name: string | null | undefined, email: string | null | undef
   return source ? source[0]!.toUpperCase() : "P";
 }
 
-/** 24 px ink account circle with the initial, at the right of the top nav; opens a sign-out menu. */
+/** Account circle in the shell: Google profile photo when signed in with Google, otherwise the name initial. */
 export function Avatar() {
   const { data: session } = useSession();
   const user = session?.user;
+  const photo = user?.image || null;
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<button type="button" className="ps-avatar ps-focus" aria-label="Account" />}>
-        {initialOf(user?.name, user?.email)}
+      <DropdownMenuTrigger render={<button type="button" className="ps-avatar ps-focus" aria-label="Account" data-photo={photo ? "" : undefined} />}>
+        {photo ? <Image src={photo} alt="" fill sizes="32px" referrerPolicy="no-referrer" /> : initialOf(user?.name, user?.email)}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
         <div className="min-w-0 px-1.5 py-1">

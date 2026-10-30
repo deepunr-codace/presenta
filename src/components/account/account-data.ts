@@ -3,7 +3,7 @@ export type AccountProfile = {
   email: string;
   image: string | null;
   hasPassword: boolean;
-  /** Listed in ADMIN_EMAILS: may manage Presenta AI. */
+  /** Listed in ADMIN_EMAILS: may manage Presenta Studio. */
   isAdmin?: boolean;
 };
 

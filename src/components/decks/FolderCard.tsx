@@ -16,6 +16,17 @@ type Props = {
   onDropItem: (kind: "deck" | "folder", id: string, into: Folder) => void;
 };
 
+/** A classic file-manager folder: a darker back tab behind a lighter front panel. */
+function FolderGlyph() {
+  return (
+    <svg viewBox="0 0 64 54" className="ps-folder-glyph" aria-hidden>
+      <path d="M6 8h13.9a5 5 0 0 1 3.6 1.5L28.5 14H50a6 6 0 0 1 6 6v4H6z" fill="var(--ps-folder-back)" />
+      <path d="M5 18h54v22.5a6 6 0 0 1-6 6H11a6 6 0 0 1-6-6z" fill="var(--ps-ink)" />
+      <path d="M5 19.5h54" stroke="var(--ps-paper)" strokeOpacity="0.22" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
 /** A folder tile, like in a file manager: click to open, drop a deck on it to file the deck inside. */
 export function FolderCard({ folder, onOpen, onRename, onMove, onDelete, onDropItem }: Props) {
   const [over, setOver] = useState(false);
@@ -24,7 +35,7 @@ export function FolderCard({ folder, onOpen, onRename, onMove, onDelete, onDropI
 
   return (
     <li
-      className="ps-glass ps-focus flex cursor-pointer items-center gap-3 p-3"
+      className="ps-glass ps-focus group relative flex cursor-pointer flex-col items-center gap-2 px-3 pb-3 pt-4 text-center"
       data-paper
       data-clickable
       data-over={over ? "true" : undefined}
@@ -59,16 +70,20 @@ export function FolderCard({ folder, onOpen, onRename, onMove, onDelete, onDropI
         }
       }}
     >
-      <span className="grid size-10 shrink-0 place-items-center rounded-[var(--ps-r-md)] bg-[var(--ps-plate)] text-[var(--ps-ink)]" aria-hidden>
-        <FolderSimple size={22} weight="light" />
+      <span className="ps-folder-tile" aria-hidden>
+        <FolderGlyph />
       </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[14px] font-medium text-[var(--ps-ink)]">{folder.name}</span>
+      <span className="w-full min-w-0">
+        <span className="block truncate text-[13.5px] font-medium text-[var(--ps-ink)]">{folder.name}</span>
         <span className="ps-caption block">
           {folder.deckCount} {folder.deckCount === 1 ? "deck" : "decks"}
         </span>
       </span>
-      <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+      <div
+        className="absolute right-2 top-2 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 max-sm:opacity-100"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
         <DropdownMenu>
           <DropdownMenuTrigger render={<button type="button" className="ps-iconbtn ps-iconbtn-sm" aria-label={`Actions for folder ${folder.name}`} />}>
             <DotsThree size={16} weight="bold" />

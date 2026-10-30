@@ -98,15 +98,15 @@ export function stripTags(html: string): string {
   return html.replace(SCRIPT_BLOCKS, "").replace(TAG, "");
 }
 
-/** Tags a text element may carry; everything else is dropped, and no attribute survives. */
-const ALLOWED_TAGS: ReadonlySet<string> = new Set(["p", "ul", "ol", "li", "strong", "em", "b", "i", "br", "u"]);
+/** Tags a text element may carry; links keep only a validated https href. */
+const ALLOWED_TAGS: ReadonlySet<string> = new Set(["p", "ul", "ol", "li", "strong", "em", "b", "i", "br", "u", "a"]);
 
 /** A complete tag or comment; an unterminated `<` is left to the text path and escaped there. */
 const TOKEN = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>|<!--[\s\S]*?-->/g;
 
 /**
  * Allow-list sanitiser for element HTML coming from the model or an imported
- * file. Keeps `p ul ol li strong em b i br u` without attributes, drops every
+ * file. Keeps basic formatting without attributes and links with https hrefs only, drops every
  * other tag (and script-like blocks with their content), and escapes stray
  * `<` / `>` characters in text so the result is always well-formed markup.
  */
@@ -124,6 +124,18 @@ export function sanitizeHtml(html: string): string {
     if (!tag || !ALLOWED_TAGS.has(tag)) continue;
     if (tag === "br") {
       out += "<br>";
+      continue;
+    }
+    if (tag === "a") {
+      if (m[0].startsWith("</")) {
+        out += "</a>";
+      } else {
+        const href = m[0].match(/\bhref\s*=\s*(["'])(.*?)\1/i)?.[2];
+        try {
+          const url = new URL(href ?? "");
+          out += url.protocol === "https:" ? `<a href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer">` : "";
+        } catch { /* drop links without a safe absolute URL */ }
+      }
       continue;
     }
     out += m[0].startsWith("</") ? `</${tag}>` : `<${tag}>`;

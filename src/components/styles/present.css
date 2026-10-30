@@ -12,8 +12,32 @@
   font-family: var(--font-inter), system-ui, sans-serif;
   user-select: none;
 }
+
+.ps-public-deck { --present-bg: #000; --present-ink: #fff; position: fixed; inset: 0; overflow: hidden; background: var(--present-bg); color: var(--present-ink); font-family: var(--font-inter), system-ui, sans-serif; user-select: none; }
+.ps-public-deck-stage { position: absolute; inset: 0; display: grid; place-items: center; }
+.ps-public-deck-header { position: absolute; top: 16px; left: 16px; right: 16px; display: flex; align-items: center; gap: 12px; padding: 6px 8px 6px 16px; border: 1px solid var(--ps-line-2); border-radius: var(--ps-r-pill); background: color-mix(in srgb, var(--ps-paper) 90%, transparent); color: var(--ps-ink); opacity: 0; pointer-events: none; transition: opacity 180ms ease-out; }
+.ps-public-deck-header[data-visible] { opacity: 1; pointer-events: auto; }
+.ps-public-deck-title { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 500; }
+.ps-public-deck-label { color: var(--ps-ash); font-size: 12px; }
+.ps-public-deck-controls { position: absolute; right: 20px; bottom: 20px; display: flex; align-items: center; gap: 6px; padding: 4px 6px; border: 1px solid var(--ps-line-2); border-radius: var(--ps-r-pill); background: color-mix(in srgb, var(--ps-paper) 90%, transparent); color: var(--ps-ink); font-size: 13px; opacity: 0; pointer-events: none; transition: opacity 180ms ease-out; }
+.ps-public-deck-controls[data-visible] { opacity: 1; pointer-events: auto; }
+.ps-public-deck-controls > span { min-width: 52px; text-align: center; font-variant-numeric: tabular-nums; }
+.ps-public-deck .ps-present-ctl:disabled { opacity: .35; }
+.ps-public-deck-embed { isolation: isolate; }
+.ps-public-deck-embed .ps-public-deck-header { top: 8px; left: 8px; right: 8px; padding: 4px 6px 4px 12px; }
+.ps-public-deck-embed .ps-public-deck-controls { right: 10px; bottom: 10px; }
+.ps-public-embed-loading { position: fixed; inset: 0; display: grid; place-items: center; background: #000; color: #fff; font: 14px/1.5 var(--font-inter), system-ui, sans-serif; }
 .ps-present[data-idle] { cursor: none; }
 .ps-present-stage { position: absolute; left: 0; right: 0; top: 0; display: grid; place-items: center; }
+.ps-slide-enter { width: 100%; height: 100%; }
+.ps-slide-enter[data-transition="fade"] { animation: ps-slide-fade 420ms ease-out both; }
+.ps-slide-enter[data-transition="push"][data-direction="forward"] { animation: ps-slide-push-forward 420ms cubic-bezier(.2,.75,.25,1) both; }
+.ps-slide-enter[data-transition="push"][data-direction="backward"] { animation: ps-slide-push-backward 420ms cubic-bezier(.2,.75,.25,1) both; }
+.ps-slide-enter[data-transition="zoom"] { animation: ps-slide-zoom 460ms cubic-bezier(.2,.75,.25,1) both; }
+@keyframes ps-slide-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ps-slide-push-forward { from { opacity: .55; transform: translateX(5%); } to { opacity: 1; transform: translateX(0); } }
+@keyframes ps-slide-push-backward { from { opacity: .55; transform: translateX(-5%); } to { opacity: 1; transform: translateX(0); } }
+@keyframes ps-slide-zoom { from { opacity: .45; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
 
 /* Bottom-right HUD: keys hint, previous / counter / next and exit. Shown for two seconds on entry and after
    any keypress or mouse move, then fades; the stage click (advance) passes through the faded area. */
@@ -53,9 +77,76 @@
   transition: background-color 120ms ease-out, color 120ms ease-out, opacity 120ms ease-out;
 }
 .ps-present-ctl:hover:not(:disabled) { background: var(--ps-plate); color: var(--ps-ink); }
+.ps-present-ctl[data-on] { background: #b42318; color: #fff; }
+.ps-present-ctl[data-on]:hover:not(:disabled) { background: #921d15; color: #fff; }
 .ps-present-ctl:disabled { opacity: 0.35; cursor: default; }
 .ps-present-ctl:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
 @media (max-width: 599px) { .ps-present-hud-keys { display: none; } .ps-present-hud { padding-left: 4px; } }
+
+/* Voice narration: a settings card above the HUD. Voices and speed are the browser's own; nothing is recorded. */
+.ps-present-voice {
+  position: absolute;
+  right: 20px;
+  width: 288px;
+  max-width: calc(100% - 40px);
+  padding: 12px 14px;
+  border: 1px solid var(--ps-line-2);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ps-paper) 96%, transparent);
+  box-shadow: var(--ps-shadow-subtle);
+  color: var(--ps-ink);
+  font-size: 12px;
+  transition: opacity 180ms ease-out;
+}
+.ps-present[data-idle] .ps-present-voice { opacity: 0; pointer-events: none; }
+.ps-present-voice-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.ps-present-voice-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ps-ash); }
+.ps-present-voice-close {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ps-r-pill);
+  background: transparent;
+  color: var(--ps-smoke);
+  cursor: pointer;
+}
+.ps-present-voice-close:hover { background: var(--ps-plate); color: var(--ps-ink); }
+.ps-present-voice-close:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 1px; }
+.ps-present-voice-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ps-present-voice-row:last-of-type { margin-bottom: 0; }
+.ps-present-voice-row > span:first-child { width: 48px; flex-shrink: 0; color: var(--ps-ash); }
+.ps-present-voice-select {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--ps-line-2);
+  border-radius: 8px;
+  background: var(--ps-paper);
+  color: var(--ps-ink);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ps-present-voice-select:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 1px; }
+.ps-present-voice-row input[type="range"] { flex: 1; min-width: 0; accent-color: var(--ps-ink); cursor: pointer; }
+.ps-present-voice-value { width: 40px; flex-shrink: 0; text-align: right; font-variant-numeric: tabular-nums; color: var(--ps-smoke); }
+.ps-present-voice-note { margin: 8px 0 0; color: var(--ps-smoke); line-height: 1.4; }
+/* The speaker button is ink-filled while narration is on and pulses while the voice is actually reading. */
+.ps-present-voice-btn[data-on] { background: var(--ps-ink); color: var(--ps-on-ink); }
+.ps-present-voice-btn[data-on]:hover:not(:disabled) { background: var(--ps-graphite); color: var(--ps-on-ink); }
+.ps-present-voice-btn[data-speaking] svg { animation: ps-present-speaking 1.4s ease-in-out infinite; }
+@keyframes ps-present-speaking {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ps-present-voice-btn[data-speaking] svg { animation: none; }
+  .ps-slide-enter[data-transition] { animation: none; }
+}
 
 /* Speaker notes band. */
 .ps-present-notes {

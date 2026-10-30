@@ -129,7 +129,7 @@ export function MediaScreen() {
             e.target.value = "";
           }}
         />
-        <header className="mb-8">
+        <header className="ps-page-hero mb-8">
           <h1 className="ps-heading">Media library</h1>
           <p className="ps-body-lg mt-2">
             Your images and videos, saved to your account. Pick images from here in the editor&apos;s image panel.

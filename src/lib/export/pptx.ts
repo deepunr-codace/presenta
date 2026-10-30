@@ -671,6 +671,9 @@ function addElement(pptxSlide: PptxGenJS.Slide, el: Element, ctx: Ctx): void {
     case "icon":
       ctx.limitations.add("Icon elements are not exported.");
       break;
+    case "video":
+      ctx.limitations.add("Video elements are not exported to PowerPoint; add them again in PowerPoint after export.");
+      break;
   }
 }
 

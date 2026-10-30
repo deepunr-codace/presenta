@@ -13,6 +13,7 @@ import { ImageProps } from "./props/ImageProps";
 import { ShapeProps } from "./props/ShapeProps";
 import { SlideProps } from "./props/SlideProps";
 import { TextProps } from "./props/TextProps";
+import { VideoProps } from "./props/VideoProps";
 
 /** Manual controls: element props when one element is selected, else slide and deck props. */
 export function DesignTab() {
@@ -38,6 +39,7 @@ export function DesignTab() {
         {element.type === "shape" ? <ShapeProps el={element} theme={theme} patch={patch} /> : null}
         {element.type === "icon" ? <IconProps el={element} theme={theme} patch={patch} /> : null}
         {element.type === "chart" ? <ChartProps el={element} patch={patch} /> : null}
+        {element.type === "video" ? <VideoProps element={element} patch={patch} /> : null}
       </div>
     );
   }

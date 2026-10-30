@@ -1,7 +1,9 @@
 "use client";
 
-import { Plus, X } from "@phosphor-icons/react";
+import { FileArrowUp, Plus, X } from "@phosphor-icons/react";
+import { useRef, useState } from "react";
 import type { ChartElement } from "@/lib/deck/schema";
+import { chartDataFromCsv, chartDataFromXlsx, CHART_CSV_LIMITS } from "@/lib/import/chart-csv";
 import type { ElementPatch } from "@/store/deck-store";
 import { NumInput } from "@/components/ui-kit/NumInput";
 import { PropertyGroup } from "@/components/ui-kit/PropertyGroup";
@@ -10,13 +12,14 @@ import { Segmented } from "@/components/ui-kit/Segmented";
 import { TextInput } from "@/components/ui-kit/TextInput";
 import { opts } from "@/components/ui-kit/options";
 
-const MAX_LABELS = 12;
-const MAX_SERIES = 4;
+const { labels: MAX_LABELS, series: MAX_SERIES } = CHART_CSV_LIMITS;
 
 type Props = { el: ChartElement; patch: (p: ElementPatch) => void };
 
 /** Chart kind plus a compact editable table: one column per label, one row per series. */
 export function ChartProps({ el, patch }: Props) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [importMessage, setImportMessage] = useState("");
   const labels = el.labels;
   const series = el.series;
 
@@ -41,8 +44,28 @@ export function ChartProps({ el, patch }: Props) {
     patch({ series: series.filter((_, j) => j !== s) });
   };
 
+  const importCsv = async (file?: File) => {
+    if (!file) return;
+    try {
+      if (file.size > 2 * 1024 * 1024) throw new Error("Choose a CSV smaller than 2 MB.");
+      const data = file.name.toLowerCase().endsWith(".xlsx") ? await chartDataFromXlsx(file) : chartDataFromCsv(await file.text());
+      patch(data);
+      setImportMessage(`Imported ${data.labels.length} labels and ${data.series.length} series from the ${file.name.toLowerCase().endsWith(".xlsx") ? "first worksheet" : "CSV"}. Up to ${CHART_CSV_LIMITS.labels} labels and ${CHART_CSV_LIMITS.series} series are supported; extra rows and columns are skipped.`);
+    } catch (error) {
+      setImportMessage(error instanceof Error ? error.message : "Could not read this CSV file.");
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
   return (
     <PropertyGroup title="Chart">
+      <div className="flex flex-col gap-2">
+        <input ref={fileRef} className="sr-only" type="file" accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="Choose chart data file" onChange={(event) => void importCsv(event.target.files?.[0])} />
+        <button type="button" className="ps-btn self-start" onClick={() => fileRef.current?.click()}><FileArrowUp size={12} /> Import CSV or Excel</button>
+        <p className="ps-caption">Use a header row, category labels in column one, and numbers in other columns. Excel imports the first worksheet.</p>
+        {importMessage ? <p className="ps-caption" role="status">{importMessage}</p> : null}
+      </div>
       <PropertyRow label="Kind">
         <Segmented aria-label="Chart kind" value={el.kind} options={opts(["bar", "line", "area", "donut"] as const)} onChange={(kind) => patch({ kind })} />
       </PropertyRow>

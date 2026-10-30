@@ -9,10 +9,11 @@ type Props = {
   status: string;
   busy: boolean;
   onSubmit: (prompt: string) => void;
+  onAgentSubmit: (prompt: string) => void;
 };
 
 /** Prompt hero (DESIGN.md §6): the wide prompt card over a drifting aurora, with three starter cards that fill the prompt. */
-export function HomeHero({ status, busy, onSubmit }: Props) {
+export function HomeHero({ status, busy, onSubmit, onAgentSubmit }: Props) {
   const [prompt, setPrompt] = useState("");
   const promptRef = useRef<PromptBoxHandle>(null);
 
@@ -30,6 +31,7 @@ export function HomeHero({ status, busy, onSubmit }: Props) {
           value={prompt}
           onChange={setPrompt}
           onSubmit={onSubmit}
+          onSecondarySubmit={onAgentSubmit}
           placeholder="Describe the deck you need. Topic, audience and goal are a great start…"
           disabled={busy}
           busy={busy}

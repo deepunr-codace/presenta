@@ -1,4 +1,4 @@
-/* Left sidebar: icon rail (84 px) + workspace panel (292 px). Desktop only; under 768 px the top nav and menu sheet are used.
+/* Left sidebar: icon rail (56 px) + workspace panel (200 px). Desktop only; under 768 px the top nav and menu sheet are used.
    Clean light surfaces, a soft neutral active state, spring hover effects and a staggered entrance.
    Type is kept small: 13 px rows, 12 px labels, weights 400 to 600. */
 
@@ -55,7 +55,15 @@
   scrollbar-width: none;
 }
 .ps-rail::-webkit-scrollbar { display: none; }
-.ps-sidenav[data-variant="full"] .ps-rail { border-right: 1px solid var(--sb-border); }
+.ps-sidenav[data-variant="full"] .ps-rail {
+  position: relative;
+  z-index: 1;
+  border-right: 1px solid var(--sb-border);
+  /* The icon rail sits proud of the panel: a groove shadow onto the panel and a shaded bevel inside its edge. */
+  box-shadow: 8px 0 16px -14px rgba(0, 0, 0, 0.5), inset -8px 0 12px -14px rgba(0, 0, 0, 0.45);
+}
+[data-theme="dark"] .ps-sidenav[data-variant="full"] .ps-rail { box-shadow: 8px 0 18px -14px rgba(0, 0, 0, 0.8), inset -8px 0 12px -12px rgba(0, 0, 0, 0.55), inset -1px 0 0 rgba(255, 255, 255, 0.04); }
+.ps-sidenav:has(.ps-panel[data-open="false"]) .ps-rail { box-shadow: none; }
 
 .ps-rail-logo {
   display: inline-flex;
@@ -112,11 +120,12 @@
 .ps-rail-item:hover:not([aria-disabled="true"]) .ps-rail-label { color: var(--ps-ink); }
 .ps-rail-item:active:not([aria-disabled="true"]) .ps-rail-icon { background: var(--rail-tile); transform: translateY(0) scale(0.94); box-shadow: none; }
 
-/* Active: a soft blue tile with a navy filled icon */
-.ps-rail-item[data-active="true"] { color: var(--ps-ink); }
+/* Active: icon colour only — brand blue, no tile */
 .ps-rail-item[data-active="true"] .ps-rail-label { font-weight: 600; }
-.ps-rail-item[data-active="true"] .ps-rail-icon { background: var(--rail-tile); color: var(--rail-accent); box-shadow: none; }
-.ps-rail-item[data-active="true"]:hover:not([aria-disabled="true"]) .ps-rail-icon { background: var(--rail-tile); color: var(--rail-accent); }
+.ps-rail-item[data-active="true"] .ps-rail-icon { background: transparent; box-shadow: none; }
+.ps-rail-item[data-active="true"] .ps-rail-icon svg { color: var(--ps-spark-violet); }
+.ps-rail-item[data-active="true"]:hover:not([aria-disabled="true"]) .ps-rail-icon { background: var(--rail-hover); }
+.ps-rail-item[data-active="true"]:hover:not([aria-disabled="true"]) .ps-rail-icon svg { color: var(--ps-spark-violet); }
 
 /* Disabled: dimmed, no hover lift */
 .ps-rail-item[aria-disabled="true"] { cursor: default; color: var(--ps-smoke); opacity: 0.8; }
@@ -230,43 +239,8 @@
 .ps-panel-soon { font-size: 12px; font-weight: 500; color: var(--ps-smoke); }
 .ps-sidenav .ps-pill[data-tone="soon"] { color: var(--ps-graphite); background: var(--sb-hover); }
 
-/* ---- Labs card in the panel ---- */
-.ps-panel-labs {
-  margin: 10px 0 4px;
-  padding: 14px;
-  border: 1px solid transparent;
-  border-radius: 16px;
-  background:
-    linear-gradient(var(--sb-bg), var(--sb-bg)) padding-box,
-    linear-gradient(135deg, color-mix(in srgb, var(--ps-spark-violet) 55%, transparent), color-mix(in srgb, var(--ps-spark-orange) 55%, transparent)) border-box;
-  box-shadow: 0 10px 24px -16px color-mix(in srgb, var(--ps-spark-violet) 60%, transparent);
-}
-.ps-panel-labs-head { display: flex; align-items: center; justify-content: space-between; }
-.ps-panel-labs-title { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ps-ink); }
-.ps-panel-new-chip { padding: 2px 8px; border-radius: 9999px; background: linear-gradient(115deg, var(--ps-spark-violet), var(--ps-spark-orange)); color: #fff; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
-.ps-panel-labs-sub { margin: 4px 0 10px; font-size: 12px; line-height: 1.4; color: var(--ps-smoke); }
-.ps-panel-labs-list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
-.ps-panel-lab { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; color: var(--ps-ink); font-size: 13px; font-weight: 400; text-decoration: none; transition: background 160ms ease-out, transform 260ms var(--sb-spring); }
-.ps-panel-lab:hover { background: var(--sb-hover); transform: translateX(3px); }
-.ps-panel-lab:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: -2px; }
-.ps-panel-lab-icon { display: inline-flex; width: 28px; height: 28px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 9px; background: linear-gradient(135deg, var(--lab-a), var(--lab-b)); color: #fff; box-shadow: 0 5px 12px -6px var(--lab-a); transition: transform 300ms var(--sb-spring); }
-.ps-panel-lab-icon svg { width: 15px; height: 15px; }
-.ps-panel-lab:hover .ps-panel-lab-icon { transform: rotate(-8deg) scale(1.1); }
-.ps-panel-labs-all { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 0 8px; font-size: 13px; font-weight: 500; color: var(--ps-ink); text-decoration: none; }
-.ps-panel-labs-all svg { transition: transform 260ms var(--sb-spring); }
-.ps-panel-labs-all:hover svg { transform: translateX(4px); }
-.ps-panel-labs-all:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; border-radius: 6px; }
-
-/* ---- Short screens (small laptops) ----
-   Everything should be visible on the first view without scrolling, so spacing tightens in two steps. */
+/* ---- Short screens (small laptops): panel tightens here; rail icon-only rules live after the compact block ---- */
 @media (min-width: 768px) and (max-height: 860px) {
-  .ps-rail { gap: 2px; padding: 12px 0 10px; }
-  .ps-rail-logo { margin-bottom: 8px; }
-  .ps-rail-items { gap: 2px; }
-  .ps-rail-item { gap: 1px; }
-  .ps-rail-icon { width: 44px; height: 34px; border-radius: 11px; }
-  .ps-rail-label { font-size: 12px; line-height: 14px; }
-  .ps-rail-foot { gap: 8px; padding-top: 6px; }
   .ps-panel { gap: 2px; padding: 10px 12px 0; }
   .ps-panel .ps-panel-scroll { gap: 2px; }
   .ps-panel-head, .ps-ws { margin-bottom: 4px; padding: 8px 10px; }
@@ -274,16 +248,11 @@
   .ps-panel-rule { margin: 6px 4px; }
   .ps-panel-kicker { padding: 2px 12px 4px; }
   .ps-panel-recent-link { padding: 4px 12px; }
-  .ps-panel-labs { margin: 6px 0 2px; padding: 10px 12px; }
-  .ps-panel-labs-sub, .ps-panel-labs-list { display: none; }
-  .ps-panel .ps-panel-foot { padding: 8px 0 10px; }
+  .ps-panel .ps-panel-foot { margin: 0 -12px; padding: 8px 12px; }
 }
 @media (min-width: 768px) and (max-height: 700px) {
-  .ps-rail-label { display: none; }
-  .ps-rail-icon { height: 34px; }
   .ps-panel-recent > li:nth-child(n + 4) { display: none; }
   .ps-panel-row { height: 32px; }
-  .ps-panel-labs { display: none; }
 }
 
 /* The scrolling middle of the panel. A thin scrollbar appears only when the content is taller than the screen. */
@@ -298,8 +267,8 @@
   padding-bottom: 8px;
   scrollbar-width: thin;
 }
-/* The AI status is fixed at the very bottom of the panel, flush with the bottom of the screen. */
-.ps-panel-foot { display: flex; flex-shrink: 0; flex-direction: column; gap: 6px; padding: 10px 0 12px; border-top: 1px solid var(--sb-border); background: var(--sb-bg); }
+/* The AI status is fixed at the very bottom of the panel and runs flush with its side edges (no side margins). */
+.ps-panel-foot { display: flex; flex-shrink: 0; flex-direction: column; margin: 0 -8px; padding: 8px; background: var(--sb-bg); }
 
 /* ---- Motion ---- */
 @keyframes ps-rail-in { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
@@ -337,23 +306,22 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .ps-rail-logo, .ps-rail-item, .ps-rail-item::before, .ps-rail-new, .ps-panel, .ps-panel-ghost span { animation: none; }
-  .ps-rail-logo, .ps-rail-icon, .ps-rail-icon svg, .ps-rail-label, .ps-panel-row, .ps-panel-row svg, .ps-panel-recent-link, .ps-panel-lab, .ps-panel-lab-icon, .ps-panel-labs-all svg,
+  .ps-rail-logo, .ps-rail-icon, .ps-rail-icon svg, .ps-rail-label, .ps-panel-row, .ps-panel-row svg, .ps-panel-recent-link,
   .ps-rail-foot .ps-iconbtn, .ps-rail-foot .ps-iconbtn svg, .ps-rail-foot .ps-avatar { transition: none; }
   .ps-rail-item:hover:not([aria-disabled="true"]) .ps-rail-icon, .ps-rail-item:hover:not([aria-disabled="true"]) .ps-rail-icon svg,
-  .ps-panel-row:hover:not([aria-disabled="true"]), .ps-panel-recent-link:hover, .ps-panel-lab:hover { transform: none; }
+  .ps-panel-row:hover:not([aria-disabled="true"]), .ps-panel-recent-link:hover { transform: none; }
 }
 
 /* ---- Key caps (search palette and shortcuts dialog) ---- */
 .ps-kbd { display: inline-flex; min-width: 20px; height: 20px; align-items: center; justify-content: center; padding: 0 5px; border: 1px solid var(--sb-border); border-bottom-width: 2px; border-radius: 5px; background: var(--sb-bg); color: var(--ps-graphite); font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1; }
 
-/* ---- AI status card ---- */
-.ps-panel-ai { display: flex; width: 100%; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--sb-border); border-radius: 12px; background: var(--sb-hover); color: var(--ps-ink); font: inherit; cursor: pointer; transition: border-color 160ms ease-out, background 160ms ease-out; }
-.ps-panel-ai:hover { border-color: var(--ps-ash); background: var(--sb-bg); }
+/* ---- AI status: a flat row pinned to the bottom of the panel ---- */
+.ps-panel-ai { --ai-1: #5B6BFF; --ai-2: #8B6BF0; --ai-3: #C86BD8; --ai-4: #E8749B; --ai-5: #FF7A45; position: relative; display: flex; width: 100%; align-items: center; gap: 10px; padding: 9px 10px; border: 1px solid color-mix(in srgb, var(--ai-2) 26%, var(--sb-border)); border-radius: 14px; background: radial-gradient(140% 170% at 6% 0%, color-mix(in srgb, var(--ai-3) 13%, transparent), transparent 62%), var(--sb-bg); color: var(--ps-ink); font: inherit; text-align: left; cursor: pointer; transition: border-color 160ms ease-out, transform 160ms ease-out; }
+.ps-panel-ai[data-tone="off"], .ps-panel-ai[data-tone="idle"] { border-color: var(--sb-border); background: var(--sb-bg); }
+.ps-panel-ai:hover { border-color: color-mix(in srgb, var(--ai-2) 48%, var(--sb-border)); }
+.ps-panel-ai:active { transform: scale(0.996); }
 .ps-panel-ai:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
-.ps-panel-ai-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 9999px; background: var(--ps-warning); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ps-warning) 20%, transparent); }
-.ps-panel-ai-dot[data-live="true"] { background: var(--ps-success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ps-success) 20%, transparent); }
-.ps-panel-ai-name { display: block; font-size: 13px; line-height: 18px; font-weight: 600; }
-.ps-panel-ai-action { flex-shrink: 0; font-size: 12px; font-weight: 500; color: var(--ps-smoke); }
+.ps-panel-ai-name { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 16px; font-weight: 600; }
 
 /* ---- Search palette (⌘K) ---- */
 .ps-cmdk { max-width: 560px; padding: 0; overflow: hidden; border: 1px solid var(--sb-border); border-radius: 16px; background: var(--sb-bg); color: var(--ps-ink); box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.4); }
@@ -401,12 +369,12 @@
   border-radius: 16px;
   background: var(--sb-bg);
 }
-/* The workspace mark: the original turning gradient ring with the workspace letter held still in the middle. */
-.ps-ws-orb {
+/* Rail mark: turning gradient ring with the letter held still in the middle (moved from the workspace header). */
+.ps-rail-logo .ps-ws-orb {
   position: relative;
   display: inline-flex;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -415,14 +383,14 @@
   box-shadow: 0 6px 14px -8px var(--ps-spark-violet);
   animation: ps-ws-spin 9s linear infinite;
 }
-.ps-ws-orb > span {
+.ps-rail-logo .ps-ws-orb > span {
   display: inline-flex;
   width: 24px;
   height: 24px;
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: var(--sb-bg);
+  background: var(--sb-rail);
   color: var(--ps-ink);
   font-size: 12px;
   font-weight: 600;
@@ -433,7 +401,7 @@
 
 
 @media (prefers-reduced-motion: reduce) {
-  .ps-ws-orb, .ps-ws-orb > span { animation: none; }
+  .ps-rail-logo .ps-ws-orb, .ps-rail-logo .ps-ws-orb > span { animation: none; }
 }
 
 /* ============================================================================================================
@@ -442,15 +410,20 @@
    ============================================================================================================ */
 
 /* ---- Rail ---- */
-.ps-rail { width: 68px; gap: 3px; padding: 14px 0 12px; }
-.ps-rail-logo { margin-bottom: 12px; }
-.ps-rail-item { width: 60px; gap: 2px; }
-.ps-rail-icon { width: 40px; height: 34px; border-radius: 10px; }
-.ps-rail-label { font-size: 11px; line-height: 14px; font-weight: 500; letter-spacing: 0.01em; }
-.ps-rail-foot { gap: 10px; }
+.ps-rail { width: 71px; gap: 3px; padding: 12px 0 10px; }
+/* Large screens get airier spacing between the icons; short screens tighten up again further down. */
+.ps-rail-items { gap: 15px; }
+.ps-rail-logo { margin-bottom: 10px; }
+.ps-rail-item { width: 52px; gap: 2px; }
+.ps-rail-icon { width: 36px; height: 32px; border-radius: 9px; }
+.ps-rail-icon svg { width: 20px; height: 20px; flex: 0 0 20px; stroke-width: 1.8; }
+.ps-rail-label { font-size: 10px; line-height: 12px; font-weight: 500; letter-spacing: 0.01em; }
+.ps-rail-foot { gap: 8px; }
+.ps-rail-expand svg, .ps-rail-foot .ps-iconbtn svg { width: 18px; height: 18px; flex: 0 0 18px; }
+.ps-rail-foot .ps-avatar { width: 28px; height: 28px; }
 
 /* ---- Panel frame ---- */
-.ps-panel { width: 224px; gap: 2px; padding: 14px 10px 0; }
+.ps-panel { width: 200px; gap: 2px; padding: 12px 8px 0; }
 .ps-panel .ps-panel-scroll { gap: 2px; }
 
 /* ---- Header: one flat row, no card, a hairline underneath ---- */
@@ -470,41 +443,66 @@
 .ps-panel-recent-link { gap: 9px; padding: 5px 10px; border-radius: 8px; font-size: 12.5px; line-height: 16px; }
 .ps-panel-recent-link:hover { transform: translateX(2px); }
 
-/* ---- Labs card ---- */
-.ps-panel-labs { margin: 8px 0 4px; padding: 10px; border-radius: 12px; }
-.ps-panel-labs-title { gap: 6px; font-size: 12px; }
-.ps-panel-new-chip { padding: 1px 6px; font-size: 10px; }
-.ps-panel-labs-sub { margin: 3px 0 8px; font-size: 11px; }
-.ps-panel-lab { gap: 8px; padding: 4px 6px; font-size: 12px; }
-.ps-panel-lab-icon { width: 22px; height: 22px; border-radius: 7px; }
-.ps-panel-lab-icon svg { width: 12px; height: 12px; }
-.ps-panel-labs-all { margin-top: 8px; font-size: 12px; }
-
-/* ---- Bottom: the AI usage meter ---- */
-.ps-panel-ai { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 11px; border-radius: 10px; background: transparent; text-align: left; }
-.ps-panel-ai:hover { background: var(--sb-hover); }
+/* ---- Bottom: the AI usage card (ring, five-step meter, chevron) ---- */
+.ps-ai-ring { position: relative; display: grid; width: 40px; height: 40px; flex-shrink: 0; place-items: center; }
+.ps-ai-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ps-ai-ring circle { fill: none; stroke-width: 3.5; }
+.ps-ai-ring-track { stroke: color-mix(in srgb, var(--ps-ink) 10%, var(--sb-border)); }
+.ps-ai-ring-fill { stroke: url(#ps-ai-ring-grad); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--ai-3) 55%, transparent)); transition: stroke-dasharray 420ms cubic-bezier(0.22, 1, 0.36, 1); }
+.ps-ai-bolt { transition: fill 200ms ease-out; }
+.ps-panel-ai[data-tone="off"] .ps-ai-bolt, .ps-panel-ai[data-tone="idle"] .ps-ai-bolt { fill: var(--ps-ash); }
+.ps-ai-body { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
 .ps-ai-head { display: flex; align-items: center; gap: 7px; }
-.ps-panel-ai .ps-panel-ai-dot { width: 6px; height: 6px; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ps-warning) 18%, transparent); }
-.ps-panel-ai .ps-panel-ai-name { flex: 1; font-size: 12px; line-height: 16px; font-weight: 600; }
-.ps-ai-go { flex-shrink: 0; color: var(--ps-smoke); transition: transform 200ms ease-out, color 160ms ease-out; }
-.ps-panel-ai:hover .ps-ai-go { color: var(--ps-ink); transform: translateX(2px); }
-.ps-ai-bar { display: block; height: 4px; overflow: hidden; border-radius: 9999px; background: var(--sb-press); }
-.ps-ai-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--ps-success); transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1), background 200ms ease-out; }
-.ps-ai-meta { font-size: 11px; line-height: 14px; color: var(--ps-smoke); }
-.ps-ai-meta strong { color: var(--ps-ink); font-weight: 600; }
-/* Colour tells the state at a glance: green plenty left, amber getting low, red nearly out, grey offline. */
-.ps-panel-ai[data-tone="ok"] .ps-panel-ai-dot { background: var(--ps-success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ps-success) 20%, transparent); }
-.ps-panel-ai[data-tone="mid"] .ps-panel-ai-dot { background: var(--ps-warning); }
-.ps-panel-ai[data-tone="mid"] .ps-ai-bar > span { background: var(--ps-warning); }
-.ps-panel-ai[data-tone="low"] .ps-panel-ai-dot { background: var(--ps-danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ps-danger) 20%, transparent); }
-.ps-panel-ai[data-tone="low"] .ps-ai-bar > span { background: var(--ps-danger); }
-.ps-panel-ai[data-tone="off"] .ps-panel-ai-dot, .ps-panel-ai[data-tone="idle"] .ps-panel-ai-dot { background: var(--ps-smoke); box-shadow: none; }
+.ps-ai-meta { display: flex; min-width: 0; align-items: center; gap: 7px; font-size: 11px; line-height: 14px; color: var(--ps-smoke); }
+.ps-ai-meta-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ps-ai-bars { display: inline-flex; flex-shrink: 0; align-items: center; gap: 3px; }
+.ps-ai-bar { width: 5px; height: 9px; border-radius: 1.5px; background: color-mix(in srgb, var(--bar) 22%, transparent); transition: background 200ms ease-out; }
+.ps-ai-bar[data-on="true"] { background: var(--bar); box-shadow: 0 0 6px color-mix(in srgb, var(--bar) 50%, transparent); }
+.ps-ai-bar:nth-child(1) { --bar: var(--ai-1); }
+.ps-ai-bar:nth-child(2) { --bar: var(--ai-2); }
+.ps-ai-bar:nth-child(3) { --bar: var(--ai-3); }
+.ps-ai-bar:nth-child(4) { --bar: var(--ai-4); }
+.ps-ai-bar:nth-child(5) { --bar: var(--ai-5); }
+.ps-ai-go { display: grid; width: 24px; height: 24px; flex-shrink: 0; place-items: center; border-radius: 9999px; background: color-mix(in srgb, var(--ps-ink) 8%, transparent); color: var(--ps-ink); transition: transform 200ms ease-out, background 160ms ease-out; }
+.ps-panel-ai:hover .ps-ai-go { transform: translateX(2px); background: color-mix(in srgb, var(--ps-ink) 12%, transparent); }
 
-/* ---- Short screens: one more step down ---- */
+/* ---- Short screens: icon-only rail (after compact sizing so these win) ---- */
 @media (min-width: 768px) and (max-height: 860px) {
-  .ps-rail-icon { height: 31px; }
+  .ps-rail { gap: 4px; padding: 12px 0 10px; }
+  .ps-rail-logo { margin-bottom: 10px; }
+  .ps-rail-items { gap: 8px; }
+  .ps-rail-item { width: auto; gap: 0; }
+  .ps-rail-label { display: none; }
+  .ps-rail-icon { width: 36px; height: 34px; border-radius: 9px; }
+  .ps-rail-expand { margin: 0 0 4px; }
+  .ps-rail-foot { gap: 10px; padding-top: 8px; }
   .ps-panel .ps-panel-row { height: 28px; }
-  .ps-panel-kicker { padding-top: 5px; }
   .ps-panel-rule { margin: 6px 4px; }
+  .ps-panel-kicker { padding-top: 5px; }
   .ps-ws { padding-bottom: 8px; margin-bottom: 4px; }
+}
+@media (min-width: 768px) and (max-height: 700px) {
+  .ps-rail { gap: 5px; padding: 10px 5px 8px; }
+  .ps-rail-logo { margin-bottom: 8px; }
+  .ps-rail-items { gap: 10px; }
+  .ps-rail-icon { height: 32px; }
+  .ps-rail-foot { gap: 8px; padding-top: 6px; }
+}
+
+/* ---- Large screens: a roomier rail, a wider panel and more breathing room inside both ---- */
+@media (min-width: 1100px) and (min-height: 861px) {
+  .ps-rail { width: 71px; gap: 3px; padding: 18px 0 16px; }
+  .ps-rail-logo { margin-bottom: 14px; }
+  .ps-rail-item { width: 56px; }
+  .ps-rail-icon { width: 40px; height: 36px; }
+  .ps-rail-foot { gap: 10px; padding-top: 14px; }
+  .ps-panel { width: 236px; padding: 16px 12px 0; }
+  .ps-panel .ps-panel-foot { margin: 0 -12px; padding: 8px 12px; }
+  .ps-panel .ps-panel-row { height: 32px; padding: 0 12px; }
+  .ps-panel-recent-link { padding: 6px 12px; }
+  .ps-panel-kicker { padding: 10px 12px 5px; }
+  .ps-panel-rule { margin: 10px 6px; }
+  .ps-ws { padding: 4px 6px 14px; margin-bottom: 10px; }
+  .ps-panel-ai { padding: 10px 12px; }
+  .ps-ai-ring { width: 42px; height: 42px; }
 }

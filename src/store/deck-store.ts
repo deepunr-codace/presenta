@@ -48,7 +48,7 @@ type DeckState = {
 };
 
 type DeckActions = {
-  loadDeck: (deck: Deck) => void;
+  loadDeck: (deck: Deck, selectedSlideId?: string | null) => void;
   newBlankDeck: (themeId: ThemeId) => Deck;
   /**
    * Apply `mutator` to a clone of the deck as one undoable step. `label` names
@@ -101,9 +101,13 @@ async function persistNow(deck: Deck): Promise<void> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     if (attempt > 0) await wait(SAVE_RETRY_MS);
     try {
-      await saveDeck(deck);
+      const saved = await saveDeck(deck);
       const current = useDeckStore.getState().deck;
       const stillCurrent = Boolean(current && current.id === deck.id && current.updatedAt === deck.updatedAt);
+      if (stillCurrent && JSON.stringify(saved) !== JSON.stringify(deck)) {
+        // Adopt server-side merges without resetting the editor's undo/redo stacks.
+        useDeckStore.setState((state) => ({ deck: saved, ...reconcileSelection(saved, state) }));
+      }
       useDeckStore.setState(stillCurrent ? { dirty: false, saveError: null } : { saveError: null });
       return;
     } catch (err) {
@@ -222,13 +226,13 @@ export const useDeckStore = create<DeckStore>()((set, get) => {
   return {
     ...initialState,
 
-    loadDeck: (deck) => {
+    loadDeck: (deck, preferredSlideId) => {
       lastCommit = null;
       set({
         ...initialState,
         zoom: get().zoom,
         deck,
-        selectedSlideId: deck.slides[0]?.id ?? null,
+        selectedSlideId: deck.slides.some((slide) => slide.id === preferredSlideId) ? preferredSlideId! : deck.slides[0]?.id ?? null,
       });
     },
 

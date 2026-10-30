@@ -6,6 +6,12 @@
 /* ---------- Layout ---------- */
 
 .ps-review { display: flex; height: 100%; min-height: 0; background: var(--ps-canvas); color: var(--ps-ink); }
+/* The editor and review pages are workspaces with their own 24 px gutter, so the breadcrumb line follows that
+   gutter instead of the centred 1280 px column the document-style pages use. */
+.ps-deck-shell > .ps-crumbbar { max-width: none; padding-left: 24px; padding-right: 24px; }
+@media (max-width: 899px) {
+  .ps-deck-shell > .ps-crumbbar { padding-left: 16px; padding-right: 16px; }
+}
 .ps-review-main { flex: 1; min-width: 0; padding: 24px 24px 48px; overflow-y: auto; }
 .ps-review-side { height: 100%; min-height: 0; flex-shrink: 0; }
 
@@ -116,7 +122,7 @@
 @media (max-width: 899px) {
   .ps-review-main { padding: 16px 16px 32px; }
   .ps-review-title { font-size: 24px; white-space: normal; }
-  .ps-review-actions { width: 100%; margin-left: 0; flex-wrap: wrap; }
+  .ps-review-actions { width: 100%; justify-content: flex-end; margin-left: 0; flex-wrap: wrap; }
   .ps-review-all { display: none; }
   .ps-review-dots { display: flex; }
   .ps-review-stats { gap: 8px; }

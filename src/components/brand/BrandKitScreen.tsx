@@ -23,7 +23,7 @@ export function BrandKitScreen() {
   return (
     <AppShell active="brand" sidebar="full" breadcrumbs={[{ label: "Studio", href: "/" }, { label: "Brand kit" }]}>
       <div className="ps-page">
-        <header className="mb-8">
+        <header className="ps-page-hero mb-8">
           <h1 className="ps-heading">Brand kit</h1>
           <p className="ps-body-lg mt-2">Set your brand once. Every new deck starts with it, and you can still change it per deck. Saved to your account.</p>
         </header>
@@ -76,7 +76,7 @@ function BrandKitEditor() {
 
   return (
     <div className="space-y-5">
-      <section aria-label="Default theme" className="ps-glass">
+      <section id="default-theme" aria-label="Default theme" className="ps-glass">
         <h3 className="ps-label mb-1">Default theme</h3>
         <p className="ps-caption mb-4">{themeId ? `New decks start with ${getTheme(themeId).name}.` : "No default chosen: new decks use the standard theme."}</p>
         <ThemeRadioGrid value={shownTheme} onChange={setThemeId} />
@@ -87,7 +87,7 @@ function BrandKitEditor() {
         ) : null}
       </section>
 
-      <section aria-label="Brand details" className="ps-glass grid gap-5 sm:grid-cols-2">
+      <section id="brand-details" aria-label="Brand details" className="ps-glass grid gap-5 sm:grid-cols-2">
         <BrandFields brand={brand} themeAccent={getTheme(shownTheme).colors.accent} onPatch={patch} idPrefix="kit" />
       </section>
 

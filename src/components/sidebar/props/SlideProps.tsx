@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { UploadSimple } from "@phosphor-icons/react";
-import type { Slide, SlideBackground, Theme } from "@/lib/deck/schema";
+import type { Slide, SlideBackground, SlideTransition, Theme } from "@/lib/deck/schema";
 import { fileToImageDataUrl, ImageIntakeError, pickImageFile } from "@/lib/image";
 import { useDeckStore } from "@/store/deck-store";
 import { LayoutPicker } from "@/components/editor/LayoutPicker";
@@ -38,6 +38,11 @@ export function SlideProps({ slide, theme }: Props) {
   const presets = useMemo(() => gradientPresets(theme), [theme]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const setTransition = (transition: SlideTransition) =>
+    commit((d) => {
+      const s = d.slides.find((x) => x.id === slide.id);
+      if (s) s.transition = transition;
+    }, "Change slide transition");
 
   const setBackground = (background: SlideBackground) =>
     commit((d) => {
@@ -80,6 +85,20 @@ export function SlideProps({ slide, theme }: Props) {
     <>
       <PropertyGroup title="Layout">
         <LayoutPicker slide={slide} />
+      </PropertyGroup>
+      <PropertyGroup title="Transition">
+        <Segmented
+          aria-label="Slide transition"
+          value={slide.transition ?? "none"}
+          onChange={setTransition}
+          options={[
+            { value: "none", label: "None" },
+            { value: "fade", label: "Fade" },
+            { value: "push", label: "Push" },
+            { value: "zoom", label: "Zoom" },
+          ]}
+        />
+        <p className="ps-caption">Plays when this slide appears in presenter view.</p>
       </PropertyGroup>
       <PropertyGroup title="Background">
         <Segmented aria-label="Background" value={bgChoice(bg)} onChange={choose} options={BG_OPTIONS} />
@@ -142,6 +161,14 @@ export function SlideProps({ slide, theme }: Props) {
           }
         />
       </PropertyGroup>
+      {slide.content?.sources?.length ? (
+        <PropertyGroup title="Sources">
+          <ul className="grid gap-1">
+            {slide.content.sources.map((source, index) => <li key={`${source}-${index}`} className="rounded-md bg-[var(--ps-plate)] px-2 py-1.5 text-[12px] leading-4 text-[var(--ps-ink)]">{source}</li>)}
+          </ul>
+          <p className="ps-caption">AI references to the material used for this slide.</p>
+        </PropertyGroup>
+      ) : null}
     </>
   );
 }

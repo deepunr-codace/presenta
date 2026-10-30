@@ -38,6 +38,8 @@
 .ps-btn-ghost { border-color: transparent; background: transparent; color: var(--ps-smoke); }
 .ps-btn-ghost:hover:not(:disabled) { background: var(--ps-plate); border-color: transparent; color: var(--ps-ink); }
 .ps-btn-xs { height: 32px; padding: 0 14px; font-size: 13px; }
+.ps-btn-grouped { gap: 6px; padding: 0 12px; background: var(--ps-plate); border-color: var(--ps-line); }
+.ps-btn-grouped:hover:not(:disabled) { background: color-mix(in srgb, var(--ps-plate) 72%, var(--ps-paper)); border-color: var(--ps-ash); }
 .ps-btn-md { height: 40px; padding: 0 20px; }
 .ps-btn-block { width: 100%; }
 

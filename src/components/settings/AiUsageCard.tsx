@@ -4,7 +4,7 @@ import { Sparkle } from "@phosphor-icons/react";
 import { useAiHealth } from "@/hooks/useAiHealth";
 import { useApiKeyDialog } from "@/components/shell/api-key-dialog-store";
 
-/** Which AI is answering, and today's free allowance when it is Presenta AI. */
+/** Which AI is answering, and today's free allowance when it is Presenta Studio. */
 export function AiUsageCard() {
   const health = useAiHealth();
   const openKeyDialog = useApiKeyDialog((s) => s.setOpen);
@@ -12,7 +12,7 @@ export function AiUsageCard() {
   const left = quota ? Math.max(quota.limit - quota.used, 0) : 0;
   const pct = quota && quota.limit > 0 ? Math.min(100, (quota.used / quota.limit) * 100) : 0;
 
-  const name = !health ? "Checking…" : health.byok ? "Your own API key" : health.provider === "presenta" ? "Presenta AI" : health.hasKey ? health.model : "Offline demo";
+  const name = !health ? "Checking…" : health.byok ? "Your own API key" : health.provider === "presenta" ? "Presenta Studio" : health.hasKey ? health.model : "Offline demo";
   const note = !health
     ? ""
     : health.byok

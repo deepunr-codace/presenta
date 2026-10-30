@@ -8,15 +8,16 @@ type Props = {
   onExport: (kind: ExportKind) => void;
   /** Greyed out until the deck is loaded. */
   disabled?: boolean;
+  busy?: boolean;
 };
 
 /** "Export" dropdown (secondary button) with PDF (print), PowerPoint and deck JSON. */
-export function ExportMenu({ onExport, disabled = false }: Props) {
+export function ExportMenu({ onExport, disabled = false, busy = false }: Props) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<button type="button" className="ps-btn" disabled={disabled} />}>
+      <DropdownMenuTrigger render={<button type="button" className="ps-btn" disabled={disabled || busy} />}>
         <DownloadSimple size={12} />
-        Export
+        {busy ? "Exporting…" : "Export"}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">
         <DropdownMenuItem onClick={() => onExport("pdf")}>

@@ -9,6 +9,7 @@ import { IconView } from "./IconView";
 import { ImageView } from "./ImageView";
 import { ShapeView } from "./ShapeView";
 import { TextView } from "./TextView";
+import { VideoView } from "./VideoView";
 
 export type ElementViewProps = {
   element: Element;
@@ -56,6 +57,9 @@ export function ElementView({ element, theme, slideId, interactive = false, edit
       break;
     case "chart":
       content = <ChartView element={element} />;
+      break;
+    case "video":
+      content = <VideoView element={element} interactive={interactive} />;
       break;
   }
 

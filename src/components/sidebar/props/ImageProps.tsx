@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Image as ImageIcon, Images, LinkSimple, Sparkle, Trash, UploadSimple } from "@phosphor-icons/react";
 import { getScope } from "@/lib/assistant/scope";
 import type { ImageElement } from "@/lib/deck/schema";
 import { fileToImageDataUrl, ImageIntakeError, pickImageFile } from "@/lib/image";
+import { resolveTheme } from "@/lib/deck/themes";
+import { postGenerateImage } from "@/lib/api-client";
 import { useDeckStore, type ElementPatch } from "@/store/deck-store";
 import { MediaPicker } from "@/components/media/MediaPicker";
 import { NumInput } from "@/components/ui-kit/NumInput";
@@ -16,6 +18,7 @@ import { TextInput } from "@/components/ui-kit/TextInput";
 import { opts } from "@/components/ui-kit/options";
 import { useSidebarStore } from "../sidebar-store";
 import { runAssistant, useAssistantRun } from "../useAssistant";
+import { useApiKeyDialog } from "@/components/shell/api-key-dialog-store";
 
 const POSITIONS = ["0% 0%", "50% 0%", "100% 0%", "0% 50%", "50% 50%", "100% 50%", "0% 100%", "50% 100%", "100% 100%"] as const;
 
@@ -25,13 +28,20 @@ type Props = { el: ImageElement; patch: (p: ElementPatch) => void };
 export function ImageProps({ el, patch }: Props) {
   const sending = useAssistantRun((s) => s.sending);
   const setTab = useSidebarStore((s) => s.setTab);
+  const openKeyDialog = useApiKeyDialog((s) => s.setOpen);
   const [error, setError] = useState<string | null>(null);
+  const [needsOpenAi, setNeedsOpenAi] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [pasting, setPasting] = useState(false);
   const [library, setLibrary] = useState(false);
+  const imageRequest = useRef<AbortController | null>(null);
+
+  useEffect(() => () => imageRequest.current?.abort(), []);
 
   const upload = async () => {
     setError(null);
+    setNeedsOpenAi(false);
     const file = await pickImageFile();
     if (!file) return;
     setBusy(true);
@@ -50,6 +60,34 @@ export function ImageProps({ el, patch }: Props) {
     if (scope.kind !== "element" || scope.element?.id !== el.id) return;
     setTab("assistant");
     void runAssistant("Suggest a new image idea for this image.", scope);
+  };
+
+  const generateImage = async () => {
+    const query = el.query?.trim();
+    if (!query || generating) return;
+    setError(null);
+    setNeedsOpenAi(false);
+    setGenerating(true);
+    const controller = new AbortController();
+    imageRequest.current = controller;
+    try {
+      const deck = useDeckStore.getState().deck;
+      const theme = deck ? resolveTheme(deck) : null;
+      const ratio = el.w / Math.max(1, el.h);
+      const size = ratio > 1.25 ? "1536x864" : ratio < 0.8 ? "864x1536" : "1024x1024";
+      const prompt = `Subject: ${query}. Art direction: a polished editorial visual for a ${theme?.name ?? "modern"} presentation, using ${theme?.colors.accent ?? "a restrained blue"} with balanced neutrals. Compose for a ${size === "1536x864" ? "wide landscape" : size === "864x1536" ? "portrait" : "square"} frame, with one clear focal point and useful negative space. No lettering, logos or watermarks.`;
+      const result = await postGenerateImage({ prompt, size }, controller.signal);
+      if (!result.ok) {
+        setNeedsOpenAi(result.code === "auth");
+        throw new Error(result.error);
+      }
+      patch({ src: result.data.src, alt: el.alt || query });
+    } catch (err) {
+      if (!controller.signal.aborted) setError(err instanceof Error ? err.message : "Could not generate this image.");
+    } finally {
+      if (imageRequest.current === controller) imageRequest.current = null;
+      setGenerating(false);
+    }
   };
 
   return (
@@ -76,6 +114,10 @@ export function ImageProps({ el, patch }: Props) {
           <LinkSimple size={12} /> URL
         </button>
       </div>
+      <button type="button" className="ps-btn self-start" onClick={() => void generateImage()} disabled={!el.query?.trim() || generating} title="Generate a slide-ready image with OpenAI">
+        <Sparkle size={12} /> {generating ? "Generating image…" : "Generate image"}
+      </button>
+      <p className="ps-caption">Requires an OpenAI API key. If you use your own key, OpenAI may charge your account.</p>
       <MediaPicker open={library} onOpenChange={setLibrary} onPick={(src, name) => patch({ src, alt: el.alt || name })} />
       {pasting ? (
         <TextInput
@@ -89,9 +131,10 @@ export function ImageProps({ el, patch }: Props) {
         />
       ) : null}
       {error ? (
-        <p className="ps-caption text-[var(--ps-danger)]" role="alert">
-          {error}
-        </p>
+        <div>
+          <p className="ps-caption text-[var(--ps-danger)]" role="alert">{error}</p>
+          {needsOpenAi ? <button type="button" className="ps-link mt-1 text-[12px]" onClick={() => openKeyDialog(true)}>Add or change API key</button> : null}
+        </div>
       ) : (
         <p className="ps-caption">PNG, JPG, WebP or SVG up to 4 MB; large images are scaled to 1920 px.</p>
       )}

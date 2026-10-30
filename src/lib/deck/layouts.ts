@@ -428,7 +428,27 @@ const LAYOUT_FNS: Record<LayoutId, LayoutFn> = {
 
 /** Positions semantic content on the stage. Deterministic apart from element ids. */
 export function applyLayout(content: SlideContent, layoutId: LayoutId, theme: Theme): Element[] {
-  return LAYOUT_FNS[layoutId](content, theme, new ZOrder());
+  const elements = LAYOUT_FNS[layoutId](content, theme, new ZOrder());
+  const sources = content.sources?.filter(Boolean).slice(0, 3);
+  if (sources?.length) {
+    const z = elements.reduce((max, element) => Math.max(max, element.z), -1) + 1;
+    elements.push({
+      id: newId("el"), type: "text", role: "caption",
+      html: `<p>Sources: ${sources.map((source) => {
+        if (/^https:\/\//i.test(source)) {
+          try {
+            const url = new URL(source);
+            return `<a href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url.hostname)}</a>`;
+          } catch { return escapeHtml(source); }
+        }
+        return escapeHtml(source);
+      }).join(" · ")}</p>`,
+      x: MARGIN, y: STAGE_H - 44, w: CW, h: 28, rotation: 0, z, locked: false, opacity: 0.9,
+      align: "right", valign: "middle", autoFit: true,
+      style: { fontSize: 14, fontWeight: 400, color: theme.colors.muted, fontFamily: "body" },
+    });
+  }
+  return elements;
 }
 
 function defaultBackground(layoutId: LayoutId): SlideBackground {
@@ -442,6 +462,7 @@ export function buildSlide(content: SlideContent, theme: Theme, layoutId: Layout
     background: defaultBackground(layoutId),
     elements: applyLayout(content, layoutId, theme),
     notes: content.notes ?? "",
+    transition: "none",
     content,
   };
 }

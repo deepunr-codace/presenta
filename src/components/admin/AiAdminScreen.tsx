@@ -39,7 +39,7 @@ function statusOf(k: PoolKey): { label: string; tone: "ok" | "warn" | "off" } {
   return { label: "Active", tone: "ok" };
 }
 
-/** /admin/ai: the pool of OpenRouter keys behind "Presenta AI", its model and each customer's daily allowance. */
+/** /admin/ai: the pool of OpenRouter keys behind "Presenta Studio", its model and each customer's daily allowance. */
 export function AiAdminScreen() {
   const { toast } = useToast();
   const [state, setState] = useState<State | null>(null);
@@ -111,12 +111,12 @@ export function AiAdminScreen() {
   const active = state?.keys.filter((k) => statusOf(k).tone === "ok").length ?? 0;
 
   return (
-    <AppShell breadcrumbs={[{ label: "Studio", href: "/" }, { label: "Admin" }, { label: "Presenta AI" }]}>
-      <div className="ps-page ps-page-narrow">
-        <header className="mb-8">
-          <h1 className="ps-heading">Presenta AI</h1>
+    <AppShell breadcrumbs={[{ label: "Studio", href: "/" }, { label: "Admin" }, { label: "Presenta Studio" }]}>
+      <div className="ps-page ps-page-narrow ps-page-admin-ai">
+        <header className="ps-page-hero mb-8">
+          <h1 className="ps-heading">Presenta Studio</h1>
           <p className="ps-body-lg mt-2">
-            Free AI for your customers, served from a pool of keys. They only ever see &ldquo;Presenta AI&rdquo;. If a key hits its limit, the next one takes over on the same request.
+            Free AI for your customers, served from a pool of keys. They only ever see &ldquo;Presenta Studio&rdquo;. If a key hits its limit, the next one takes over on the same request.
           </p>
         </header>
 
@@ -131,8 +131,8 @@ export function AiAdminScreen() {
                 <span className="ps-pill">{active} of {state.keys.length} keys active</span>
                 <span className="ps-pill">{state.usage.requestsToday} requests today · {state.usage.usersToday} customers</span>
                 <label className="ml-auto flex items-center gap-2 text-[13px]">
-                  <input type="checkbox" checked={settings.enabled} onChange={(e) => void run(() => api("/api/admin/ai", { method: "PUT", body: JSON.stringify({ enabled: e.target.checked }) }), e.target.checked ? "Presenta AI is on." : "Presenta AI is off.")} />
-                  Offer Presenta AI to customers
+                  <input type="checkbox" checked={settings.enabled} onChange={(e) => void run(() => api("/api/admin/ai", { method: "PUT", body: JSON.stringify({ enabled: e.target.checked }) }), e.target.checked ? "Presenta Studio is on." : "Presenta Studio is off.")} />
+                  Offer Presenta Studio to customers
                 </label>
               </div>
               <form

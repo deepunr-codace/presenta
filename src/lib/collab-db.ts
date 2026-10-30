@@ -1,7 +1,11 @@
 import { randomBytes } from "node:crypto";
 import { sql } from "@/lib/auth/db";
+import bcrypt from "bcryptjs";
 import { ensureDeckTables } from "@/lib/decks-db";
 import { newId } from "@/lib/deck/ids";
+import { DeckSchema, type Deck } from "@/lib/deck/schema";
+import { sanitizeHtml, stripTags } from "@/lib/text";
+import { signShareAccess, verifyShareAccess } from "@/lib/share-access-token";
 
 /**
  * Teams, deck sharing and edit locks, stored in Postgres. Every function takes the acting user's id and checks what
@@ -56,6 +60,18 @@ export function ensureCollabTables(): Promise<void> {
       )
       .then(
         () => sql()`
+          CREATE TABLE IF NOT EXISTS team_messages (
+            id TEXT PRIMARY KEY,
+            team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            body TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          )
+        `,
+      )
+      .then(() => sql()`CREATE INDEX IF NOT EXISTS team_messages_team ON team_messages (team_id, created_at)`)
+      .then(
+        () => sql()`
           CREATE TABLE IF NOT EXISTS deck_shares (
             owner_id TEXT NOT NULL,
             deck_id TEXT NOT NULL,
@@ -70,6 +86,21 @@ export function ensureCollabTables(): Promise<void> {
         `,
       )
       .then(() => sql()`CREATE INDEX IF NOT EXISTS deck_shares_grantee ON deck_shares (grantee_id, kind)`)
+      .then(() => sql()`
+        CREATE TABLE IF NOT EXISTS deck_comments (
+          id TEXT PRIMARY KEY,
+          owner_id TEXT NOT NULL,
+          deck_id TEXT NOT NULL,
+          user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          parent_id TEXT REFERENCES deck_comments(id) ON DELETE CASCADE,
+          slide_id TEXT,
+          body TEXT NOT NULL,
+          resolved_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          FOREIGN KEY (owner_id, deck_id) REFERENCES decks(user_id, id) ON DELETE CASCADE
+        )
+      `)
+      .then(() => sql()`CREATE INDEX IF NOT EXISTS deck_comments_deck ON deck_comments (owner_id, deck_id, created_at)`)
       .then(
         () => sql()`
           CREATE TABLE IF NOT EXISTS deck_links (
@@ -77,11 +108,49 @@ export function ensureCollabTables(): Promise<void> {
             deck_id TEXT NOT NULL,
             token TEXT NOT NULL UNIQUE,
             access TEXT NOT NULL DEFAULT 'restricted',
+            expires_at TIMESTAMPTZ,
+            password_hash TEXT,
+            password_updated_at TIMESTAMPTZ,
             PRIMARY KEY (owner_id, deck_id),
             FOREIGN KEY (owner_id, deck_id) REFERENCES decks(user_id, id) ON DELETE CASCADE
           )
         `,
       )
+      .then(() => sql()`
+        CREATE TABLE IF NOT EXISTS audience_questions (
+          id TEXT PRIMARY KEY,
+          token TEXT NOT NULL REFERENCES deck_links(token) ON DELETE CASCADE,
+          visitor_id TEXT NOT NULL,
+          display_name TEXT NOT NULL,
+          body TEXT NOT NULL,
+          slide_number INTEGER,
+          hidden_at TIMESTAMPTZ,
+          answered_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `)
+      .then(() => sql()`CREATE INDEX IF NOT EXISTS audience_questions_token ON audience_questions (token, created_at DESC)`)
+      .then(() => sql()`
+        CREATE TABLE IF NOT EXISTS audience_polls (
+          id TEXT PRIMARY KEY,
+          token TEXT NOT NULL REFERENCES deck_links(token) ON DELETE CASCADE,
+          created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          prompt TEXT NOT NULL,
+          options JSONB NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          ended_at TIMESTAMPTZ
+        )
+      `)
+      .then(() => sql()`CREATE UNIQUE INDEX IF NOT EXISTS audience_polls_one_active ON audience_polls (token) WHERE ended_at IS NULL`)
+      .then(() => sql()`
+        CREATE TABLE IF NOT EXISTS audience_votes (
+          poll_id TEXT NOT NULL REFERENCES audience_polls(id) ON DELETE CASCADE,
+          visitor_id TEXT NOT NULL,
+          option_index INTEGER NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          PRIMARY KEY (poll_id, visitor_id)
+        )
+      `)
       .then(
         () => sql()`
           CREATE TABLE IF NOT EXISTS deck_locks (
@@ -91,11 +160,37 @@ export function ensureCollabTables(): Promise<void> {
             holder_name TEXT NOT NULL,
             client_id TEXT NOT NULL,
             heartbeat_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            PRIMARY KEY (owner_id, deck_id),
+            PRIMARY KEY (owner_id, deck_id, client_id),
             FOREIGN KEY (owner_id, deck_id) REFERENCES decks(user_id, id) ON DELETE CASCADE
           )
         `,
       )
+      .then(() => sql()`
+        ALTER TABLE deck_links ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ
+      `)
+      .then(() => sql()`ALTER TABLE deck_links ADD COLUMN IF NOT EXISTS password_hash TEXT`)
+      .then(() => sql()`ALTER TABLE deck_links ADD COLUMN IF NOT EXISTS password_updated_at TIMESTAMPTZ`)
+      .then(() => sql()`
+        DO $$
+        DECLARE
+          primary_name TEXT;
+          primary_columns TEXT[];
+        BEGIN
+          SELECT c.conname::TEXT, array_agg(a.attname::TEXT ORDER BY u.ordinality)
+            INTO primary_name, primary_columns
+          FROM pg_constraint c
+          CROSS JOIN LATERAL unnest(c.conkey) WITH ORDINALITY AS u(attnum, ordinality)
+          JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = u.attnum
+          WHERE c.conrelid = 'deck_locks'::regclass AND c.contype = 'p'
+          GROUP BY c.conname;
+          IF primary_columns IS DISTINCT FROM ARRAY['owner_id', 'deck_id', 'client_id']::TEXT[] THEN
+            IF primary_name IS NOT NULL THEN
+              EXECUTE format('ALTER TABLE deck_locks DROP CONSTRAINT %I', primary_name);
+            END IF;
+            ALTER TABLE deck_locks ADD PRIMARY KEY (owner_id, deck_id, client_id);
+          END IF;
+        END $$
+      `)
       .then(
         () => sql()`
           CREATE TABLE IF NOT EXISTS deck_lock_requests (
@@ -251,6 +346,82 @@ export async function declineInvite(userEmail: string, inviteToken: string): Pro
   await sql()`DELETE FROM team_invites WHERE token = ${inviteToken} AND email = ${userEmail.trim().toLowerCase()}`;
 }
 
+/* ======================= Team chat ======================= */
+
+export type TeamMessage = { id: string; userId: string; name: string; body: string; createdAt: string };
+
+/** Longest message a person may post. */
+export const TEAM_MESSAGE_MAX = 2000;
+/** How many messages a first load (or a reload) brings back. */
+const CHAT_PAGE = 100;
+
+type MessageRow = { id: string; user_id: string; name: string; body: string; created_at: string };
+
+const toMessage = (r: MessageRow): TeamMessage => ({ id: r.id, userId: r.user_id, name: r.name, body: r.body, createdAt: iso(r.created_at) });
+
+async function requireTeamMember(userId: string, teamId: string): Promise<void> {
+  const rows = (await sql()`SELECT 1 FROM team_members WHERE team_id = ${teamId} AND user_id = ${userId}`) as unknown[];
+  if (!rows.length) throw new CollabError("Only members of this team can read its chat.", 403);
+}
+
+/**
+ * The team's chat: the newest `CHAT_PAGE` messages, or only the ones posted after `afterId` when polling.
+ * An `afterId` the team no longer has (deleted, or another team's) falls back to the newest page.
+ */
+export async function listTeamMessages(userId: string, teamId: string, afterId?: string | null): Promise<TeamMessage[]> {
+  await ensureCollabTables();
+  await requireTeamMember(userId, teamId);
+
+  if (afterId) {
+    const since = (await sql()`SELECT 1 FROM team_messages WHERE id = ${afterId} AND team_id = ${teamId}`) as unknown[];
+    if (since.length) {
+      // Compare the whole (created_at, id) pair: timestamps are stored with microsecond precision, so comparing
+      // only created_at would hand back the message the caller already has.
+      const newer = (await sql()`
+        SELECT m.id, m.user_id, COALESCE(u.name, u.email) AS name, m.body, m.created_at
+        FROM team_messages m JOIN users u ON u.id = m.user_id
+        WHERE m.team_id = ${teamId}
+          AND (m.created_at, m.id) > (
+            SELECT s.created_at, s.id FROM team_messages s WHERE s.id = ${afterId} AND s.team_id = ${teamId}
+          )
+        ORDER BY m.created_at ASC, m.id ASC
+        LIMIT 200
+      `) as MessageRow[];
+      return newer.map(toMessage);
+    }
+  }
+
+  const rows = (await sql()`
+    SELECT * FROM (
+      SELECT m.id, m.user_id, COALESCE(u.name, u.email) AS name, m.body, m.created_at
+      FROM team_messages m JOIN users u ON u.id = m.user_id
+      WHERE m.team_id = ${teamId}
+      ORDER BY m.created_at DESC, m.id DESC
+      LIMIT ${CHAT_PAGE}
+    ) recent
+    ORDER BY recent.created_at ASC, recent.id ASC
+  `) as MessageRow[];
+  return rows.map(toMessage);
+}
+
+/** Post a message in a team the user belongs to. */
+export async function sendTeamMessage(userId: string, teamId: string, body: string): Promise<TeamMessage> {
+  await ensureCollabTables();
+  await requireTeamMember(userId, teamId);
+  const text = body.trim();
+  if (!text) throw new CollabError("Write something first.");
+  if (text.length > TEAM_MESSAGE_MAX) throw new CollabError(`Messages can be at most ${TEAM_MESSAGE_MAX} characters.`);
+
+  const id = newId("msg");
+  await sql()`INSERT INTO team_messages (id, team_id, user_id, body) VALUES (${id}, ${teamId}, ${userId}, ${text})`;
+  const rows = (await sql()`
+    SELECT m.id, m.user_id, COALESCE(u.name, u.email) AS name, m.body, m.created_at
+    FROM team_messages m JOIN users u ON u.id = m.user_id
+    WHERE m.id = ${id}
+  `) as MessageRow[];
+  return toMessage(rows[0]);
+}
+
 /* ======================= Deck access ======================= */
 
 const rank = (r: DeckRole) => (r === "owner" ? 3 : r === "editor" ? 2 : 1);
@@ -266,10 +437,174 @@ export async function resolveAccess(userId: string, deckId: string): Promise<{ o
     WHERE s.deck_id = ${deckId}
       AND ((s.kind = 'user' AND s.grantee_id = ${userId})
         OR (s.kind = 'team' AND s.grantee_id IN (SELECT team_id FROM team_members WHERE user_id = ${userId})))
+      AND (NOT s.via_link OR EXISTS (SELECT 1 FROM deck_links l WHERE l.owner_id = s.owner_id AND l.deck_id = s.deck_id AND l.access = 'anyone_view' AND (l.expires_at IS NULL OR l.expires_at > now())))
   `) as { owner_id: string; role: ShareRole }[];
   if (!rows.length) return null;
   const best = rows.reduce((a, b) => (rank(b.role) > rank(a.role) ? b : a));
   return { ownerId: best.owner_id, role: best.role };
+}
+
+export type DeckComment = { id: string; userId: string; name: string; parentId: string | null; slideId: string | null; body: string; resolvedAt: string | null; createdAt: string };
+
+/** Comments are available to anyone with deck access; only the author or owner may resolve a thread. */
+export async function listDeckComments(userId: string, deckId: string): Promise<DeckComment[]> {
+  await ensureCollabTables();
+  const access = await resolveAccess(userId, deckId);
+  if (!access) throw new CollabError("Deck not found.", 404);
+  const rows = (await sql()`
+    SELECT c.id, c.user_id, COALESCE(u.name, u.email) AS name, c.parent_id, c.slide_id, c.body, c.resolved_at, c.created_at
+    FROM deck_comments c JOIN users u ON u.id = c.user_id
+    WHERE c.owner_id = ${access.ownerId} AND c.deck_id = ${deckId}
+    ORDER BY c.created_at ASC, c.id ASC
+  `) as { id: string; user_id: string; name: string; parent_id: string | null; slide_id: string | null; body: string; resolved_at: string | Date | null; created_at: string | Date }[];
+  return rows.map((r) => ({ id: r.id, userId: r.user_id, name: r.name, parentId: r.parent_id, slideId: r.slide_id, body: r.body, resolvedAt: r.resolved_at ? iso(r.resolved_at) : null, createdAt: iso(r.created_at) }));
+}
+
+export async function addDeckComment(userId: string, deckId: string, body: string, slideId: string | null, parentId: string | null): Promise<void> {
+  await ensureCollabTables();
+  const access = await resolveAccess(userId, deckId);
+  if (!access) throw new CollabError("You do not have permission to comment on this deck.", 403);
+  const text = body.trim();
+  if (!text || text.length > 4000) throw new CollabError("Comments must be between 1 and 4,000 characters.");
+  if (parentId) {
+    const parent = (await sql()`SELECT slide_id FROM deck_comments WHERE id = ${parentId} AND owner_id = ${access.ownerId} AND deck_id = ${deckId}`) as { slide_id: string | null }[];
+    if (!parent[0]) throw new CollabError("That comment thread was not found.", 404);
+  }
+  await sql()`INSERT INTO deck_comments (id, owner_id, deck_id, user_id, parent_id, slide_id, body) VALUES (${newId("comment")}, ${access.ownerId}, ${deckId}, ${userId}, ${parentId}, ${slideId}, ${text})`;
+}
+
+export async function setDeckCommentResolved(userId: string, deckId: string, commentId: string, resolved: boolean): Promise<void> {
+  await ensureCollabTables();
+  const access = await resolveAccess(userId, deckId);
+  if (!access) throw new CollabError("Deck not found.", 404);
+  const result = await sql()`UPDATE deck_comments SET resolved_at = ${resolved ? new Date().toISOString() : null} WHERE id = ${commentId} AND owner_id = ${access.ownerId} AND deck_id = ${deckId} AND (${userId} = ${access.ownerId} OR user_id = ${userId}) RETURNING id` as unknown[];
+  if (!result.length) throw new CollabError("You cannot resolve that comment.", 403);
+}
+
+export type AudienceQuestion = { id: string; name: string; body: string; slideNumber: number | null; createdAt: string; hiddenAt: string | null; answeredAt: string | null };
+type AudienceQuestionRow = { id: string; display_name: string; body: string; slide_number: number | null; created_at: string | Date; hidden_at: string | Date | null; answered_at: string | Date | null };
+const toAudienceQuestion = (r: AudienceQuestionRow): AudienceQuestion => ({ id: r.id, name: r.display_name, body: r.body, slideNumber: r.slide_number, createdAt: iso(r.created_at), hiddenAt: r.hidden_at ? iso(r.hidden_at) : null, answeredAt: r.answered_at ? iso(r.answered_at) : null });
+
+/** Questions visible on an active public share link. */
+export async function listPublicAudienceQuestions(linkToken: string): Promise<AudienceQuestion[] | null> {
+  await ensureCollabTables();
+  if (!/^[A-Za-z0-9_-]{20,80}$/.test(linkToken)) return null;
+  const rows = (await sql()`
+    SELECT q.id, q.display_name, q.body, q.slide_number, q.created_at, q.hidden_at, q.answered_at
+    FROM audience_questions q JOIN deck_links l ON l.token = q.token
+    JOIN decks d ON d.user_id = l.owner_id AND d.id = l.deck_id
+    WHERE q.token = ${linkToken} AND l.access = 'anyone_view' AND (l.expires_at IS NULL OR l.expires_at > now()) AND d.trashed_at IS NULL AND q.hidden_at IS NULL
+    ORDER BY q.created_at ASC, q.id ASC LIMIT 100
+  `) as AudienceQuestionRow[];
+  const active = (await sql()`SELECT 1 FROM deck_links l JOIN decks d ON d.user_id = l.owner_id AND d.id = l.deck_id WHERE l.token = ${linkToken} AND l.access = 'anyone_view' AND (l.expires_at IS NULL OR l.expires_at > now()) AND d.trashed_at IS NULL`) as unknown[];
+  return active.length ? rows.map(toAudienceQuestion) : null;
+}
+
+/** Public attendees may ask three questions per browser id within five minutes. */
+export async function addPublicAudienceQuestion(linkToken: string, visitorId: string, name: string, body: string, slideNumber: number | null): Promise<void> {
+  await ensureCollabTables();
+  if (!/^[A-Za-z0-9_-]{20,80}$/.test(linkToken)) throw new CollabError("This share link is not active.", 404);
+  if (!/^[0-9a-f-]{36}$/i.test(visitorId)) throw new CollabError("Refresh the page and try again.");
+  const link = (await sql()`SELECT l.token FROM deck_links l JOIN decks d ON d.user_id = l.owner_id AND d.id = l.deck_id WHERE l.token = ${linkToken} AND l.access = 'anyone_view' AND (l.expires_at IS NULL OR l.expires_at > now()) AND d.trashed_at IS NULL`) as { token: string }[];
+  if (!link.length) throw new CollabError("This share link is not active.", 404);
+  const recent = (await sql()`SELECT COUNT(*)::int AS count FROM audience_questions WHERE token = ${linkToken} AND visitor_id = ${visitorId} AND created_at > now() - interval '5 minutes'`) as { count: number }[];
+  if ((recent[0]?.count ?? 0) >= 3) throw new CollabError("Please wait a few minutes before asking another question.", 429);
+  const text = stripTags(body).trim().replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "");
+  if (text.length < 3 || text.length > 500) throw new CollabError("Questions must be between 3 and 500 characters.");
+  const displayName = stripTags(name).trim().replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 80) || "Guest";
+  await sql()`INSERT INTO audience_questions (id, token, visitor_id, display_name, body, slide_number) VALUES (${newId("question")}, ${linkToken}, ${visitorId}, ${displayName}, ${text}, ${slideNumber})`;
+}
+
+/** Deck editors can review and moderate questions sent through the deck's public link. */
+export async function listDeckAudienceQuestions(userId: string, deckId: string): Promise<AudienceQuestion[]> {
+  await ensureCollabTables();
+  const access = await resolveAccess(userId, deckId);
+  if (!access || access.role === "viewer") throw new CollabError("You cannot manage questions for this deck.", 403);
+  const rows = (await sql()`
+    SELECT q.id, q.display_name, q.body, q.slide_number, q.created_at, q.hidden_at, q.answered_at
+    FROM audience_questions q JOIN deck_links l ON l.token = q.token
+    WHERE l.owner_id = ${access.ownerId} AND l.deck_id = ${deckId}
+    ORDER BY q.created_at DESC, q.id DESC LIMIT 200
+  `) as AudienceQuestionRow[];
+  return rows.map(toAudienceQuestion);
+}
+
+export async function moderateDeckAudienceQuestion(userId: string, deckId: string, questionId: string, patch: { hidden?: boolean; answered?: boolean }): Promise<void> {
+  await ensureCollabTables();
+  const access = await resolveAccess(userId, deckId);
+  if (!access || access.role === "viewer") throw new CollabError("You cannot manage questions for this deck.", 403);
+  const row = (await sql()`SELECT q.hidden_at, q.answered_at FROM audience_questions q JOIN deck_links l ON l.token = q.token WHERE q.id = ${questionId} AND l.owner_id = ${access.ownerId} AND l.deck_id = ${deckId}`) as { hidden_at: string | Date | null; answered_at: string | Date | null }[];
+  if (!row[0]) throw new CollabError("That question was not found.", 404);
+  const hiddenAt = patch.hidden === undefined ? row[0].hidden_at : patch.hidden ? new Date().toISOString() : null;
+  const answeredAt = patch.answered === undefined ? row[0].answered_at : patch.answered ? new Date().toISOString() : null;
+  await sql()`UPDATE audience_questions SET hidden_at = ${hiddenAt}, answered_at = ${answeredAt} WHERE id = ${questionId}`;
+}
+
+export type AudiencePoll = { id: string; prompt: string; options: string[]; voteCounts: number[]; totalVotes: number; createdAt: string; endedAt: string | null };
+type AudiencePollRow = { id: string; prompt: string; options: unknown; created_at: string | Date; ended_at: string | Date | null };
+
+async function pollWithVotes(row: AudiencePollRow, visitorId?: string): Promise<AudiencePoll & { myVote: number | null }> {
+  let options: string[] = [];
+  try { options = Array.isArray(row.options) ? row.options as string[] : JSON.parse(String(row.options)) as string[]; } catch { /* corrupt old rows remain hidden from the tally */ }
+  const counts = (await sql()`SELECT option_index, COUNT(*)::int AS count FROM audience_votes WHERE poll_id = ${row.id} GROUP BY option_index`) as { option_index: number; count: number }[];
+  const voteCounts = options.map((_, i) => counts.find((c) => c.option_index === i)?.count ?? 0);
+  const mine = visitorId ? (await sql()`SELECT option_index FROM audience_votes WHERE poll_id = ${row.id} AND visitor_id = ${visitorId}`) as { option_index: number }[] : [];
+  return { id: row.id, prompt: row.prompt, options, voteCounts, totalVotes: voteCounts.reduce((sum, value) => sum + value, 0), createdAt: iso(row.created_at), endedAt: row.ended_at ? iso(row.ended_at) : null, myVote: mine[0]?.option_index ?? null };
+}
+
+async function deckPublicToken(userId: string, deckId: string): Promise<{ ownerId: string; token: string }> {
+  const access = await resolveAccess(userId, deckId);
+  if (!access || access.role === "viewer") throw new CollabError("You cannot manage polls for this deck.", 403);
+  const rows = (await sql()`SELECT token FROM deck_links WHERE owner_id = ${access.ownerId} AND deck_id = ${deckId} AND access = 'anyone_view'`) as { token: string }[];
+  if (!rows[0]) throw new CollabError("Turn on the public share link before creating a live poll.", 409);
+  return { ownerId: access.ownerId, token: rows[0].token };
+}
+
+export async function listDeckAudiencePolls(userId: string, deckId: string): Promise<AudiencePoll[]> {
+  await ensureCollabTables();
+  const { token: linkToken } = await deckPublicToken(userId, deckId);
+  const rows = (await sql()`SELECT id, prompt, options, created_at, ended_at FROM audience_polls WHERE token = ${linkToken} ORDER BY created_at DESC LIMIT 50`) as AudiencePollRow[];
+  return Promise.all(rows.map(async (row) => { const { myVote: _myVote, ...poll } = await pollWithVotes(row); return poll; }));
+}
+
+export async function createDeckAudiencePoll(userId: string, deckId: string, prompt: string, options: string[]): Promise<AudiencePoll[]> {
+  await ensureCollabTables();
+  const { token: linkToken } = await deckPublicToken(userId, deckId);
+  const cleanPrompt = stripTags(prompt).trim().slice(0, 200);
+  const cleanOptions = options.map((option) => stripTags(option).trim().slice(0, 80));
+  if (cleanPrompt.length < 3 || cleanOptions.length < 2 || cleanOptions.length > 6 || cleanOptions.some((option) => !option)) throw new CollabError("A poll needs a question and 2 to 6 non-empty options.");
+  const id = newId("poll");
+  const created = (await sql()`INSERT INTO audience_polls (id, token, created_by, prompt, options) VALUES (${id}, ${linkToken}, ${userId}, ${cleanPrompt}, ${JSON.stringify(cleanOptions)}::jsonb) ON CONFLICT DO NOTHING RETURNING id`) as { id: string }[];
+  if (!created.length) throw new CollabError("End the current poll before starting another.", 409);
+  return listDeckAudiencePolls(userId, deckId);
+}
+
+export async function endDeckAudiencePoll(userId: string, deckId: string, pollId: string): Promise<AudiencePoll[]> {
+  await ensureCollabTables();
+  const { token: linkToken } = await deckPublicToken(userId, deckId);
+  const ended = (await sql()`UPDATE audience_polls SET ended_at = now() WHERE id = ${pollId} AND token = ${linkToken} AND ended_at IS NULL RETURNING id`) as unknown[];
+  if (!ended.length) throw new CollabError("That live poll was not found.", 404);
+  return listDeckAudiencePolls(userId, deckId);
+}
+
+export async function getPublicAudiencePoll(linkToken: string, visitorId: string): Promise<(AudiencePoll & { myVote: number | null }) | null> {
+  await ensureCollabTables();
+  if (!/^[A-Za-z0-9_-]{20,80}$/.test(linkToken)) throw new CollabError("This share link is not active.", 404);
+  const activeLink = (await sql()`SELECT 1 FROM deck_links l JOIN decks d ON d.user_id = l.owner_id AND d.id = l.deck_id WHERE l.token = ${linkToken} AND l.access = 'anyone_view' AND (l.expires_at IS NULL OR l.expires_at > now()) AND d.trashed_at IS NULL`) as unknown[];
+  if (!activeLink.length) throw new CollabError("This share link is not active.", 404);
+  const rows = (await sql()`SELECT id, prompt, options, created_at, ended_at FROM audience_polls WHERE token = ${linkToken} AND ended_at IS NULL LIMIT 1`) as AudiencePollRow[];
+  return rows[0] ? pollWithVotes(rows[0], visitorId) : null;
+}
+
+export async function castAudiencePollVote(linkToken: string, visitorId: string, pollId: string, optionIndex: number): Promise<AudiencePoll & { myVote: number | null }> {
+  await ensureCollabTables();
+  if (!/^[A-Za-z0-9_-]{20,80}$/.test(linkToken) || !/^[0-9a-f-]{36}$/i.test(visitorId)) throw new CollabError("Refresh the page and try again.");
+  const rows = (await sql()`SELECT p.id, p.prompt, p.options, p.created_at, p.ended_at FROM audience_polls p JOIN deck_links l ON l.token = p.token JOIN decks d ON d.user_id = l.owner_id AND d.id = l.deck_id WHERE p.id = ${pollId} AND p.token = ${linkToken} AND p.ended_at IS NULL AND l.access = 'anyone_view' AND (l.expires_at IS NULL OR l.expires_at > now()) AND d.trashed_at IS NULL`) as AudiencePollRow[];
+  if (!rows[0]) throw new CollabError("This poll has ended.", 409);
+  const options: unknown = Array.isArray(rows[0].options) ? rows[0].options : JSON.parse(String(rows[0].options));
+  if (!Array.isArray(options) || optionIndex < 0 || optionIndex >= options.length) throw new CollabError("Choose one of the poll options.");
+  await sql()`INSERT INTO audience_votes (poll_id, visitor_id, option_index) VALUES (${pollId}, ${visitorId}, ${optionIndex}) ON CONFLICT (poll_id, visitor_id) DO UPDATE SET option_index = EXCLUDED.option_index, created_at = now()`;
+  return pollWithVotes(rows[0], visitorId);
 }
 
 export type SharedDeck = {
@@ -297,6 +632,10 @@ export async function listSharedWithMe(userId: string): Promise<SharedDeck[]> {
     WHERE s.owner_id <> ${userId}
       AND ((s.kind = 'user' AND s.grantee_id = ${userId})
         OR (s.kind = 'team' AND s.grantee_id IN (SELECT team_id FROM team_members WHERE user_id = ${userId})))
+      AND (NOT s.via_link OR EXISTS (
+        SELECT 1 FROM deck_links l WHERE l.owner_id = s.owner_id AND l.deck_id = s.deck_id
+          AND l.access = 'anyone_view' AND (l.expires_at IS NULL OR l.expires_at > now())
+      ))
     ORDER BY d.updated_at DESC
   `) as { id: string; title: string; updated_at: string; slide_count: number; theme_id: string; role: ShareRole; kind: "user" | "team"; grantee_id: string; via_link: boolean; owner_name: string }[];
   const seen = new Map<string, SharedDeck>();
@@ -380,38 +719,90 @@ export async function removeShare(ownerId: string, deckId: string, kind: "user" 
 
 /* ---------- Link ---------- */
 
-export async function getLink(ownerId: string, deckId: string): Promise<{ access: LinkAccess; token: string } | null> {
+export async function getLink(ownerId: string, deckId: string): Promise<{ access: LinkAccess; token: string; expiresAt: string | null; passwordEnabled: boolean } | null> {
   await ensureCollabTables();
   await requireOwnDeck(ownerId, deckId);
-  const rows = (await sql()`SELECT access, token FROM deck_links WHERE owner_id = ${ownerId} AND deck_id = ${deckId}`) as { access: LinkAccess; token: string }[];
-  return rows[0] ?? null;
+  const rows = (await sql()`SELECT access, token, expires_at, password_hash FROM deck_links WHERE owner_id = ${ownerId} AND deck_id = ${deckId}`) as { access: LinkAccess; token: string; expires_at: string | Date | null; password_hash: string | null }[];
+  return rows[0] ? { access: rows[0].access, token: rows[0].token, expiresAt: rows[0].expires_at ? iso(rows[0].expires_at) : null, passwordEnabled: Boolean(rows[0].password_hash) } : null;
 }
 
 /**
  * Who a share link works for. `anyone_view` lets any signed-in person with the link view the deck; `restricted` turns the
  * link off (and withdraws access that people got through it). The link's token stays the same so it can be switched back on.
  */
-export async function setLinkAccess(ownerId: string, deckId: string, access: LinkAccess): Promise<{ access: LinkAccess; token: string }> {
+export async function setLinkAccess(ownerId: string, deckId: string, access: LinkAccess): Promise<{ access: LinkAccess; token: string; expiresAt: string | null; passwordEnabled: boolean }> {
   await ensureCollabTables();
   await requireOwnDeck(ownerId, deckId);
   const rows = (await sql()`
     INSERT INTO deck_links (owner_id, deck_id, token, access) VALUES (${ownerId}, ${deckId}, ${token()}, ${access})
     ON CONFLICT (owner_id, deck_id) DO UPDATE SET access = EXCLUDED.access
-    RETURNING access, token
-  `) as { access: LinkAccess; token: string }[];
-  if (access === "restricted") await sql()`DELETE FROM deck_shares WHERE owner_id = ${ownerId} AND deck_id = ${deckId} AND via_link`;
-  return rows[0];
+    RETURNING access, token, expires_at, password_hash
+  `) as { access: LinkAccess; token: string; expires_at: string | Date | null; password_hash: string | null }[];
+  if (access === "restricted") {
+    await sql()`DELETE FROM deck_shares WHERE owner_id = ${ownerId} AND deck_id = ${deckId} AND via_link`;
+    await sql()`UPDATE audience_polls SET ended_at = now() WHERE token = ${rows[0].token} AND ended_at IS NULL`;
+  }
+  return { access: rows[0].access, token: rows[0].token, expiresAt: rows[0].expires_at ? iso(rows[0].expires_at) : null, passwordEnabled: Boolean(rows[0].password_hash) };
+}
+
+/** Set or clear a public link's expiry. The owner can extend an expired link without changing its URL. */
+export async function setLinkExpiry(ownerId: string, deckId: string, hours: 24 | 168 | 720 | null): Promise<{ access: LinkAccess; token: string; expiresAt: string | null; passwordEnabled: boolean }> {
+  await ensureCollabTables();
+  await requireOwnDeck(ownerId, deckId);
+  const current = await getLink(ownerId, deckId);
+  if (!current) throw new CollabError("Enable the share link before setting an expiry.", 409);
+  const rows = (await sql()`UPDATE deck_links SET expires_at = ${hours === null ? null : new Date(Date.now() + hours * 60 * 60 * 1000).toISOString()} WHERE owner_id = ${ownerId} AND deck_id = ${deckId} RETURNING access, token, expires_at, password_hash`) as { access: LinkAccess; token: string; expires_at: string | Date | null; password_hash: string | null }[];
+  return { access: rows[0].access, token: rows[0].token, expiresAt: rows[0].expires_at ? iso(rows[0].expires_at) : null, passwordEnabled: Boolean(rows[0].password_hash) };
+}
+
+export async function setLinkPassword(ownerId: string, deckId: string, password: string | null): Promise<{ access: LinkAccess; token: string; expiresAt: string | null; passwordEnabled: boolean }> {
+  await ensureCollabTables();
+  await requireOwnDeck(ownerId, deckId);
+  const current = await getLink(ownerId, deckId);
+  if (!current) throw new CollabError("Enable the share link before setting a password.", 409);
+  if (password !== null && (password.length < 8 || Buffer.byteLength(password, "utf8") > 72)) throw new CollabError("Use a password between 8 and 72 characters.");
+  const passwordHash = password === null ? null : await bcrypt.hash(password, 12);
+  const rows = (await sql()`UPDATE deck_links SET password_hash = ${passwordHash}, password_updated_at = now() WHERE owner_id = ${ownerId} AND deck_id = ${deckId} RETURNING access, token, expires_at, password_hash`) as { access: LinkAccess; token: string; expires_at: string | Date | null; password_hash: string | null }[];
+  return { access: rows[0].access, token: rows[0].token, expiresAt: rows[0].expires_at ? iso(rows[0].expires_at) : null, passwordEnabled: Boolean(rows[0].password_hash) };
+}
+
+export async function publicLinkNeedsPassword(linkToken: string): Promise<boolean | null> {
+  await ensureCollabTables();
+  if (!/^[A-Za-z0-9_-]{20,80}$/.test(linkToken)) return null;
+  const rows = (await sql()`SELECT l.password_hash FROM deck_links l JOIN decks d ON d.user_id = l.owner_id AND d.id = l.deck_id WHERE l.token = ${linkToken} AND l.access = 'anyone_view' AND (l.expires_at IS NULL OR l.expires_at > now()) AND d.trashed_at IS NULL`) as { password_hash: string | null }[];
+  return rows.length ? Boolean(rows[0].password_hash) : null;
+}
+
+export async function authenticatePublicLink(linkToken: string, password: string): Promise<string | null> {
+  await ensureCollabTables();
+  if (!/^[A-Za-z0-9_-]{20,80}$/.test(linkToken)) return null;
+  const rows = (await sql()`SELECT l.password_hash, l.password_updated_at FROM deck_links l JOIN decks d ON d.user_id = l.owner_id AND d.id = l.deck_id WHERE l.token = ${linkToken} AND l.access = 'anyone_view' AND (l.expires_at IS NULL OR l.expires_at > now()) AND d.trashed_at IS NULL`) as { password_hash: string | null; password_updated_at: string | Date | null }[];
+  const row = rows[0];
+  if (!row?.password_hash || !(await bcrypt.compare(password, row.password_hash))) return null;
+  return signShareAccess(linkToken, row.password_updated_at ? new Date(row.password_updated_at).getTime() : 0);
+}
+
+export async function authorizePublicLink(linkToken: string, accessToken: string | null): Promise<boolean> {
+  await ensureCollabTables();
+  if (!/^[A-Za-z0-9_-]{20,80}$/.test(linkToken)) return false;
+  const rows = (await sql()`SELECT l.password_hash, l.password_updated_at FROM deck_links l JOIN decks d ON d.user_id = l.owner_id AND d.id = l.deck_id WHERE l.token = ${linkToken} AND l.access = 'anyone_view' AND (l.expires_at IS NULL OR l.expires_at > now()) AND d.trashed_at IS NULL`) as { password_hash: string | null; password_updated_at: string | Date | null }[];
+  if (!rows[0]) return false;
+  if (!rows[0].password_hash) return true;
+  const version = rows[0].password_updated_at ? new Date(rows[0].password_updated_at).getTime() : 0;
+  return verifyShareAccess(accessToken, linkToken, version);
 }
 
 /** A signed-in visitor opens a link: if the owner allows it, they become a viewer. Returns the deck id to open. */
-export async function claimLink(userId: string, linkToken: string): Promise<{ deckId: string }> {
+export async function claimLink(userId: string, linkToken: string, accessToken: string | null = null): Promise<{ deckId: string }> {
   await ensureCollabTables();
   const rows = (await sql()`
-    SELECT l.owner_id, l.deck_id, l.access, d.trashed_at FROM deck_links l
+    SELECT l.owner_id, l.deck_id, l.access, l.expires_at, d.trashed_at FROM deck_links l
     JOIN decks d ON d.user_id = l.owner_id AND d.id = l.deck_id WHERE l.token = ${linkToken}
-  `) as { owner_id: string; deck_id: string; access: LinkAccess; trashed_at: string | null }[];
+  `) as { owner_id: string; deck_id: string; access: LinkAccess; expires_at: string | Date | null; trashed_at: string | null }[];
   const link = rows[0];
-  if (!link || link.access !== "anyone_view" || link.trashed_at) throw new CollabError("This link is not active. Ask the owner to share the deck again.", 404);
+  if (!link || link.access !== "anyone_view" || link.trashed_at || (link.expires_at && new Date(link.expires_at).getTime() <= Date.now())) throw new CollabError("This link is not active. Ask the owner to share the deck again.", 404);
+  const requiresPassword = await publicLinkNeedsPassword(linkToken);
+  if (requiresPassword && !(await authorizePublicLink(linkToken, accessToken))) throw new CollabError("Enter the share password to open this link.", 401);
   if (link.owner_id === userId) return { deckId: link.deck_id };
   const clash = (await sql()`SELECT 1 FROM decks WHERE user_id = ${userId} AND id = ${link.deck_id}`) as unknown[];
   if (clash.length) throw new CollabError("You already have a different deck with the same id, so this one cannot be opened.", 409);
@@ -420,6 +811,27 @@ export async function claimLink(userId: string, linkToken: string): Promise<{ de
     ON CONFLICT DO NOTHING
   `;
   return { deckId: link.deck_id };
+}
+
+/** Read-only deck data for a valid public token. Speaker notes and unsafe rich text are never exposed. */
+export async function getPublicDeckByToken(linkToken: string): Promise<Deck | null> {
+  await ensureCollabTables();
+  if (!/^[A-Za-z0-9_-]{20,80}$/.test(linkToken)) return null;
+  const rows = (await sql()`
+    SELECT d.data FROM deck_links l
+    JOIN decks d ON d.user_id = l.owner_id AND d.id = l.deck_id
+    WHERE l.token = ${linkToken} AND l.access = 'anyone_view' AND (l.expires_at IS NULL OR l.expires_at > now()) AND d.trashed_at IS NULL
+    LIMIT 1
+  `) as { data: unknown }[];
+  if (!rows[0]) return null;
+  const parsed = DeckSchema.safeParse(rows[0].data);
+  if (!parsed.success) return null;
+  const deck = parsed.data;
+  for (const slide of deck.slides) {
+    slide.notes = "";
+    for (const element of slide.elements) if (element.type === "text") element.html = sanitizeHtml(element.html);
+  }
+  return deck;
 }
 
 /* ======================= Edit lock ======================= */
@@ -439,13 +851,10 @@ export async function acquireLock(ownerId: string, deckId: string, userId: strin
   const name = await displayName(userId);
   const taken = (await sql()`
     INSERT INTO deck_locks (owner_id, deck_id, holder_id, holder_name, client_id) VALUES (${ownerId}, ${deckId}, ${userId}, ${name}, ${clientId})
-    ON CONFLICT (owner_id, deck_id) DO UPDATE SET holder_id = EXCLUDED.holder_id, holder_name = EXCLUDED.holder_name, client_id = EXCLUDED.client_id, heartbeat_at = now()
-    WHERE deck_locks.client_id = EXCLUDED.client_id OR deck_locks.heartbeat_at < now() - make_interval(secs => ${LOCK_TTL_SECONDS})
+    ON CONFLICT (owner_id, deck_id, client_id) DO UPDATE SET holder_id = EXCLUDED.holder_id, holder_name = EXCLUDED.holder_name, heartbeat_at = now()
     RETURNING 1
   `) as unknown[];
-  if (taken.length) return { state: "mine" };
-  const holder = (await sql()`SELECT holder_name FROM deck_locks WHERE owner_id = ${ownerId} AND deck_id = ${deckId}`) as { holder_name: string }[];
-  return { state: "held", holderName: holder[0]?.holder_name ?? "Someone" };
+  return taken.length ? { state: "mine" } : { state: "held", holderName: name };
 }
 
 export type PendingRequest = { id: string; requesterName: string };
@@ -455,12 +864,7 @@ export async function heartbeat(ownerId: string, deckId: string, clientId: strin
   await ensureCollabTables();
   const alive = (await sql()`UPDATE deck_locks SET heartbeat_at = now() WHERE owner_id = ${ownerId} AND deck_id = ${deckId} AND client_id = ${clientId} RETURNING 1`) as unknown[];
   if (!alive.length) return { lost: true };
-  const req = (await sql()`
-    SELECT id, requester_name FROM deck_lock_requests
-    WHERE owner_id = ${ownerId} AND deck_id = ${deckId} AND status = 'pending' AND created_at > now() - make_interval(secs => ${REQUEST_TTL_SECONDS})
-    ORDER BY created_at ASC LIMIT 1
-  `) as { id: string; requester_name: string }[];
-  return { lost: false, request: req[0] ? { id: req[0].id, requesterName: req[0].requester_name } : null };
+  return { lost: false, request: null };
 }
 
 export async function releaseLock(ownerId: string, deckId: string, clientId: string): Promise<void> {
@@ -470,12 +874,8 @@ export async function releaseLock(ownerId: string, deckId: string, clientId: str
 
 /** Ask the current holder to hand over editing. Replaces any earlier request from the same tab. */
 export async function requestTakeover(ownerId: string, deckId: string, userId: string, clientId: string): Promise<{ requestId: string }> {
-  await ensureCollabTables();
-  const name = await displayName(userId);
-  await sql()`DELETE FROM deck_lock_requests WHERE owner_id = ${ownerId} AND deck_id = ${deckId} AND client_id = ${clientId}`;
-  const id = newId("lockreq");
-  await sql()`INSERT INTO deck_lock_requests (id, owner_id, deck_id, requester_id, requester_name, client_id) VALUES (${id}, ${ownerId}, ${deckId}, ${userId}, ${name}, ${clientId})`;
-  return { requestId: id };
+  void ownerId; void deckId; void userId; void clientId;
+  throw new CollabError("Editors can work on this deck at the same time.", 409);
 }
 
 export type RequestStatus = "pending" | "allowed" | "denied" | "free" | "expired";
@@ -519,21 +919,26 @@ export async function respondToRequest(ownerId: string, deckId: string, holderCl
 
 /** True when another tab or person holds a live lock, so this save must be refused. */
 export async function lockBlocksSave(ownerId: string, deckId: string, clientId: string | null): Promise<{ holderName: string } | null> {
-  await ensureCollabTables();
-  const rows = (await sql()`
-    SELECT holder_name FROM deck_locks
-    WHERE owner_id = ${ownerId} AND deck_id = ${deckId} AND heartbeat_at > now() - make_interval(secs => ${LOCK_TTL_SECONDS}) AND client_id <> ${clientId ?? ""}
-  `) as { holder_name: string }[];
-  return rows[0] ? { holderName: rows[0].holder_name } : null;
+  void ownerId; void deckId; void clientId;
+  return null;
 }
 
 /** Who has the deck open for editing right now, for a read-only viewer's "X is editing" note. */
 export async function currentEditor(ownerId: string, deckId: string): Promise<string | null> {
   await ensureCollabTables();
   const rows = (await sql()`
-    SELECT holder_name FROM deck_locks WHERE owner_id = ${ownerId} AND deck_id = ${deckId} AND heartbeat_at > now() - make_interval(secs => ${LOCK_TTL_SECONDS})
-  `) as { holder_name: string }[];
-  return rows[0]?.holder_name ?? null;
+    SELECT COUNT(*)::int AS count, MIN(holder_name) AS name FROM deck_locks
+    WHERE owner_id = ${ownerId} AND deck_id = ${deckId} AND heartbeat_at > now() - make_interval(secs => ${LOCK_TTL_SECONDS})
+  `) as { count: number; name: string | null }[];
+  const row = rows[0];
+  return !row?.count ? null : row.count > 1 ? `${row.name ?? "Someone"} and ${row.count - 1} other${row.count === 2 ? "" : "s"}` : row.name;
+}
+
+/** Whether this browser tab still holds a live edit lease for a deck. */
+export async function holdsEditLock(ownerId: string, deckId: string, clientId: string): Promise<boolean> {
+  await ensureCollabTables();
+  const rows = (await sql()`SELECT 1 FROM deck_locks WHERE owner_id = ${ownerId} AND deck_id = ${deckId} AND client_id = ${clientId} AND heartbeat_at > now() - make_interval(secs => ${LOCK_TTL_SECONDS})`) as unknown[];
+  return rows.length > 0;
 }
 
 /** Clean up everything that points at a user who is being deleted (shares to them cannot use a foreign key). */

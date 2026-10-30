@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { CLIENT_HEADER } from "@/lib/client-id";
-import { CollabError, currentEditor, lockBlocksSave, resolveAccess } from "@/lib/collab-db";
-import { deleteDeckRow, getDeckData, setDeckTrashed, updateDeckContent, upsertDeck } from "@/lib/decks-db";
+import { CollabError, currentEditor, resolveAccess } from "@/lib/collab-db";
+import { compareAndSwapDeckContent, createAutoDeckVersion, deleteDeckRow, getDeckData, setDeckTrashed, upsertDeck } from "@/lib/decks-db";
 import { DeckSchema } from "@/lib/deck/schema";
+import { mergeDecks } from "@/lib/deck/merge";
 import { assertRoom, deckSize, StorageFullError } from "@/lib/storage";
 
 /**
@@ -55,53 +55,61 @@ export async function PUT(req: Request, { params }: Params) {
     return NextResponse.json({ error: "Request body must be JSON." }, { status: 400 });
   }
 
-  const parsed = DeckSchema.safeParse(body);
-  if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    return NextResponse.json({ error: first?.message ?? "Invalid deck." }, { status: 400 });
+  const envelope = z.object({ deck: DeckSchema, base: DeckSchema.nullable().optional() }).safeParse(body);
+  let deck: z.infer<typeof DeckSchema>;
+  let base: z.infer<typeof DeckSchema> | null = null;
+  if (envelope.success) {
+    deck = envelope.data.deck;
+    base = envelope.data.base ?? null;
+  } else {
+    const parsed = DeckSchema.safeParse(body);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      return NextResponse.json({ error: first?.message ?? "Invalid deck." }, { status: 400 });
+    }
+    deck = parsed.data;
   }
-  const deck = parsed.data;
 
   if (deck.id !== id) return NextResponse.json({ error: "Deck id in the body does not match the URL." }, { status: 400 });
-
-  const clientId = req.headers.get(CLIENT_HEADER) ?? null;
 
   try {
     const access = await resolveAccess(session.user.id, id);
 
     if (!access) {
+      if (base) return NextResponse.json({ error: "You no longer have access to this deck." }, { status: 404 });
       // New deck: only the owner may create it (the deck's user id must equal the signed-in user).
       const json = JSON.stringify(deck);
       const size = Buffer.byteLength(json);
       await assertRoom(session.user.id, size);
       await upsertDeck(session.user.id, deck);
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true, deck });
     }
 
     if (access.role === "viewer") {
       return NextResponse.json({ error: "You can only view this deck." }, { status: 403 });
     }
 
-    // Check the edit lock: refuse if another tab/person holds it.
-    const blocked = await lockBlocksSave(access.ownerId, id, clientId);
-    if (blocked) {
-      return NextResponse.json({ error: `${blocked.holderName} is editing this deck. Save is blocked.` }, { status: 409 });
-    }
-
-    const json = JSON.stringify(deck);
-    const newSize = Buffer.byteLength(json);
     const oldSize = await deckSize(access.ownerId, id);
-    await assertRoom(access.ownerId, newSize, oldSize);
-
-    if (access.role === "owner") {
-      await upsertDeck(access.ownerId, deck);
-    } else {
-      // editor: update content only, never move out of trash or change ownership
-      const updated = await updateDeckContent(access.ownerId, deck);
-      if (!updated) return NextResponse.json({ error: "Deck not found." }, { status: 404 });
+    await createAutoDeckVersion(access.ownerId, id, session.user.id);
+    let savedDeck: typeof deck | null = null;
+    // Re-read and retry if another save lands between our read and conditional write.
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const remoteParsed = DeckSchema.safeParse(await getDeckData(access.ownerId, id));
+      if (!remoteParsed.success) return NextResponse.json({ error: "The saved deck could not be merged." }, { status: 409 });
+      const remote = remoteParsed.data;
+      const baseline = base ?? remote;
+      const comparable = (value: typeof remote) => JSON.stringify({ ...value, updatedAt: "" });
+      const candidate = comparable(remote) === comparable(baseline) ? deck : mergeDecks(baseline, deck, remote);
+      candidate.updatedAt = new Date(Math.max(Date.now(), Date.parse(remote.updatedAt) + 1)).toISOString();
+      const json = JSON.stringify(candidate);
+      await assertRoom(access.ownerId, Buffer.byteLength(json), oldSize);
+      if (await compareAndSwapDeckContent(access.ownerId, candidate, remote.updatedAt)) {
+        savedDeck = candidate;
+        break;
+      }
     }
-
-    return NextResponse.json({ ok: true });
+    if (!savedDeck) return NextResponse.json({ error: "This deck changed repeatedly while saving. Please save again." }, { status: 409 });
+    return NextResponse.json({ ok: true, deck: savedDeck });
   } catch (err) {
     if (err instanceof CollabError) return NextResponse.json({ error: err.message }, { status: err.status });
     if (err instanceof StorageFullError) return NextResponse.json({ error: err.message, code: err.code }, { status: err.status });

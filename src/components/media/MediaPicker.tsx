@@ -9,21 +9,23 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  kind?: "image" | "video";
   /** Called with the chosen image's public URL and its name. */
   onPick: (url: string, name: string) => void;
 };
 
 /** Choose an image from the media library, or add a new one to it, without leaving the editor. */
-export function MediaPicker({ open, onOpenChange, onPick }: Props) {
+export function MediaPicker({ open, onOpenChange, onPick, kind = "image" }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="ps-media-picker">
         <DialogHeader>
           <DialogTitle>Media library</DialogTitle>
-          <DialogDescription>Choose an image for this slide.</DialogDescription>
+          <DialogDescription>Choose a {kind} from your media library.</DialogDescription>
         </DialogHeader>
         {/* Mounted only while open, so it always shows the current library. */}
         <PickerBody
+          kind={kind}
           onPick={(url, name) => {
             onPick(url, name);
             onOpenChange(false);
@@ -34,7 +36,7 @@ export function MediaPicker({ open, onOpenChange, onPick }: Props) {
   );
 }
 
-function PickerBody({ onPick }: { onPick: (url: string, name: string) => void }) {
+function PickerBody({ onPick, kind }: { onPick: (url: string, name: string) => void; kind: "image" | "video" }) {
   const [items, setItems] = useState<MediaItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -50,13 +52,12 @@ function PickerBody({ onPick }: { onPick: (url: string, name: string) => void })
     };
   }, []);
 
-  // Slides take images only for now, so videos stay in the library but are not offered here.
-  const images = items?.filter((m) => m.kind === "image") ?? null;
+  const media = items?.filter((m) => m.kind === kind) ?? null;
 
   const addFiles = async (files: File[]) => {
     setBusy(true);
     setError(null);
-    for (const file of files.filter((f) => f.type.startsWith("image/"))) {
+    for (const file of files.filter((f) => kind === "image" ? f.type.startsWith("image/") : ["video/mp4", "video/webm"].includes(f.type))) {
       try {
         await addMediaFile(file);
       } catch (err) {
@@ -79,7 +80,7 @@ function PickerBody({ onPick }: { onPick: (url: string, name: string) => void })
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept={kind === "image" ? "image/*" : "video/mp4,video/webm"}
           multiple
           className="hidden"
           aria-hidden
@@ -95,16 +96,16 @@ function PickerBody({ onPick }: { onPick: (url: string, name: string) => void })
           {error}
         </p>
       ) : null}
-      {images === null ? (
+      {media === null ? (
         <p className="ps-body py-8 text-center">Loading…</p>
-      ) : images.length === 0 ? (
+      ) : media.length === 0 ? (
         <div className="ps-media-picker-empty">
           <Images size={24} aria-hidden />
-          <p className="ps-body">No images yet. Upload one to get started.</p>
+          <p className="ps-body">No {kind === "video" ? "videos" : "images"} yet. Upload one to get started.</p>
         </div>
       ) : (
-        <ul className="ps-media-picker-grid" aria-label="Library images">
-          {images.map((m) => (
+        <ul className="ps-media-picker-grid" aria-label={`Library ${kind}s`}>
+          {media.map((m) => (
             <li key={m.id}>
               <button type="button" className="ps-media-pick" onClick={() => onPick(m.url, m.name)} title={`${m.name} · ${formatBytes(m.bytes)}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element -- remote thumbnail */}

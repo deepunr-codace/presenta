@@ -4,7 +4,7 @@ import { jsonOk } from "../_lib/respond";
 export const runtime = "nodejs";
 
 /**
- * Which provider would serve this request: the visitor's own key if sent, else Presenta AI for a signed-in user
+ * Which provider would serve this request: the visitor's own key if sent, else Presenta Studio for a signed-in user
  * (with today's allowance), else the server's own key where allowed. Checking does not use any allowance.
  */
 export async function GET(request: Request) {

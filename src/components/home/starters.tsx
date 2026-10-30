@@ -6,7 +6,7 @@ export type Intent = "create" | "paste" | "import" | "sample";
 /** Secondary ways to start, shown as outline pills beside the page title. */
 export const ALT_STARTS: { id: Exclude<Intent, "create">; label: string; icon: ReactNode }[] = [
   { id: "paste", label: "From my content", icon: <ClipboardText /> },
-  { id: "import", label: "Import JSON", icon: <UploadSimple /> },
+  { id: "import", label: "Import deck", icon: <UploadSimple /> },
   { id: "sample", label: "Open sample", icon: <Sparkle /> },
 ];
 

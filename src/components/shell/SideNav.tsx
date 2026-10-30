@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import {
-  ArrowRight,
   ChartLine,
   ChevronRight,
   Ellipsis,
@@ -14,8 +13,8 @@ import {
   Images,
   KeyRound,
   Keyboard,
-  LayoutGrid,
-  LayoutTemplate,
+  LayoutPanelTop,
+  PlayingCardsFan,
   Palette,
   PanelLeftClose,
   PanelLeftOpen,
@@ -26,10 +25,9 @@ import {
   Share2,
   Star,
   Trash2,
-  UsersRound,
+  Users,
   type LucideIcon,
 } from "lucide-react";
-import { LABS_FEATURES, LABS_HIGHLIGHTS } from "@/components/labs/labs-data";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAiHealth } from "@/hooks/useAiHealth";
 import { useDecks } from "@/hooks/useDecks";
@@ -38,7 +36,7 @@ import { useIsMac, useStarred } from "@/hooks/useStarred";
 import type { DeckSummary } from "@/lib/persist";
 import { timeAgo } from "@/lib/time";
 import { Avatar } from "./Avatar";
-import { Mark } from "./Mark";
+import { NotificationsCenter } from "./NotificationsCenter";
 import { useApiKeyDialog } from "./api-key-dialog-store";
 import { ModeToggle } from "./ModeToggle";
 import type { NavKey } from "./nav-items";
@@ -52,15 +50,15 @@ type RailItem = { label: string; href?: string; icon: Icon; key?: NavKey; /** Op
 const RAIL: RailItem[] = [
   { label: "Search", icon: Search, action: "search" },
   { label: "Home", href: "/", icon: House, key: "home" },
-  { label: "Decks", href: "/decks", icon: LayoutGrid, key: "decks" },
-  { label: "Templates", href: "/templates", icon: LayoutTemplate, key: "templates" },
+  { label: "Decks", href: "/decks", icon: PlayingCardsFan, key: "decks" },
+  { label: "Templates", href: "/templates", icon: LayoutPanelTop, key: "templates" },
   { label: "Media", href: "/media", icon: Images, key: "media" },
-  { label: "Teams", href: "/teams", icon: UsersRound, key: "teams" },
+  { label: "Teams", href: "/teams", icon: Users, key: "teams" },
   { label: "Brand", href: "/brand", icon: Palette, key: "brand" },
 ];
 
 /** Destinations in the More menu. A `key` makes the More icon show as active while that page is open. */
-const MORE_KEYS: NavKey[] = ["trash"];
+const MORE_KEYS: NavKey[] = ["trash", "labs"];
 
 const RECENT_LIMIT = 5;
 const STARRED_LIMIT = 5;
@@ -120,20 +118,20 @@ function RailButton({ item, active }: { item: RailItem; active: boolean }) {
     const onClick = item.action === "search" ? () => setSearch(true) : () => openKeyDialog(true);
     const title = item.action === "search" ? "Search decks, pages and templates" : "Add or change your API key";
     return (
-      <button type="button" className="ps-rail-item" title={title} onClick={onClick}>
+      <button type="button" className="ps-rail-item" aria-label={item.label} title={title} onClick={onClick}>
         {body}
       </button>
     );
   }
   if (!item.href) {
     return (
-      <button type="button" className="ps-rail-item" aria-disabled="true" title={`${item.label} (coming soon)`} onClick={(e) => e.preventDefault()}>
+      <button type="button" className="ps-rail-item" aria-disabled="true" aria-label={item.label} title={`${item.label} (coming soon)`} onClick={(e) => e.preventDefault()}>
         {body}
       </button>
     );
   }
   return (
-    <Link href={item.href} className="ps-rail-item" data-active={active ? "true" : undefined} aria-current={active ? "page" : undefined}>
+    <Link href={item.href} className="ps-rail-item" data-active={active ? "true" : undefined} aria-current={active ? "page" : undefined} aria-label={item.label} title={item.label}>
       {body}
     </Link>
   );
@@ -156,6 +154,10 @@ function RailMore({ active }: { active?: NavKey }) {
         <span className="ps-rail-label">More</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="right" align="end" sideOffset={12} className="ps-more-menu w-60">
+        <DropdownMenuItem onClick={() => router.push("/labs")}>
+          <FlaskConical /> Labs <span className="ps-more-chip">New</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => router.push("/trash")}>
           <Trash2 /> Trash
         </DropdownMenuItem>
@@ -251,14 +253,46 @@ function DeckLists() {
   );
 }
 
+/** The same core shortcuts stay available on every sidebar destination. */
+function WorkspaceLinks({ active }: { active?: NavKey }) {
+  return (
+    <>
+      <PanelRow icon={PlayingCardsFan} href="/decks" active={active === "decks"}>
+        My decks
+      </PanelRow>
+      <PanelRow icon={Share2} href="/decks#shared-decks-title">
+        Shared with me
+      </PanelRow>
+      <PanelRow icon={Users} href="/teams" active={active === "teams"}>
+        Teams
+      </PanelRow>
+      <PanelRow icon={Folder} href="/decks#folders-title">
+        Folders
+      </PanelRow>
+      <PanelRow icon={LayoutPanelTop} href="/templates" active={active === "templates"}>
+        Templates
+      </PanelRow>
+      <PanelRow icon={Images} href="/media" active={active === "media"}>
+        Media library
+      </PanelRow>
+      <PanelRow icon={Palette} href="/brand" active={active === "brand"}>
+        Brand kit
+      </PanelRow>
+      <PanelRow icon={ChartLine} href="/analytics" active={active === "analytics"}>
+        Analytics
+      </PanelRow>
+      <PanelRow icon={Plug} href="/integrations" active={active === "integrations"}>
+        Integrations
+      </PanelRow>
+    </>
+  );
+}
+
 /** The panel's header: a greeting for the time of day, the workspace name and the button that closes the panel. */
 function WorkspaceCard({ onClose, mod }: { onClose: () => void; mod: string }) {
   const part = useDayPart();
   return (
     <section className="ps-ws" aria-label="Workspace">
-      <span className="ps-ws-orb" aria-hidden>
-        <span>P</span>
-      </span>
       <span className="min-w-0 flex-1">
         <span className="ps-ws-hello">Presenta</span>
         <span className="ps-panel-sub">Good {part ?? "day"}</span>
@@ -270,47 +304,88 @@ function WorkspaceCard({ onClose, mod }: { onClose: () => void; mod: string }) {
   );
 }
 
-/** Which AI is answering and how to change it; opens the API key dialog. */
+/** Which AI is answering and how much of today's free allowance is left; opens the API key dialog. */
 function AiStatus() {
   const health = useAiHealth();
   const openKeyDialog = useApiKeyDialog((s) => s.setOpen);
-  const provider = health ? (health.provider === "presenta" ? "Presenta AI" : health.provider === "openai" ? "OpenAI" : health.provider === "claude" ? "Claude" : "Offline demo") : "Checking…";
+  const provider = health ? (health.provider === "presenta" ? "Presenta Studio" : health.provider === "openai" ? "OpenAI" : health.provider === "claude" ? "Claude" : "Offline demo") : "Checking…";
   const live = Boolean(health?.hasKey);
-  // The free daily allowance as a bar: full when nothing is used, and it turns amber, then red, as it runs out.
+  // The free daily allowance as a slim ring: full when nothing is used, warming to amber and red as it runs out.
   const quota = health?.quota && !health.byok ? health.quota : null;
   const left = quota ? Math.max(quota.limit - quota.used, 0) : 0;
   const pct = quota && quota.limit > 0 ? (left / quota.limit) * 100 : 0;
   const tone = !health ? "idle" : !live ? "off" : quota ? (pct <= 15 ? "low" : pct <= 40 ? "mid" : "ok") : "ok";
   const hint = !live ? "Add a key for real decks" : health?.byok ? `Your key · ${health.model}` : "Included with your account";
+  const steps = 5;
+  const lit = quota ? Math.min(steps, Math.ceil((pct / 100) * steps)) : 0;
+  const radius = 16.5;
+  const circumference = 2 * Math.PI * radius;
+  const arc = (Math.max(pct, left > 0 ? 6 : 0) / 100) * circumference;
   return (
     <button type="button" className="ps-panel-ai" data-tone={tone} onClick={() => openKeyDialog(true)} title={live ? "Change the AI, or use your own key" : "Add an API key"} aria-label={`AI: ${provider}${quota ? `, ${left} of ${quota.limit} free requests left today` : ""}. Open API key settings`}>
-      <span className="ps-ai-head">
-        <span className="ps-panel-ai-dot" data-live={live ? "true" : undefined} aria-hidden />
-        <span className="ps-panel-ai-name">{provider}</span>
-        <ChevronRight size={12} strokeWidth={2} className="ps-ai-go" aria-hidden />
+      <span
+        className="ps-ai-ring"
+        role={quota ? "progressbar" : undefined}
+        aria-valuemin={quota ? 0 : undefined}
+        aria-valuemax={quota ? quota.limit : undefined}
+        aria-valuenow={quota ? left : undefined}
+        aria-label={quota ? "Free requests left today" : undefined}
+        aria-hidden={quota ? undefined : true}
+      >
+        <svg viewBox="0 0 40 40" aria-hidden>
+          <defs>
+            <linearGradient id="ps-ai-ring-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="var(--ai-1)" />
+              <stop offset="55%" stopColor="var(--ai-3)" />
+              <stop offset="100%" stopColor="var(--ai-5)" />
+            </linearGradient>
+            <linearGradient id="ps-ai-bolt-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="var(--ai-2)" />
+              <stop offset="100%" stopColor="var(--ai-4)" />
+            </linearGradient>
+          </defs>
+          <circle className="ps-ai-ring-track" cx="20" cy="20" r={radius} />
+          {quota ? <circle className="ps-ai-ring-fill" cx="20" cy="20" r={radius} strokeDasharray={`${arc} ${circumference}`} /> : null}
+          <path
+            className="ps-ai-bolt"
+            d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+            transform="translate(11 11) scale(0.75)"
+            fill="url(#ps-ai-bolt-grad)"
+          />
+        </svg>
       </span>
-      {quota ? (
-        <>
-          <span className="ps-ai-bar" role="progressbar" aria-valuemin={0} aria-valuemax={quota.limit} aria-valuenow={left} aria-label="Free requests left today">
-            <span style={{ width: `${Math.max(pct, left > 0 ? 3 : 0)}%` }} />
-          </span>
-          <span className="ps-ai-meta">
-            <strong>{left}</strong> of {quota.limit} free requests left today
-          </span>
-        </>
-      ) : (
-        <span className="ps-ai-meta">{hint}</span>
-      )}
+      <span className="ps-ai-body">
+        <span className="ps-ai-head">
+          <span className="ps-panel-ai-name">{provider}</span>
+        </span>
+        <span className="ps-ai-meta">
+          {quota ? (
+            <>
+              <span className="ps-ai-bars" aria-hidden>
+                {Array.from({ length: steps }, (_, i) => (
+                  <span key={i} className="ps-ai-bar" data-on={i < lit ? "true" : undefined} />
+                ))}
+              </span>
+              <span className="ps-ai-meta-text">
+                {left} of {quota.limit} left today
+              </span>
+            </>
+          ) : (
+            <span className="ps-ai-meta-text">{hint}</span>
+          )}
+        </span>
+      </span>
+      <span className="ps-ai-go" aria-hidden>
+        <ChevronRight size={13} strokeWidth={2.5} />
+      </span>
     </button>
   );
 }
 
 /**
- * Left sidebar: a 68 px icon rail (search, destinations, theme toggle, account) and, on the home page, a 224 px
- * workspace panel: New deck, starred and recent decks, a workspace group (shared decks, teams, folders, analytics,
- * integrations), the Labs card and, fixed at the bottom, the AI status. Each destination
- * appears once: the rail has the global ones, More has Trash, shortcuts and the API key. Hidden under 768 px, where
- * the top nav and its menu sheet take over.
+ * Left sidebar: a 56 px icon rail and a consistent 200 px workspace panel on every destination, with New deck, starred
+ * and recent decks, major workspace links and a fixed AI status card. More keeps Trash, Labs and API key shortcuts. On short screens
+ * (small laptops, max-height 860 px) the rail is icon-only with even gaps; under 768 px it yields to the top nav.
  */
 export function SideNav({ active, variant = "full", startCollapsed = false }: SideNavProps) {
   const full = variant === "full";
@@ -339,7 +414,9 @@ export function SideNav({ active, variant = "full", startCollapsed = false }: Si
     <aside className="ps-sidenav" data-variant={variant} aria-label="Sidebar">
       <nav className="ps-rail" aria-label="Primary">
         <Link href="/" className="ps-rail-logo ps-focus" aria-label="Presenta Studio home">
-          <Mark size={36} />
+          <span className="ps-ws-orb" aria-hidden>
+            <span>P</span>
+          </span>
         </Link>
         {full && !panelOpen ? (
           <button type="button" className="ps-rail-expand" aria-label="Open sidebar panel" aria-expanded={false} title={`Open sidebar (${mod}+B)`} onClick={openPanel}>
@@ -353,6 +430,7 @@ export function SideNav({ active, variant = "full", startCollapsed = false }: Si
           <RailMore active={active} />
         </div>
         <div className="ps-rail-foot">
+          <NotificationsCenter />
           <ModeToggle side="right" />
           <Avatar />
         </div>
@@ -364,66 +442,20 @@ export function SideNav({ active, variant = "full", startCollapsed = false }: Si
 
           {/* Only this middle part scrolls; the header above and the AI card below stay put. */}
           <div className="ps-panel-scroll">
-          <div className="ps-panel-group">
-            <PanelRow icon={Plus} href="/new" active={active === "new"}>
-              New deck
-            </PanelRow>
-          </div>
-
-          <div className="ps-panel-rule" />
-          <DeckLists />
-
-          <div className="ps-panel-rule" />
-          <p className="ps-panel-kicker">Workspace</p>
-          <div className="ps-panel-group">
-            <PanelRow icon={Share2} href="/#shared">
-              Shared with me
-            </PanelRow>
-            <PanelRow icon={UsersRound} href="/teams" active={active === "teams"}>
-              Teams
-            </PanelRow>
-            <PanelRow icon={Folder} href="/decks" active={active === "decks"}>
-              Folders
-            </PanelRow>
-            <PanelRow icon={ChartLine} href="/analytics" active={active === "analytics"}>
-              Analytics
-            </PanelRow>
-            <PanelRow icon={Plug} href="/integrations" active={active === "integrations"}>
-              Integrations
-            </PanelRow>
-          </div>
-
-          <div className="ps-panel-labs">
-            <div className="ps-panel-labs-head">
-              <span className="ps-panel-labs-title">
-                <FlaskConical size={15} strokeWidth={1.75} aria-hidden /> Labs
-              </span>
-              <span className="ps-panel-new-chip">New</span>
+            <div className="ps-panel-group">
+              <PanelRow icon={Plus} href="/new" active={active === "new"}>
+                New deck
+              </PanelRow>
             </div>
-            <p className="ps-panel-labs-sub">Futuristic previews we are building.</p>
-            <ul className="ps-panel-labs-list">
-              {LABS_HIGHLIGHTS.map((id) => {
-                const f = LABS_FEATURES.find((x) => x.id === id);
-                if (!f) return null;
-                return (
-                  <li key={id}>
-                    <Link href={`/labs#${id}`} className="ps-panel-lab" style={{ "--lab-a": f.tint[0], "--lab-b": f.tint[1] } as React.CSSProperties}>
-                      <span className="ps-panel-lab-icon" aria-hidden>
-                        {f.icon}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate">{f.title}</span>
-                      <span className="ps-pill" data-tone="soon">
-                        Soon
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-            <Link href="/labs" className="ps-panel-labs-all">
-              Explore all labs <ArrowRight size={14} aria-hidden />
-            </Link>
-          </div>
+
+            <div className="ps-panel-rule" />
+            <DeckLists />
+
+            <div className="ps-panel-rule" />
+            <p className="ps-panel-kicker">Workspace</p>
+            <div className="ps-panel-group">
+              <WorkspaceLinks active={active} />
+            </div>
           </div>
 
           <div className="ps-panel-foot">

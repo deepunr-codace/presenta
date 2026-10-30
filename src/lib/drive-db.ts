@@ -230,6 +230,21 @@ export async function recordEvent(ownerId: string, deckId: string, userId: strin
   `;
 }
 
+/** Record anonymous public-link analytics with a browser-generated, non-identifying visitor id. */
+export async function recordPublicEvent(linkToken: string, visitorId: string, kind: EventKind): Promise<boolean> {
+  await ensureDriveTables();
+  if (!/^[A-Za-z0-9_-]{20,80}$/.test(linkToken) || !/^[0-9a-f-]{36}$/i.test(visitorId)) return false;
+  const rows = (await sql()`
+    SELECT l.owner_id, l.deck_id FROM deck_links l
+    JOIN decks d ON d.user_id = l.owner_id AND d.id = l.deck_id
+    WHERE l.token = ${linkToken} AND l.access = 'anyone_view' AND (l.expires_at IS NULL OR l.expires_at > now()) AND d.trashed_at IS NULL
+    LIMIT 1
+  `) as { owner_id: string; deck_id: string }[];
+  if (!rows[0]) return false;
+  await recordEvent(rows[0].owner_id, rows[0].deck_id, `public:${visitorId}`, kind);
+  return true;
+}
+
 export type Analytics = {
   days: number;
   totals: { decks: number; slides: number; sharedDecks: number; views: number; viewsByOthers: number; uniqueViewers: number; presentations: number };

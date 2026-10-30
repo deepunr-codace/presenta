@@ -4,6 +4,8 @@ import { DeckImportSchema, DeckSchema, type Deck, type ThemeId } from "@/lib/dec
 import type { DriveDeck } from "@/lib/drive-db";
 import { uploadDataUrl } from "@/lib/media";
 import { sanitizeHtml, stripTags } from "@/lib/text";
+import { importPptx } from "@/lib/import/pptx";
+import { importPdfDeck } from "@/lib/import/pdf-deck";
 
 /**
  * Deck persistence. Decks live in the signed-in user's account (Postgres, through /api/decks), so they follow the
@@ -49,6 +51,7 @@ const json = (method: string, body: unknown): RequestInit => ({ method, headers:
 /* ---------- Large embedded images ---------- */
 
 const externalized = new Map<string, string>();
+const deckBases = new Map<string, Deck>();
 
 /** Every `data:image/...` string in the deck, with the object and key that hold it. */
 function findDataUrls(node: unknown, out: { holder: Record<string, unknown>; key: string; value: string }[] = []) {
@@ -92,23 +95,41 @@ async function fitForSave(deck: Deck): Promise<Deck> {
 
 /* ---------- Decks ---------- */
 
-/** Save a deck to the account (create or replace). */
-export async function saveDeck(deck: Deck): Promise<void> {
+/** The last version received from the server, used for three-way concurrent-edit merges. */
+export function getDeckBase(id: string): Deck | null {
+  const base = deckBases.get(id);
+  return base ? structuredClone(base) : null;
+}
+
+export function rememberDeckBase(deck: Deck): void {
+  deckBases.set(deck.id, structuredClone(deck));
+}
+
+/** Save a deck to the account and adopt the server's merged version as the new base. */
+export async function saveDeck(deck: Deck): Promise<Deck> {
   const body = await fitForSave(deck);
-  await request(`/api/decks/${encodeURIComponent(deck.id)}`, json("PUT", body), "The deck could not be saved.");
+  const base = deckBases.get(deck.id) ?? null;
+  const res = await request(`/api/decks/${encodeURIComponent(deck.id)}`, json("PUT", { deck: body, base }), "The deck could not be saved.");
+  const response = (await res.json().catch(() => null)) as { deck?: unknown } | null;
+  const parsed = DeckSchema.safeParse(response?.deck);
+  const saved = parsed.success ? parsed.data : body;
+  deckBases.set(deck.id, structuredClone(saved));
+  return saved;
 }
 
 /** A deck with what the signed-in user may do with it, and who is editing it right now (if anyone). */
 export type DeckAccess = { deck: Deck; role: "owner" | "editor" | "viewer"; editor: string | null };
 
 /** Load a deck of mine, or one shared with me. Null when there is no such deck for me. */
-export async function loadDeckWithAccess(id: string): Promise<DeckAccess | null> {
+export async function loadDeckWithAccess(id: string, rememberBase = true): Promise<DeckAccess | null> {
   const res = await fetch(`/api/decks/${encodeURIComponent(id)}`, { cache: "no-store" });
   if (res.status === 404) return null;
   if (!res.ok) throw await readError(res, "The deck could not be loaded.");
   const body = (await res.json()) as { deck?: unknown; role?: DeckAccess["role"]; editor?: string | null };
   const parsed = DeckSchema.safeParse(body.deck);
-  return parsed.success ? { deck: parsed.data, role: body.role ?? "owner", editor: body.editor ?? null } : null;
+  if (!parsed.success) return null;
+  if (rememberBase) deckBases.set(id, structuredClone(parsed.data));
+  return { deck: parsed.data, role: body.role ?? "owner", editor: body.editor ?? null };
 }
 
 export async function loadDeckById(id: string): Promise<Deck | null> {
@@ -171,30 +192,35 @@ function sanitizeDeckText(deck: Deck): Deck {
 }
 
 /**
- * Parse and validate a deck JSON file. Files over `IMPORT_MAX_BYTES` and
- * decks over the `DeckImportSchema` bounds are refused; text is sanitised and
- * duplicate ids are re-issued. If a deck with the same id is already in the account
- * (list or trash), the imported copy gets a fresh id and timestamps so it never
- * overwrites the existing one. Does not save; callers decide.
+ * Import a Presenta JSON backup, PPTX, or PDF file. Data is validated and
+ * sanitised where applicable; duplicate ids are re-issued. If the imported id
+ * already exists, a fresh id is assigned. Does not save; callers decide.
  */
-export async function importDeckJson(file: File): Promise<Deck> {
+export async function importDeckFile(file: File): Promise<Deck> {
   if (file.size > IMPORT_MAX_BYTES) {
     throw new DeckImportError(`That file is ${(file.size / 1024 / 1024).toFixed(1)} MB; the import limit is ${IMPORT_MAX_BYTES / 1024 / 1024} MB.`);
   }
-  const text = await file.text();
-  let parsedJson: unknown;
-  try {
-    parsedJson = JSON.parse(text);
-  } catch {
-    throw new DeckImportError("That file is not valid JSON.");
+  let deck: Deck;
+  if (/\.pptx$/i.test(file.name)) {
+    deck = await importPptx(file);
+  } else if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") {
+    deck = await importPdfDeck(file);
+  } else {
+    const text = await file.text();
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(text);
+    } catch {
+      throw new DeckImportError("Choose a Presenta JSON backup, PowerPoint .pptx, or PDF file.");
+    }
+    const parsed = DeckImportSchema.safeParse(parsedJson);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      const where = first?.path.length ? ` at ${first.path.join(".")}` : "";
+      throw new DeckImportError(`That file is not a Presenta deck${where}: ${first?.message ?? "invalid"}.`);
+    }
+    deck = sanitizeDeckText(reIdDuplicates(parsed.data));
   }
-  const parsed = DeckImportSchema.safeParse(parsedJson);
-  if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    const where = first?.path.length ? ` at ${first.path.join(".")}` : "";
-    throw new DeckImportError(`That file is not a Presenta deck${where}: ${first?.message ?? "invalid"}.`);
-  }
-  const deck = sanitizeDeckText(reIdDuplicates(parsed.data));
   const idsRes = await request("/api/decks?ids=1", { cache: "no-store" }, "Could not check your saved decks.");
   const { ids } = (await idsRes.json()) as { ids?: string[] };
   if ((ids ?? []).includes(deck.id)) {
@@ -208,6 +234,11 @@ export async function importDeckJson(file: File): Promise<Deck> {
     };
   }
   return { ...deck, meta: { ...deck.meta, source: deck.meta.source ?? "import" } };
+}
+
+/** Backward-compatible JSON import entry point. */
+export async function importDeckJson(file: File): Promise<Deck> {
+  return importDeckFile(file);
 }
 
 export function downloadBlob(blob: Blob, filename: string): void {

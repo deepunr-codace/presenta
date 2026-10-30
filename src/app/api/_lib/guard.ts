@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { CollabError } from "@/lib/collab-db";
 import { StorageFullError } from "@/lib/storage";
+import { TemplateError } from "@/lib/templates-db";
 
 export type SignedInUser = { id: string; email: string };
 
@@ -16,6 +17,7 @@ export async function withUser(label: string, fn: (user: SignedInUser) => Promis
     return await fn({ id: session.user.id, email: session.user.email ?? "" });
   } catch (err) {
     if (err instanceof CollabError) return NextResponse.json({ error: err.message }, { status: err.status });
+    if (err instanceof TemplateError) return NextResponse.json({ error: err.message }, { status: err.status });
     if (err instanceof StorageFullError) return NextResponse.json({ error: err.message, code: err.code }, { status: err.status });
     console.error(`${label} failed`, err);
     return NextResponse.json({ error: "Something went wrong. Try again." }, { status: 500 });

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { CaretRight, FolderPlus, HardDrives, ListBullets, MagnifyingGlass, Plus, SquaresFour, UploadSimple } from "@phosphor-icons/react";
+import { ArrowRight, CaretRight, FolderOpen, FolderPlus, HardDrives, ListBullets, MagnifyingGlass, Plus, Sparkle, SquaresFour, UploadSimple } from "@phosphor-icons/react";
 import { fetchSharedDecks, fetchTeams, type SharedDeck, type TeamSummary } from "@/lib/collab";
 import { SAMPLE_DECK } from "@/lib/deck/sample";
 import { childrenOf, createFolder, deleteFolder, fetchFolders, fetchStorage, moveDeckToFolder, moveFolder, pathLabel, pathTo, renameFolder, type Folder, type StorageUsage } from "@/lib/drive";
@@ -36,6 +36,8 @@ type Filter = "all" | "mine" | "starred" | "sharedByMe" | "sharedWithMe";
 type Sort = "recent" | "oldest" | "name" | "nameDesc" | "slides" | "size";
 
 const GRID = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+/* Folders are smaller tiles than decks, the way a file manager lays them out. */
+const FOLDER_GRID = "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6";
 const title = (d: { title: string }) => d.title || "Untitled deck";
 
 /** Which dialog is open. Only one at a time. */
@@ -319,11 +321,11 @@ export function DecksScreen() {
         </>
       }
     >
-      <div className="ps-page">
+      <div className="ps-page ps-decks-page">
         <input
           ref={fileRef}
           type="file"
-          accept="application/json,.json"
+          accept="application/json,.json,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/pdf,.pdf"
           className="hidden"
           aria-hidden
           tabIndex={-1}
@@ -333,10 +335,12 @@ export function DecksScreen() {
           }}
         />
 
-        <header className="mb-5 flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
-          <div className="min-w-0">
+        <header className="ps-decks-header">
+          <div className="ps-decks-intro">
+            <span className="ps-decks-eyebrow"><Sparkle size={12} weight="fill" /> YOUR LIBRARY</span>
             <h1 className="ps-heading">Decks</h1>
-            <nav aria-label="Folder path" className="mt-2 flex flex-wrap items-center gap-1 text-[14px]">
+            <p className="ps-decks-subtitle">A considered home for every story you create.</p>
+            <nav aria-label="Folder path" className="ps-decks-path">
               <button
                 type="button"
                 className="ps-btn ps-btn-xs"
@@ -365,24 +369,28 @@ export function DecksScreen() {
             </nav>
           </div>
           {storage ? (
-            <Link href="/account#storage" className="flex flex-col items-end gap-1" title="See what is using your storage">
+            <Link href="/account#storage" className="ps-decks-storage" title="See what is using your storage">
+              <span className="ps-decks-storage-label">LIBRARY STORAGE</span>
               <StorageMeter used={storage.used} limit={storage.limit} compact />
+              <span className="ps-decks-storage-hint">Manage storage <ArrowRight size={12} /></span>
             </Link>
           ) : null}
         </header>
 
         {loadError || error ? <ErrorNotice compact className="mb-4" message={loadError ?? error ?? ""} /> : null}
 
-        <div className="mb-5 flex flex-wrap items-center gap-3">
-          <PillTabs items={tabs} value={filter} onChange={(id) => setFilter(id as Filter)} ariaLabel="Filter decks" />
-          <div className="ml-auto flex flex-wrap items-center gap-2">
+        <section className="ps-decks-tools" aria-label="Browse your decks">
+          <div className="ps-decks-filter-scroll">
+            <PillTabs items={tabs} value={filter} onChange={(id) => setFilter(id as Filter)} ariaLabel="Filter decks" className="ps-decks-tabs" />
+          </div>
+          <div className={`ps-decks-controls ${teams.length ? "has-team" : "no-team"}`}>
             <label className="relative">
               <span className="sr-only">Search decks and folders</span>
               <MagnifyingGlass size={14} className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-[var(--ps-smoke)]" aria-hidden />
               <input type="search" className="ps-input !pl-8" placeholder="Search decks and folders" value={query} onChange={(e) => setQuery(e.target.value)} />
             </label>
             {teams.length ? (
-              <select className="ps-input !w-auto" value={teamId} onChange={(e) => setTeamId(e.target.value)} aria-label="Filter by team">
+              <select className="ps-input ps-decks-team-select" value={teamId} onChange={(e) => setTeamId(e.target.value)} aria-label="Filter by team">
                 <option value="">All teams</option>
                 {teams.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -391,7 +399,7 @@ export function DecksScreen() {
                 ))}
               </select>
             ) : null}
-            <select className="ps-input !w-auto" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Sort by">
+            <select className="ps-input ps-decks-sort-select" value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Sort by">
               <option value="recent">Newest first</option>
               <option value="oldest">Oldest first</option>
               <option value="name">Name A to Z</option>
@@ -410,7 +418,7 @@ export function DecksScreen() {
               ]}
             />
           </div>
-        </div>
+        </section>
 
         {!explorer ? (
           <p className="ps-caption mb-4" role="status">
@@ -438,15 +446,28 @@ export function DecksScreen() {
         ) : nothingAtAll ? (
           <EmptyDecksCard onSample={() => void openSample()} busy={busy !== null} />
         ) : nothingShown ? (
-          <p className="ps-body py-12 text-center" role="status">
-            {emptyMessage}
-          </p>
+          <section className="ps-decks-empty" role="status" aria-label="No matching decks">
+            <div className="ps-decks-empty-art" aria-hidden><FolderOpen size={27} weight="light" /></div>
+            <span className="ps-decks-eyebrow">{currentId && explorer ? "EMPTY FOLDER" : "NOTHING TO SHOW"}</span>
+            <h2>{q || teamId || filter !== "all" ? "No decks match this view" : currentId ? "A fresh space for what’s next" : "Your next great story starts here"}</h2>
+            <p>{emptyMessage}</p>
+            {q || teamId || filter !== "all" ? (
+              <button type="button" className="ps-btn ps-btn-primary ps-btn-xs" onClick={() => { setQuery(""); setFilter("all"); setTeamId(""); }}>
+                Clear filters <ArrowRight size={13} />
+              </button>
+            ) : (
+              <div className="ps-decks-empty-actions">
+                <Link href="/new" className="ps-btn ps-btn-primary ps-btn-xs"><Plus size={13} weight="bold" /> New deck</Link>
+                <button type="button" className="ps-btn ps-btn-xs" onClick={() => setDialog({ kind: "newFolder" })}><FolderPlus size={13} /> New folder</button>
+              </div>
+            )}
+          </section>
         ) : (
           <div className="flex flex-col gap-9">
             {shownFolders.length ? (
               <section aria-labelledby="folders-title">
                 <SectionTitle title={<span id="folders-title">Folders</span>} caption={`${shownFolders.length}`} className="mb-4" />
-                <ul className={GRID} aria-label="Folders">
+                <ul className={FOLDER_GRID} aria-label="Folders">
                   {shownFolders.map((f) => (
                     <FolderCard
                       key={f.id}

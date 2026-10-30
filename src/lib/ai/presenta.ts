@@ -4,7 +4,7 @@ import { AiError } from "./errors";
 import { getPresentaSettings, listPoolKeys, recordPoolKeyError, releaseAllowance, reserveAllowance, takePoolKey, usedToday, type KeyPenalty } from "./pool-db";
 
 /**
- * "Presenta AI": AI the app provides to signed-in customers from a pool of OpenRouter keys that an admin manages.
+ * "Presenta Studio": AI the app provides to signed-in customers from a pool of OpenRouter keys that an admin manages.
  * Customers never see the provider, the model or a key. Each signed-in user gets a daily allowance; a visitor's own
  * key (Settings) always takes priority and is not limited. Server only.
  */
@@ -29,7 +29,7 @@ async function poolHasKeys(): Promise<boolean> {
 }
 
 /**
- * Resolve who serves a request. A visitor's own key wins; otherwise a signed-in user is served by Presenta AI
+ * Resolve who serves a request. A visitor's own key wins; otherwise a signed-in user is served by Presenta Studio
  * when an admin has it on and at least one pooled key is enabled; otherwise the existing server-key / offline rules apply.
  * `cost` is how many requests of the daily allowance this call uses (0 to only check availability).
  * Throws a `rate_limit` AiError when the allowance is spent.
@@ -50,7 +50,7 @@ export async function resolveAiForRequest(request: Request, opts: { cost?: numbe
       if (!taken.ok) {
         throw new AiError(
           "rate_limit",
-          `You've used today's ${settings.dailyLimit} free Presenta AI requests. They reset tomorrow, or add your own API key in Settings to keep going.`,
+          `You've used today's ${settings.dailyLimit} free Presenta Studio requests. They reset tomorrow, or add your own API key in Settings to keep going.`,
         );
       }
     }
@@ -59,12 +59,12 @@ export async function resolveAiForRequest(request: Request, opts: { cost?: numbe
     if (err instanceof AiError) throw err;
     // The pool is unavailable (for example the database is down): fall back instead of failing the request.
     // eslint-disable-next-line no-console -- server-side diagnostics; the customer just gets the fallback
-    console.error("Presenta AI is unavailable", err);
+    console.error("Presenta Studio is unavailable", err);
     return base;
   }
 }
 
-/** Today's allowance for the health check; null when Presenta AI is not what would serve this user. */
+/** Today's allowance for the health check; null when Presenta Studio is not what would serve this user. */
 export async function presentaQuota(userId: string): Promise<{ used: number; limit: number } | null> {
   const settings = await getPresentaSettings();
   return { used: await usedToday(userId), limit: settings.dailyLimit };
@@ -107,7 +107,7 @@ export async function withPoolKey<T>(grant: { userId: string; cost: number; mode
     }
     // eslint-disable-next-line no-console -- server-side diagnostics; the customer sees only "busy"
     if (lastError) console.error("Every pooled AI key failed", lastError);
-    throw new AiError("api", "Presenta AI is busy right now. Please try again in a moment.");
+    throw new AiError("api", "Presenta Studio is busy right now. Please try again in a moment.");
   } catch (err) {
     if (grant.cost > 0) await releaseAllowance(grant.userId).catch(() => undefined);
     throw err;

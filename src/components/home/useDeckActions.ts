@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { deckSlug } from "@/components/editor/deck-slug";
 import { useToast } from "@/components/shell/Toast";
-import { downloadBlob, exportDeckJson, importDeckJson, loadDeckById, saveDeck, trashDeck, type DeckSummary } from "@/lib/persist";
+import { downloadBlob, exportDeckJson, importDeckFile, loadDeckById, saveDeck, trashDeck, type DeckSummary } from "@/lib/persist";
 import type { DeckActions } from "./deck-actions";
 import { cloneDeck } from "./home-data";
 
@@ -69,7 +69,7 @@ export function useDeckActions(refresh: () => Promise<void>) {
     (file: File | undefined) => {
       if (!file) return;
       void run("Importing…", async () => {
-        const deck = await importDeckJson(file);
+        const deck = await importDeckFile(file);
         await saveDeck(deck);
         router.push(`/deck/${deck.id}`);
       });

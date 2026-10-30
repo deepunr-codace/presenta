@@ -111,7 +111,7 @@ export function TrashScreen() {
       }
     >
       <div className="ps-page">
-        <header className="mb-8">
+        <header className="ps-page-hero mb-8">
           <h1 className="ps-heading">Trash</h1>
           <p className="ps-body-lg mt-2">Decks you delete wait here for {TRASH_RETENTION_DAYS} days, then are removed for good.</p>
         </header>

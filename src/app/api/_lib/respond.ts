@@ -18,15 +18,15 @@ type ParsedBody<T> = { ok: true; data: T } | { ok: false; response: NextResponse
 
 /**
  * Read and validate a JSON request body. Fails with 413 when the body is
- * larger than `MAX_BODY_BYTES` and with 400 when it is not JSON or does not
- * match `schema`. The body itself is never logged.
+ * larger than `limit` (1 MB unless the route says otherwise) and with 400 when
+ * it is not JSON or does not match `schema`. The body itself is never logged.
  */
-export async function readJsonBody<S extends z.ZodType>(request: Request, schema: S): Promise<ParsedBody<z.output<S>>> {
+export async function readJsonBody<S extends z.ZodType>(request: Request, schema: S, limit = MAX_BODY_BYTES): Promise<ParsedBody<z.output<S>>> {
   const declared = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) return { ok: false, response: tooLarge() };
+  if (Number.isFinite(declared) && declared > limit) return { ok: false, response: tooLarge(limit) };
 
   const text = await request.text();
-  if (exceedsUtf8Bytes(text, MAX_BODY_BYTES)) return { ok: false, response: tooLarge() };
+  if (exceedsUtf8Bytes(text, limit)) return { ok: false, response: tooLarge(limit) };
 
   let json: unknown;
   try {
@@ -55,8 +55,8 @@ export function exceedsUtf8Bytes(text: string, limit: number): boolean {
   return new TextEncoder().encode(text).byteLength > limit;
 }
 
-function tooLarge(): NextResponse<ApiFail> {
-  return jsonError(413, "too_large", `Request body is too large (limit ${MAX_BODY_BYTES / 1024 / 1024} MB).`);
+function tooLarge(limit = MAX_BODY_BYTES): NextResponse<ApiFail> {
+  return jsonError(413, "too_large", `Request body is too large (limit ${Math.round((limit / 1024 / 1024) * 10) / 10} MB).`);
 }
 
 /**

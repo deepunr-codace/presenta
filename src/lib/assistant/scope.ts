@@ -54,6 +54,8 @@ export function elementChip(el: Element): string {
       return "Icon";
     case "chart":
       return "Chart";
+    case "video":
+      return "Video";
   }
 }
 

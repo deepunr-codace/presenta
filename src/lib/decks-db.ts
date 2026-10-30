@@ -1,5 +1,6 @@
 import { ensureUsersTable, sql } from "@/lib/auth/db";
-import type { Deck } from "@/lib/deck/schema";
+import { DeckSchema, type Deck } from "@/lib/deck/schema";
+import { newId } from "@/lib/deck/ids";
 
 /** Decks and per-account settings, stored in Postgres. Every query is scoped to the signed-in user's id. */
 
@@ -42,6 +43,19 @@ export function ensureDeckTables(): Promise<void> {
           )
         `,
       )
+      .then(() => sql()`
+        CREATE TABLE IF NOT EXISTS deck_versions (
+          id TEXT PRIMARY KEY,
+          owner_id TEXT NOT NULL,
+          deck_id TEXT NOT NULL,
+          created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          label TEXT NOT NULL,
+          snapshot JSONB NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          FOREIGN KEY (owner_id, deck_id) REFERENCES decks(user_id, id) ON DELETE CASCADE
+        )
+      `)
+      .then(() => sql()`CREATE INDEX IF NOT EXISTS deck_versions_deck ON deck_versions (owner_id, deck_id, created_at DESC)`)
       .then(() => sql()`ALTER TABLE decks ADD COLUMN IF NOT EXISTS folder_id TEXT`)
       .then(() => sql()`ALTER TABLE decks ADD COLUMN IF NOT EXISTS size_bytes INTEGER NOT NULL DEFAULT 0`)
       // Decks saved before sizes were tracked get theirs filled in once; afterwards this touches no rows.
@@ -113,6 +127,58 @@ export async function updateDeckContent(ownerId: string, deck: Deck): Promise<bo
     WHERE user_id = ${ownerId} AND id = ${deck.id} AND trashed_at IS NULL RETURNING id
   `) as { id: string }[];
   return rows.length > 0;
+}
+
+/** Replace deck content only if nobody has saved since the caller read expectedUpdatedAt. */
+export async function compareAndSwapDeckContent(ownerId: string, deck: Deck, expectedUpdatedAt: string): Promise<boolean> {
+  await ensureDeckTables();
+  const json = JSON.stringify(deck);
+  const rows = (await sql()`
+    UPDATE decks SET title = ${deck.title}, theme_id = ${deck.themeId}, slide_count = ${deck.slides.length}, data = ${json}::jsonb, size_bytes = ${Buffer.byteLength(json)}, updated_at = ${deck.updatedAt}
+    WHERE user_id = ${ownerId} AND id = ${deck.id} AND trashed_at IS NULL AND updated_at = ${expectedUpdatedAt}::timestamptz
+    RETURNING id
+  `) as { id: string }[];
+  return rows.length > 0;
+}
+
+export type DeckVersionSummary = { id: string; createdBy: string; name: string; label: string; createdAt: string };
+
+/** Store a named snapshot of the current deck. Keeps the newest 100 versions for this deck. */
+export async function createDeckVersion(ownerId: string, deckId: string, userId: string, label: string): Promise<string> {
+  await ensureDeckTables();
+  const rows = (await sql()`SELECT data FROM decks WHERE user_id = ${ownerId} AND id = ${deckId} AND trashed_at IS NULL`) as { data: unknown }[];
+  if (!rows[0]) throw new Error("Deck not found.");
+  const id = newId("version");
+  const cleanLabel = label.trim().replace(/\s+/g, " ").slice(0, 80) || "Checkpoint";
+  await sql()`INSERT INTO deck_versions (id, owner_id, deck_id, created_by, label, snapshot) VALUES (${id}, ${ownerId}, ${deckId}, ${userId}, ${cleanLabel}, ${JSON.stringify(rows[0].data)}::jsonb)`;
+  await sql()`DELETE FROM deck_versions WHERE owner_id = ${ownerId} AND deck_id = ${deckId} AND id IN (SELECT id FROM deck_versions WHERE owner_id = ${ownerId} AND deck_id = ${deckId} ORDER BY created_at DESC, id DESC OFFSET 100)`;
+  return id;
+}
+
+/** Save one automatic checkpoint every five minutes of active editing. */
+export async function createAutoDeckVersion(ownerId: string, deckId: string, userId: string): Promise<void> {
+  await ensureDeckTables();
+  const due = (await sql()`SELECT 1 FROM deck_versions WHERE owner_id = ${ownerId} AND deck_id = ${deckId} AND created_at > now() - interval '5 minutes' LIMIT 1`) as unknown[];
+  if (!due.length) await createDeckVersion(ownerId, deckId, userId, "Autosaved checkpoint");
+}
+
+export async function listDeckVersions(ownerId: string, deckId: string): Promise<DeckVersionSummary[]> {
+  await ensureDeckTables();
+  const rows = (await sql()`
+    SELECT v.id, v.created_by, COALESCE(u.name, u.email) AS name, v.label, v.created_at
+    FROM deck_versions v JOIN users u ON u.id = v.created_by
+    WHERE v.owner_id = ${ownerId} AND v.deck_id = ${deckId}
+    ORDER BY v.created_at DESC, v.id DESC LIMIT 100
+  `) as { id: string; created_by: string; name: string; label: string; created_at: string | Date }[];
+  return rows.map((r) => ({ id: r.id, createdBy: r.created_by, name: r.name, label: r.label, createdAt: iso(r.created_at) }));
+}
+
+export async function getDeckVersion(ownerId: string, deckId: string, versionId: string): Promise<Deck | null> {
+  await ensureDeckTables();
+  const rows = (await sql()`SELECT snapshot FROM deck_versions WHERE owner_id = ${ownerId} AND deck_id = ${deckId} AND id = ${versionId} LIMIT 1`) as { snapshot: unknown }[];
+  if (!rows[0]) return null;
+  const parsed = DeckSchema.safeParse(rows[0].snapshot);
+  return parsed.success ? parsed.data : null;
 }
 
 /** Move a deck to the trash or back. Returns false if the user has no such deck. */

@@ -32,7 +32,7 @@ const DEFAULT_MODEL = "gpt-4o";
 const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 /** What customers see instead of the provider's name when a request is served from the pooled keys. */
-const POOL_BRAND = "Presenta AI";
+const POOL_BRAND = "Presenta Studio";
 
 /** Where one request goes, and how its errors are worded. */
 type Target = { baseUrl: string; model: string; brand: string; pooled: boolean };

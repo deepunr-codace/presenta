@@ -1,12 +1,12 @@
 "use client";
 
-import { ChartBar, Image as ImageIcon, Plus, Shapes, SquaresFour, Star, TextAa, TextH } from "@phosphor-icons/react";
+import { ChartBar, FilmStrip, Image as ImageIcon, Plus, Shapes, SquaresFour, Star, TextAa, TextH } from "@phosphor-icons/react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { newId } from "@/lib/deck/ids";
 import { STAGE_H, STAGE_W, type Element } from "@/lib/deck/schema";
 import { useDeckStore } from "@/store/deck-store";
 
-export type AddKind = "text" | "heading" | "image" | "card" | "shape" | "icon" | "chart";
+export type AddKind = "text" | "heading" | "image" | "card" | "shape" | "icon" | "chart" | "video";
 
 function frame(w: number, h: number, z: number) {
   return {
@@ -45,6 +45,8 @@ function buildElement(kind: AddKind, z: number): Element {
         labels: ["Q1", "Q2", "Q3", "Q4"],
         series: [{ name: "Series 1", values: [12, 18, 24, 31] }],
       };
+    case "video":
+      return { ...frame(960, 540, z), type: "video", src: "https://www.youtube.com/watch?v=aqz-KE-bpKQ", title: "Embedded video" };
   }
 }
 
@@ -56,6 +58,7 @@ const ITEMS: { kind: AddKind; label: string; Icon: typeof TextAa }[] = [
   { kind: "shape", label: "Shape", Icon: Shapes },
   { kind: "icon", label: "Icon", Icon: Star },
   { kind: "chart", label: "Chart", Icon: ChartBar },
+  { kind: "video", label: "Video", Icon: FilmStrip },
 ];
 
 /** "Add" dropdown: inserts a new element of the chosen kind, centred on the selected slide. */

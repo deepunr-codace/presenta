@@ -45,7 +45,7 @@ export function BriefStep() {
       {mode === null ? (
         <div className="grid gap-4 sm:grid-cols-2">
           <OptionCard icon={<ChatCircleDots />} title="Create with AI" body="Answer five quick questions. The assistant suggests answers as you go." cta="Start a conversation" onClick={() => choose("chat")} />
-          <OptionCard icon={<ClipboardText />} title="Start from my content" body="Paste notes, an outline or an article, or drop a .txt or .md file." cta="Paste content" onClick={() => choose("paste")} />
+          <OptionCard icon={<ClipboardText />} title="Start from my content" body="Paste notes or add a .txt, .md, .docx, .pptx or text-based .pdf file as source material." cta="Paste content" onClick={() => choose("paste")} />
         </div>
       ) : (
         <>

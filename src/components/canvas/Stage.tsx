@@ -163,9 +163,10 @@ export function Stage({ className }: StageProps) {
       const ids = useDeckStore.getState().selectedElementIds;
       const movable = slide.elements.filter((el) => ids.includes(el.id) && !el.locked).map((el) => el.id);
 
-      if (meta && e.key.toLowerCase() === "z") {
+      const key = e.key.toLowerCase();
+      if (meta && (key === "z" || key === "y")) {
         e.preventDefault();
-        if (e.shiftKey) redo();
+        if (e.shiftKey || key === "y") redo();
         else undo();
         return;
       }

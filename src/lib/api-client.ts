@@ -33,7 +33,7 @@ export type AiHealth = {
   byok: boolean;
   /** The server's own key may serve requests without one. */
   serverKey: boolean;
-  /** Today's free Presenta AI allowance, when it is the active source. */
+  /** Today's free Presenta Studio allowance, when it is the active source. */
   quota?: { used: number; limit: number };
 };
 
@@ -47,6 +47,8 @@ export type GenerateBody = Body<GenerateRequest>;
 export type ReviseBody = Body<ReviseRequest>;
 export type SuggestBody = Body<SuggestRequest>;
 export type OutlineBody = Body<OutlineRequest>;
+export type GenerateImageBody = { prompt: string; size: "1536x864" | "864x1536" | "1024x1024" };
+export type ResearchResult = { summary: string; sources: { title: string; url: string }[] };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -112,6 +114,15 @@ export function postOutline(req: OutlineBody, signal?: AbortSignal): Promise<Api
   return post<Outline>("/api/outline", req, signal);
 }
 
+export function postResearch(query: string, signal?: AbortSignal): Promise<ApiResult<ResearchResult>> {
+  return post<ResearchResult>("/api/research", { query }, signal);
+}
+
+/** Generate one slide-ready image with the configured OpenAI image model. */
+export function postGenerateImage(req: GenerateImageBody, signal?: AbortSignal): Promise<ApiResult<{ src: string }>> {
+  return post<{ src: string }>("/api/images/generate", req, signal);
+}
+
 export function getHealth(signal?: AbortSignal): Promise<ApiResult<AiHealth>> {
   return request<AiHealth>("/api/health", { method: "GET", headers: aiKeyHeaders(), cache: "no-store", signal });
 }
@@ -119,7 +130,7 @@ export function getHealth(signal?: AbortSignal): Promise<ApiResult<AiHealth>> {
 export function sourceLabel(source: AiSource | null | undefined): string {
   if (source === "claude") return "Claude";
   if (source === "openai") return "OpenAI";
-  if (source === "presenta") return "Presenta AI";
+  if (source === "presenta") return "Presenta Studio";
   if (source === "mock") return "Offline mock";
   return "Checking…";
 }

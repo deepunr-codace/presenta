@@ -9,9 +9,12 @@ export type PromptBoxProps = {
   onSubmit: (text: string) => void;
   placeholder?: string;
   /** Status tag in the footer; defaults to the AI health check ("Offline", "Claude" or "OpenAI"). */
-  footerPill?: "Offline" | "Claude" | "OpenAI" | "Presenta AI";
+  footerPill?: "Offline" | "Claude" | "OpenAI" | "Presenta Studio";
   /** Label of the filled pill. */
   submitLabel?: ReactNode;
+  /** Optional second path for the same prompt, e.g. a more automated create flow. */
+  onSecondarySubmit?: (text: string) => void;
+  secondarySubmitLabel?: ReactNode;
   /** Wide taupe hero card (home) instead of the paper composer. */
   hero?: boolean;
   /** Starter chips rendered between the textarea and the footer. */
@@ -35,7 +38,7 @@ export type PromptBoxHandle = { focus: () => void };
  * footer with the status tag left and a filled pill right. Enter sends, Shift+Enter inserts a newline.
  */
 export const PromptBox = forwardRef<PromptBoxHandle, PromptBoxProps>(function PromptBox(
-  { onSubmit, placeholder = "Describe the deck you need…", footerPill, submitLabel = "Create deck", hero = false, starters, value, onChange, disabled = false, busy = false, autoFocus = false, maxLength = 2000, rows = 3, className, ariaLabel = "Prompt" },
+  { onSubmit, placeholder = "Describe the deck you need…", footerPill, submitLabel = "Create deck", onSecondarySubmit, secondarySubmitLabel = "Create with Agent", hero = false, starters, value, onChange, disabled = false, busy = false, autoFocus = false, maxLength = 2000, rows = 3, className, ariaLabel = "Prompt" },
   ref,
 ) {
   const [inner, setInner] = useState("");
@@ -44,7 +47,7 @@ export const PromptBox = forwardRef<PromptBoxHandle, PromptBoxProps>(function Pr
   const areaRef = useRef<HTMLTextAreaElement>(null);
   const health = useAiHealth();
   const openKeyDialog = useApiKeyDialog((s) => s.setOpen);
-  const pill: "Offline" | "Claude" | "OpenAI" | "Presenta AI" | null = footerPill ?? (health ? (health.hasKey ? (health.provider === "presenta" ? "Presenta AI" : health.provider === "openai" ? "OpenAI" : "Claude") : "Offline") : null);
+  const pill: "Offline" | "Claude" | "OpenAI" | "Presenta Studio" | null = footerPill ?? (health ? (health.hasKey ? (health.provider === "presenta" ? "Presenta Studio" : health.provider === "openai" ? "OpenAI" : "Claude") : "Offline") : null);
 
   useImperativeHandle(ref, () => ({ focus: () => areaRef.current?.focus() }), []);
 
@@ -71,7 +74,7 @@ export const PromptBox = forwardRef<PromptBoxHandle, PromptBoxProps>(function Pr
     <div className={className ? `ps-prompt ${className}` : "ps-prompt"} data-hero={hero ? "" : undefined} onClick={(e) => e.target === e.currentTarget && areaRef.current?.focus()}>
       <textarea ref={areaRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} placeholder={placeholder} rows={rows} maxLength={maxLength} disabled={disabled} autoFocus={autoFocus} aria-label={ariaLabel} />
       {starters}
-      <div className="ps-prompt-footer">
+      <div className="ps-prompt-footer" data-secondary={onSecondarySubmit ? "true" : undefined}>
         {pill ? (
           <button type="button" className="ps-pill ps-pill-btn" data-tone={pill === "Offline" ? "warning" : "success"} title={pill === "Offline" ? "Offline demo: click to add your API key" : `${health?.model ?? ""} · click to change your API key`} onClick={() => openKeyDialog(true)}>
             {pill === "Offline" ? <WifiSlash weight="bold" /> : <Sparkle weight="fill" />}
@@ -83,6 +86,11 @@ export const PromptBox = forwardRef<PromptBoxHandle, PromptBoxProps>(function Pr
           </span>
         )}
         <span className="ps-caption hidden sm:inline">Enter to create · Shift+Enter for a new line</span>
+        {onSecondarySubmit ? (
+          <button type="button" className="ps-btn" onClick={() => onSecondarySubmit(text.trim())} disabled={disabled || busy || !text.trim()}>
+            {secondarySubmitLabel}
+          </button>
+        ) : null}
         <button type="button" className="ps-send ml-auto" onClick={submit} disabled={disabled || busy || !text.trim()}>
           {busy ? <CircleNotch size={14} weight="bold" className="animate-spin" /> : null}
           {submitLabel}

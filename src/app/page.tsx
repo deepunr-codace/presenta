@@ -4,8 +4,9 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Presentation, Stack } from "@phosphor-icons/react";
 import { SAMPLE_DECK } from "@/lib/deck/sample";
-import { trashDeck, downloadBlob, exportDeckJson, importDeckJson, listDecks, loadDeckById, saveDeck, type DeckSummary } from "@/lib/persist";
+import { trashDeck, downloadBlob, exportDeckJson, importDeckFile, listDecks, loadDeckById, saveDeck, type DeckSummary } from "@/lib/persist";
 import { deckSlug } from "@/components/editor/deck-slug";
+import { queueAgentPrompt } from "@/lib/agent";
 import { DeckCard } from "@/components/home/DeckCard";
 import { DeleteDeckDialog } from "@/components/home/DeleteDeckDialog";
 import { EmptyDecksCard } from "@/components/home/EmptyDecksCard";
@@ -90,7 +91,7 @@ export default function HomePage() {
   const onImportFile = (file: File | undefined) => {
     if (!file) return;
     void run("Importing…", async () => {
-      const deck = await importDeckJson(file);
+      const deck = await importDeckFile(file);
       await saveDeck(deck);
       openDeck(deck.id);
     });
@@ -128,6 +129,15 @@ export default function HomePage() {
     router.push("/new");
   };
 
+  const startWithAgent = (text: string) => {
+    try {
+      queueAgentPrompt(text);
+      router.push("/agent");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not start Agent mode.");
+    }
+  };
+
   const onIntent = (intent: Intent) => {
     if (intent === "paste") {
       seedWizardForPaste();
@@ -162,7 +172,7 @@ export default function HomePage() {
           <input
             ref={fileRef}
             type="file"
-            accept="application/json,.json"
+            accept="application/json,.json,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/pdf,.pdf"
             className="hidden"
             aria-hidden
             tabIndex={-1}
@@ -189,7 +199,7 @@ export default function HomePage() {
             </div>
           </header>
 
-          <HomeHero status={busy ?? "Presenta can make mistakes. Review important details."} busy={busy !== null} onSubmit={startFromPrompt} />
+          <HomeHero status={busy ?? "Presenta can make mistakes. Review important details."} busy={busy !== null} onSubmit={startFromPrompt} onAgentSubmit={startWithAgent} />
 
           <div className="ps-home-stats mt-8 grid gap-4 sm:grid-cols-3">
             {loading ? (

@@ -13,6 +13,7 @@ Return one JSON object matching the schema: { "title": string, "slides": SlideCo
 - Produce exactly the number of slides requested in the user message (slideCount).
 - slides[0].kind MUST be "cover". The last slide's kind MUST be "closing". No other slide may be a cover or closing.
 - "title" is the deck title (max 80 characters).
+- Any slide may include "sources": up to 3 exact source references (max 300 characters each). Cite supplied labels such as "report.pdf · Page 4", "Notion page: Launch plan" or an exact https URL for slide-specific facts, figures and quotations. Never invent a source or URL. Keep citations out of presenter notes and story copy; omit sources when no traceable source label exists.
 
 # Slide kinds and when to use each
 - cover: the opening slide. Fields: title (the deck title or a sharper version of it), subtitle (one line of promise or context), imageQuery (required).
@@ -36,6 +37,7 @@ Return one JSON object matching the schema: { "title": string, "slides": SlideCo
 - steps: at most 6; step title 40, step body 120.
 - quote.text: 220. quote.by: 60.
 - imageQuery: 140.
+- sources: up to 3 exact source references from supplied material, each at most 300 characters. Use exact https URLs when research URLs are supplied.
 
 # Writing rules
 - Be concrete and specific. Use the names, numbers, products, places and terms from the input. Prefer a fact, an example or a consequence over a generality. Every bullet should say something a reader could not have guessed from the title.
@@ -46,6 +48,7 @@ Return one JSON object matching the schema: { "title": string, "slides": SlideCo
 - imageQuery is required on cover, image-text and closing slides: a descriptive photo or illustration search phrase (subject, setting, mood, style), 4 to 12 words, no text overlays, no brand names.
 - Titles are headlines, not labels: "Onboarding drops from 9 days to 2" beats "Results". Bullets are complete thoughts without a trailing full stop. No emoji.
 - Speaker notes (notes) are optional: 1 or 2 sentences the presenter can say, in the same language.
+- Keep source references separate from slide copy and presenter notes. Cite only supplied material that supports the slide's claims.
 - For pasted material, preserve its structure, facts and terminology; compress, do not invent. For chat briefs, expand the brief into a persuasive, logically ordered story: context, problem, solution, evidence, plan, ask.
 
 # When an outline is supplied
@@ -141,6 +144,9 @@ export function buildGenerateUserMessage(req: GenerateRequest): string {
       ? "Keep the source's order, facts and terminology. Compress long passages into bullets, steps, cards or stats according to their shape. Do not add claims that are not in the source."
       : "Expand the brief into a complete, persuasive deck. Where the brief gives numbers, names or examples, use them verbatim; where it does not, stay specific to the topic without inventing statistics.",
   );
+  if (req.mode === "paste" || req.brief?.source?.trim()) {
+    lines.push("For each slide grounded in the supplied source, add a `sources` array with up to 3 exact references that support its claims. When the supplied source includes web research URLs, cite the exact URL(s) that support the slide. Combine `Source file:` or `Notion page:` with `Page N` or `Slide N` markers where available. Do not cite an unrelated section or invent a marker. Keep citations out of visible slide copy and speaker notes.");
+  }
   if (req.outline) {
     lines.push("The outline wins over the pasted material or transcript wherever they disagree on structure; the material is the source of facts and wording.");
   }
@@ -251,6 +257,8 @@ export function buildOutlineUserMessage(req: OutlineRequest): string {
 
 export const REVISE_SYSTEM = `You are the revision engine of Presenta Studio, an AI presentation builder. You receive the current deck as compact JSON (title, themeId, and every slide's index, layoutId, semantic content and a digest of its elements with their ids), optionally the user's selection (a slide, or one element on a slide), and an instruction. You answer with a patch: { "summary": string, "ops": PatchOp[] }. The editor applies the ops to the deck; you never return a whole deck.
 
+Preserve a slide's "sources" when its factual claims remain supported. Remove a reference when its cited material no longer supports the revised slide. Never invent source labels; keep citations out of presenter notes and slide copy.
+
 # Slide and deck ops
 - { "op": "replaceSlideContent", "slideIndex", "content" }: rewrite one slide's complete semantic content (kind, title and the fields that kind uses). Use for rewording, shortening, expanding, changing tone, translating, changing a slide's kind, fixing facts. Send the full content, not a diff. This rebuilds the slide's elements, so never use it when only one element should change.
 - { "op": "insertSlide", "atIndex", "content" }: insert a new slide so that it becomes slides[atIndex]; slides at and after atIndex shift right. To add a slide after slide 3, use atIndex 4.
@@ -272,7 +280,7 @@ export const REVISE_SYSTEM = `You are the revision engine of Presenta Studio, an
 - { "op": "duplicateElement", "slideIndex", "elementId" }: copy an element onto the same slide, slightly offset.
 
 # Slide content (same schema as generation)
-kind is one of cover, section, bullets, two-column, cards, stats, quote, image-text, process, comparison, closing. Fields: title (max 90), subtitle (160), body (400), bullets and bulletsRight (max 6 items of 110), columnTitles (exactly 2 of 40), cards (max 4; title 50, body 140, icon = Phosphor name), stats (max 4; value 14, label 50), steps (max 6; title 40, body 120), quote {text 220, by 60}, imageQuery (140, English), notes (400). Fill only the fields the kind uses.
+kind is one of cover, section, bullets, two-column, cards, stats, quote, image-text, process, comparison, closing. Fields: title (max 90), subtitle (160), body (400), bullets and bulletsRight (max 6 items of 110), columnTitles (exactly 2 of 40), cards (max 4; title 50, body 140, icon = Phosphor name), stats (max 4; value 14, label 50), steps (max 6; title 40, body 120), quote {text 220, by 60}, imageQuery (140, English), notes (400), sources (up to 3 exact references, max 300 each). Fill only the fields the kind uses and retain supported source references.
 
 # Scope rules
 - Ops only, minimal and targeted. Touch only what the instruction concerns. Do not rewrite slides or elements the user did not ask about, and do not "improve" things that were not requested.

@@ -27,9 +27,9 @@ export function hasAiKey(): boolean {
   return aiSource() !== "mock";
 }
 
-/** Model name for a source (Claude's when running on the mock). Presenta AI never reveals its model. */
+/** Model name for a source (Claude's when running on the mock). Presenta Studio never reveals its model. */
 export function activeModel(source: AiSource = aiSource()): string {
-  if (source === "presenta") return "Presenta AI";
+  if (source === "presenta") return "Presenta Studio";
   return source === "openai" ? openAiModel() : CLAUDE_MODEL;
 }
 
@@ -38,7 +38,7 @@ export type AiRunOptions = Omit<AiCallOptions, "auth"> & { ai?: AiResolution };
 function pick<T>(opts: AiRunOptions, run: { claude: (o: AiCallOptions) => Promise<T>; openai: (o: AiCallOptions) => Promise<T>; mock: () => T }): Promise<T> {
   const ai = opts.ai ?? { source: aiSource() };
   const call: AiCallOptions = { signal: opts.signal, auth: ai.auth };
-  // Presenta AI: the same chat-completions path as OpenAI, with a key from the pool.
+  // Presenta Studio: the same chat-completions path as OpenAI, with a key from the pool.
   if (ai.source === "presenta" && ai.presenta) return withPoolKey(ai.presenta, (auth) => run.openai({ ...call, auth }));
   if (ai.source === "claude") return run.claude(call);
   if (ai.source === "openai") return run.openai(call);

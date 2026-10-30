@@ -22,7 +22,13 @@ const CRUMBS = [
 export function DeckShell({ id, children }: Props) {
   const title = useDeckStore((s) => (s.deck?.id === id ? s.deck.title : null));
   return (
-    <AppShell active="decks" sidebar="full" sidebarStartCollapsed breadcrumbs={[...CRUMBS, { label: title || "Deck" }]}>
+    <AppShell
+      active="decks"
+      sidebar="full"
+      sidebarStartCollapsed
+      className="ps-deck-shell"
+      breadcrumbs={[...CRUMBS, { label: title || "Deck" }]}
+    >
       {children}
     </AppShell>
   );

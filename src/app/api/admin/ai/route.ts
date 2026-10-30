@@ -4,7 +4,7 @@ import { adminUser } from "@/lib/admin-guard";
 import { addPoolKey, getPresentaSettings, listPoolKeys, savePresentaSettings, usageSummary } from "@/lib/ai/pool-db";
 import { fetchKeyInfo } from "@/lib/ai/openrouter";
 
-/** Admin-only management of Presenta AI: the pooled OpenRouter keys, the model and the daily allowance. */
+/** Admin-only management of Presenta Studio: the pooled OpenRouter keys, the model and the daily allowance. */
 
 const notAllowed = () => NextResponse.json({ error: "Not allowed." }, { status: 403 });
 

@@ -32,15 +32,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // so we always look the account up by email and use ours. Sessions made before this fix are corrected the first
       // time they are used (they have no `dbId` mark yet).
       const marked = token as typeof token & { dbId?: boolean };
+      if (user) {
+        if (user.name) token.name = user.name;
+        if (user.email) token.email = user.email;
+        if (user.image) token.picture = user.image;
+      }
       if (user || !marked.dbId) {
         const email = user?.email ?? token.email;
         const row = email ? await findUserByEmail(email) : null;
         if (row) {
           token.id = row.id;
           marked.dbId = true;
+          if (row.name) token.name = row.name;
+          if (row.image) token.picture = row.image;
         } else if (user?.id) {
           token.id = user.id;
         }
+      } else if (!token.picture && token.email) {
+        // Older sessions may lack the Google photo; pull it once from the users table.
+        const row = await findUserByEmail(String(token.email));
+        if (row?.image) token.picture = row.image;
       }
       if (trigger === "update" && session && typeof session === "object") {
         const patch = session as Partial<{ name: string; image: string }>;
@@ -50,7 +61,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      if (session.user && typeof token.id === "string") session.user.id = token.id;
+      if (session.user) {
+        if (typeof token.id === "string") session.user.id = token.id;
+        if (typeof token.picture === "string") session.user.image = token.picture;
+      }
       return session;
     },
   },

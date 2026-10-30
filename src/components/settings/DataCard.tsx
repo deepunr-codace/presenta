@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { DownloadSimple, UploadSimple } from "@phosphor-icons/react";
 import { useToast } from "@/components/shell/Toast";
 import type { Deck } from "@/lib/deck/schema";
-import { downloadBlob, importDeckJson, listDecks, loadDeckById, saveDeck } from "@/lib/persist";
+import { downloadBlob, importDeckFile, listDecks, loadDeckById, saveDeck } from "@/lib/persist";
 
 type Backup = { app: "presenta"; version: 1; exportedAt: string; decks: Deck[] };
 
@@ -54,7 +54,7 @@ export function DataCard() {
       for (const [i, d] of parsed.decks.entries()) {
         setStatus(`Restoring deck ${i + 1} of ${parsed.decks.length}…`);
         // Each deck goes through the normal import so it is validated, and gets a new id if one already exists.
-        const deck = await importDeckJson(new File([JSON.stringify(d)], "deck.json", { type: "application/json" }));
+        const deck = await importDeckFile(new File([JSON.stringify(d)], "deck.json", { type: "application/json" }));
         await saveDeck(deck);
         added += 1;
       }

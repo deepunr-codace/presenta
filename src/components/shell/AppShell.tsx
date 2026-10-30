@@ -9,7 +9,9 @@ import { KeyBanner } from "./KeyBanner";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { Mark } from "./Mark";
 import { SideNav, type SideNavProps } from "./SideNav";
-import { NavLinks, TopNav } from "./TopNav";
+import { TopNav } from "./TopNav";
+import { MobileNavMenu } from "./MobileNavMenu";
+import { MobileBottomNav } from "./MobileBottomNav";
 import { TopBar, type Crumb } from "./TopBar";
 import type { NavKey } from "./nav-items";
 
@@ -47,6 +49,7 @@ export function AppShell({ children, breadcrumbs, actions, active, banner = fals
     <div className="ps-shell" data-sidebar="">
       <TopNav active={active} onMenu={() => setNavOpen(true)} />
       <SideNav active={active} variant={sidebar} startCollapsed={sidebarStartCollapsed} />
+      <MobileBottomNav active={active} onMore={() => setNavOpen(true)} />
       <div className={className ? `ps-content ${className}` : "ps-content"}>
         {banner ? <KeyBanner /> : null}
         <TopBar breadcrumbs={breadcrumbs} actions={actions} />
@@ -69,9 +72,7 @@ export function AppShell({ children, breadcrumbs, actions, active, banner = fals
             </button>
           </div>
           <DialogTitle className="sr-only">Navigation</DialogTitle>
-          <nav aria-label="Primary">
-            <NavLinks active={active} onNavigate={closeNav} />
-          </nav>
+          <MobileNavMenu active={active} onNavigate={closeNav} />
         </DialogContent>
       </Dialog>
     </div>

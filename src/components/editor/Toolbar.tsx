@@ -24,34 +24,38 @@ export function Toolbar() {
 
   return (
     <div className="ps-toolbar" role="toolbar" aria-label="Deck tools">
-      <TitleEditor />
+      <div className="ps-toolbar-main" role="group" aria-label="Editing tools">
+        <TitleEditor />
 
-      <span className="ps-toolbar-sep" aria-hidden />
+        <span className="ps-toolbar-sep" aria-hidden />
 
-      <button type="button" className="ps-iconbtn" onClick={undo} disabled={!canUndo} title="Undo (⌘Z)" aria-label="Undo">
-        <ArrowCounterClockwise size={16} />
-      </button>
-      <button type="button" className="ps-iconbtn" onClick={redo} disabled={!canRedo} title="Redo (⇧⌘Z)" aria-label="Redo">
-        <ArrowClockwise size={16} />
-      </button>
+        <button type="button" className="ps-iconbtn" onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z / ⌘Z)" aria-label="Undo">
+          <ArrowCounterClockwise size={16} />
+        </button>
+        <button type="button" className="ps-iconbtn" onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Y / Ctrl+Shift+Z / ⇧⌘Z)" aria-label="Redo">
+          <ArrowClockwise size={16} />
+        </button>
 
-      <span className="ps-toolbar-sep" aria-hidden />
+        <span className="ps-toolbar-sep" aria-hidden />
 
-      <AddMenu />
-      <ThemePicker />
+        <AddMenu />
+        <ThemePicker />
 
-      <span className="ps-save" data-dirty={dirty} data-error={saveError ? "true" : undefined} aria-live="polite" title={saveError ?? undefined}>
-        <span className="ps-save-dot" aria-hidden />
-        {saveError ? "Not saved" : dirty ? "Saving…" : "Saved"}
-      </span>
+        <span className="ps-save" data-dirty={dirty} data-error={saveError ? "true" : undefined} aria-live="polite" title={saveError ?? undefined}>
+          <span className="ps-save-dot" aria-hidden />
+          {saveError ? "Not saved" : dirty ? "Saving…" : "Saved"}
+        </span>
+      </div>
 
       <div className="flex-1" />
 
-      <button type="button" className="ps-iconbtn" aria-pressed={sidebarOpen} onClick={() => setSidebarOpen(!sidebarOpen)} title={sidebarOpen ? "Hide the side panel" : "Show the side panel"} aria-label={sidebarOpen ? "Hide the side panel" : "Show the side panel"}>
-        <SidebarSimple size={16} mirrored />
-      </button>
-      <div className="ps-toolbar-actions">
-        <DeckActions id={deck.id} mode="edit" />
+      <div className="ps-toolbar-right" role="group" aria-label="Deck actions">
+        <div className="ps-toolbar-actions">
+          <DeckActions id={deck.id} mode="edit" />
+        </div>
+        <button type="button" className="ps-iconbtn" aria-pressed={sidebarOpen} onClick={() => setSidebarOpen(!sidebarOpen)} title={sidebarOpen ? "Hide the side panel" : "Show the side panel"} aria-label={sidebarOpen ? "Hide the side panel" : "Show the side panel"}>
+          <SidebarSimple size={16} mirrored />
+        </button>
       </div>
     </div>
   );

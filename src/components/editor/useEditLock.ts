@@ -5,9 +5,8 @@ import { ApiError, lockApi, type PendingRequest } from "@/lib/collab";
 import { flushSave } from "@/store/deck-store";
 
 /**
- * One person edits a deck at a time. This hook asks the server for the edit lock when the editor opens, keeps it
- * alive while the editor is open, and runs the hand-over: someone who finds the deck taken can ask the holder to
- * hand over, and the holder's changes are saved before the lock moves.
+ * Track this editor tab's presence while owners and editors work on a deck together. The lease is a heartbeat and
+ * presence signal; persistence uses three-way merge so an edit lock never blocks another editor's save.
  */
 
 export type LockPhase =

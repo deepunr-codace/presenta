@@ -63,7 +63,7 @@ export function AccountScreen() {
   return (
     <AppShell breadcrumbs={[{ label: "Studio", href: "/" }, { label: "Settings" }]}>
       <div className="ps-page">
-        <header className="mb-8">
+        <header className="ps-page-hero mb-8">
           <h1 className="ps-heading">Settings</h1>
           <p className="ps-body-lg mt-2">Your profile, storage, AI, teams and security, all in one place.</p>
         </header>
@@ -120,9 +120,9 @@ export function AccountScreen() {
                 <Block id="admin" className="xl:col-span-2">
                   <section className="ps-glass" data-paper>
                     <h2 className="ps-cardtitle">Admin</h2>
-                    <p className="ps-body mt-1">Manage the AI keys, model and daily allowance behind Presenta AI.</p>
+                    <p className="ps-body mt-1">Manage the AI keys, model and daily allowance behind Presenta Studio.</p>
                     <Link href="/admin/ai" className="ps-btn ps-btn-xs mt-3 inline-flex">
-                      Open Presenta AI settings
+                      Open Presenta Studio settings
                     </Link>
                   </section>
                 </Block>

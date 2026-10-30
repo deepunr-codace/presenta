@@ -1,0 +1,90 @@
+/* Phone controller, opened from the main presentation's expiring remote link. */
+.ps-present-remote {
+  position: absolute;
+  z-index: 12;
+  right: 20px;
+  width: 340px;
+  max-width: calc(100% - 40px);
+  max-height: min(520px, calc(100dvh - 36px));
+  overflow-y: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--ps-line-2);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ps-paper) 97%, transparent);
+  box-shadow: var(--ps-shadow-subtle);
+  color: var(--ps-ink);
+  font-size: 12px;
+}
+.ps-present[data-idle] .ps-present-remote { opacity: 0; pointer-events: none; }
+.ps-present-remote-copy { margin: 0 0 10px; color: var(--ps-smoke); line-height: 1.45; }
+.ps-present-remote-link { display: block; overflow-wrap: anywhere; padding: 8px 9px; border: 1px solid var(--ps-line); border-radius: 8px; background: var(--ps-canvas); color: var(--ps-ink); font-size: 11px; }
+.ps-present-remote-link-row { display: flex; align-items: stretch; gap: 6px; }
+.ps-present-remote-link-row .ps-present-remote-link { min-width: 0; flex: 1; }
+.ps-present-remote-copy-btn { display: grid; width: 38px; flex: 0 0 auto; place-items: center; border: 1px solid var(--ps-line-2); border-radius: 8px; background: var(--ps-paper); color: var(--ps-ink); cursor: pointer; }
+.ps-present-remote-copy-btn:hover { background: var(--ps-plate); }
+.ps-present-remote-copy-btn:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+.ps-present-remote-qr { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px; border: 1px solid var(--ps-line); border-radius: 12px; background: var(--ps-canvas); color: var(--ps-ink); }
+.ps-present-remote-qr svg { display: block; width: 128px; height: 128px; flex: 0 0 auto; border-radius: 6px; background: #fff; }
+.ps-present-remote-qr > span { display: flex; flex-direction: column; gap: 4px; }
+.ps-present-remote-qr strong { font-size: 12px; }
+.ps-present-remote-qr small { color: var(--ps-ash); font-size: 10px; line-height: 1.45; }
+.ps-present-remote-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.ps-present-remote-btn { display: inline-flex; min-height: 32px; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; border: 1px solid var(--ps-line-2); border-radius: 8px; background: var(--ps-paper); color: var(--ps-ink); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+.ps-present-remote-btn:hover:not(:disabled) { background: var(--ps-plate); }
+.ps-present-remote-btn:disabled { opacity: .55; cursor: wait; }
+.ps-present-remote-btn:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+.ps-present-remote-btn-primary { border-color: var(--ps-ink); background: var(--ps-ink); color: var(--ps-on-ink); }
+.ps-present-remote-btn-primary:hover:not(:disabled) { background: var(--ps-graphite); color: var(--ps-on-ink); }
+.ps-present-remote-message { margin: 9px 0 0; color: var(--ps-smoke); line-height: 1.4; }
+.ps-present-polls { width: 360px; }
+.ps-present-share { width: 390px; }
+.ps-present-share-link-row { display: flex; align-items: stretch; gap: 6px; }
+.ps-present-share-link-row .ps-present-remote-link { min-width: 0; flex: 1; }
+.ps-present-share-qr { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px; border: 1px solid var(--ps-line); border-radius: 12px; background: var(--ps-canvas); color: var(--ps-ink); }
+.ps-present-share-qr svg { display: block; width: 112px; height: 112px; flex: 0 0 auto; border-radius: 6px; background: #fff; }
+.ps-present-share-qr > span { display: flex; flex-direction: column; gap: 4px; }
+.ps-present-share-qr strong { font-size: 12px; }
+.ps-present-share-qr small { color: var(--ps-ash); font-size: 10px; line-height: 1.45; }
+.ps-present-poll-question { margin: 9px 0 12px; color: var(--ps-ink); font-size: 14px; font-weight: 600; line-height: 1.4; }
+.ps-present-poll-options { display: grid; gap: 11px; margin: 0; padding: 0; list-style: none; }
+.ps-present-poll-option { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--ps-ink); }
+.ps-present-poll-option > span { min-width: 0; overflow-wrap: anywhere; }
+.ps-present-poll-option strong { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.ps-present-poll-option small { margin-left: 4px; color: var(--ps-ash); font-size: 10px; font-weight: 400; }
+.ps-present-poll-track { height: 5px; margin-top: 5px; overflow: hidden; border-radius: 999px; background: var(--ps-plate); }
+.ps-present-poll-track > span { display: block; height: 100%; border-radius: inherit; background: var(--ps-spark-violet); transition: width 240ms ease-out; }
+
+@media (max-width: 520px) {
+  .ps-present-remote { right: 12px; width: min(360px, calc(100% - 24px)); max-width: none; }
+  .ps-present-remote-qr { gap: 9px; padding: 8px; }
+  .ps-present-remote-qr svg { width: 112px; height: 112px; }
+}
+
+.ps-remote-page { min-height: 100dvh; padding: max(20px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom)); background: var(--ps-canvas); color: var(--ps-ink); font-family: var(--font-inter), system-ui, sans-serif; }
+.ps-remote-head { display: flex; max-width: 440px; align-items: center; gap: 12px; margin: 2px auto 22px; }
+.ps-remote-mark { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border-radius: 13px; background: var(--ps-ink); color: var(--ps-on-ink); }
+.ps-remote-eyebrow { margin: 0; color: var(--ps-ash); font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+.ps-remote-head h1 { margin: 2px 0 0; font-size: 20px; font-weight: 600; letter-spacing: -.025em; }
+.ps-remote-card { max-width: 440px; margin: 0 auto; padding: 20px; border: 1px solid var(--ps-line); border-radius: var(--ps-r-card); background: var(--ps-paper); box-shadow: var(--ps-shadow-subtle); }
+.ps-remote-status { display: flex; align-items: center; gap: 8px; color: var(--ps-ash); font-size: 12px; }
+.ps-remote-status[data-connected] { color: var(--ps-success); }
+.ps-remote-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ps-ash); }
+.ps-remote-status[data-connected] .ps-remote-dot { background: var(--ps-success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ps-success) 14%, transparent); }
+.ps-remote-current-label { margin: 30px 0 0; color: var(--ps-ash); font-size: 12px; text-align: center; }
+.ps-remote-current { display: flex; align-items: baseline; justify-content: center; gap: 8px; margin: 3px 0 26px; font-size: clamp(64px, 18vw, 92px); font-weight: 300; letter-spacing: -.07em; line-height: 1; font-variant-numeric: tabular-nums; }
+.ps-remote-total { color: var(--ps-ash); font-size: 24px; font-weight: 400; letter-spacing: -.02em; }
+.ps-remote-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ps-remote-button { display: flex; min-height: 112px; flex-direction: column; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--ps-line-2); border-radius: 16px; background: var(--ps-canvas); color: var(--ps-ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; touch-action: manipulation; user-select: none; }
+.ps-remote-button:active:not(:disabled) { transform: scale(.98); background: var(--ps-plate); }
+.ps-remote-button:disabled { opacity: .38; cursor: default; }
+.ps-remote-button:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+.ps-remote-next { border-color: var(--ps-ink); background: var(--ps-ink); color: var(--ps-on-ink); }
+.ps-remote-next:active:not(:disabled) { background: var(--ps-graphite); }
+.ps-remote-hint { margin: 14px 0 0; color: var(--ps-ash); font-size: 11px; line-height: 1.5; text-align: center; }
+.ps-remote-wait { display: grid; min-height: 220px; place-items: center; color: var(--ps-ash); font-size: 13px; }
+.ps-remote-error { display: flex; align-items: flex-start; gap: 7px; margin: 14px 0 0; color: var(--ps-danger); font-size: 12px; line-height: 1.5; }
+.ps-remote-foot { max-width: 440px; margin: 14px auto 0; color: var(--ps-ash); font-size: 11px; line-height: 1.5; text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-remote-button:active:not(:disabled) { transform: none; }
+}

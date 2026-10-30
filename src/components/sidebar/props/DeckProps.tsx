@@ -11,6 +11,7 @@ import { PropertyRow } from "@/components/ui-kit/PropertyRow";
 import { SelectInput } from "@/components/ui-kit/SelectInput";
 import { TextInput } from "@/components/ui-kit/TextInput";
 import { ColorField } from "../ColorField";
+import { BrandGuardian } from "./BrandGuardian";
 
 const FONT_PAIRS: { value: FontPair | "theme"; label: string }[] = [
   { value: "theme", label: "Theme default" },
@@ -55,6 +56,7 @@ export function DeckProps({ deck, theme }: Props) {
   };
 
   return (
+    <>
     <PropertyGroup title="Deck">
       <PropertyRow label="Title" stacked>
         <TextInput aria-label="Deck title" value={deck.title} onCommit={(title) => setTitle(title.trim() || deck.title)} />
@@ -100,5 +102,7 @@ export function DeckProps({ deck, theme }: Props) {
         <p className="ps-caption">Brand accent and fonts restyle every slide; the logo is used when slides are generated.</p>
       )}
     </PropertyGroup>
+    <BrandGuardian deck={deck} />
+    </>
   );
 }

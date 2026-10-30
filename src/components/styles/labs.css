@@ -67,6 +67,7 @@
 .ps-lab:hover .ps-lab-icon::after { transform: translateX(120%); transition: transform 700ms ease-out; }
 .ps-lab-stage { padding: 3px 9px; border-radius: 9999px; border: 1px solid var(--ps-line-2); background: var(--ps-surface); font-size: 12px; font-weight: 600; color: var(--ps-graphite); }
 .ps-lab-stage[data-stage="Early preview"] { border-color: color-mix(in srgb, var(--ps-success) 50%, transparent); color: var(--ps-success); background: color-mix(in srgb, var(--ps-success) 10%, transparent); }
+.ps-lab-stage[data-stage="Available"] { border-color: color-mix(in srgb, var(--ps-success) 50%, transparent); color: var(--ps-success); background: color-mix(in srgb, var(--ps-success) 10%, transparent); }
 .ps-lab-cat { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ps-smoke); }
 .ps-lab-name { font-size: 18px; line-height: 24px; font-weight: 500; letter-spacing: -0.01em; color: var(--ps-ink); }
 .ps-lab-desc { font-size: 14px; line-height: 1.5; color: var(--ps-smoke); }

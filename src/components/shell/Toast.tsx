@@ -1,7 +1,9 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useSession } from "next-auth/react";
 import { CheckCircle, Info, WarningCircle, X } from "@phosphor-icons/react";
+import { recordAppNotification } from "@/lib/notifications";
 
 type ToastTone = "info" | "success" | "error";
 
@@ -25,6 +27,8 @@ type Props = { children: ReactNode };
 
 /** Bottom-right toasts (`.ps-toast`). Mounted once in the root layout. */
 export function ToastProvider({ children }: Props) {
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextId = useRef(1);
   const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
@@ -40,11 +44,21 @@ export function ToastProvider({ children }: Props) {
     (message: string, options: ToastOptions = {}) => {
       const id = nextId.current++;
       setItems((list) => [...list.slice(-3), { id, message, ...options }]);
+      if (userId) {
+        const tone = options.tone ?? "info";
+        recordAppNotification(userId, {
+          id: `toast:${Date.now()}:${id}`,
+          kind: "activity",
+          title: tone === "success" ? "Completed" : tone === "error" ? "Needs attention" : "Update",
+          body: message,
+          createdAt: new Date().toISOString(),
+        });
+      }
       const duration = options.duration ?? 4000;
       if (duration > 0) timers.current.set(id, setTimeout(() => dismiss(id), duration));
       return id;
     },
-    [dismiss],
+    [dismiss, userId],
   );
 
   useEffect(() => {

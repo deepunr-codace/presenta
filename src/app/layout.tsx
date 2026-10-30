@@ -4,6 +4,7 @@ import { Suspense, type CSSProperties, type ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
 import { AccountSync } from "@/components/shell/AccountSync";
 import { MiniDeck } from "@/components/shell/MiniDeck";
+import { TeamMessengerProvider } from "@/components/teams/TeamMessengerProvider";
 import { NavProgress } from "@/components/shell/NavProgress";
 import { ThemeModeProvider } from "@/components/shell/ThemeMode";
 import { ToastProvider } from "@/components/shell/Toast";
@@ -57,7 +58,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <ThemeModeProvider>
             <TooltipProvider delay={200}>
               <ToastProvider>
-                {children}
+                <TeamMessengerProvider>
+                  {children}
+                </TeamMessengerProvider>
                 <MiniDeck />
               </ToastProvider>
             </TooltipProvider>

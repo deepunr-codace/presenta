@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { loadDeckWithAccess } from "@/lib/persist";
+import { loadDeckWithAccess, rememberDeckBase } from "@/lib/persist";
 import { flushSave, useDeckStore } from "@/store/deck-store";
 import { Stage } from "@/components/canvas/Stage";
 import { Sidebar } from "@/components/sidebar/Sidebar";
@@ -19,8 +19,8 @@ type Props = { id: string };
 type Status = "loading" | "missing" | "ready";
 
 /**
- * The editor: tool row on top, filmstrip left, stage centre, sidebar right (DESIGN.md §6). Only one person edits a deck
- * at a time: the canvas appears once this tab holds the edit lock, and viewers are sent to the read-only review page.
+ * The editor: tool row on top, filmstrip left, stage centre, sidebar right (DESIGN.md §6). Owners and editors can
+ * work together; the server merges concurrent saves by slide and element, and viewers are sent to the review page.
  */
 export function EditorScreen({ id }: Props) {
   const router = useRouter();
@@ -68,6 +68,36 @@ export function EditorScreen({ id }: Props) {
       void flushSave();
     };
   }, [id, loadDeck, router, reviewHref]);
+
+  // Read other editors' autosaves when this tab is idle. Local dirty changes are merged on the next save.
+  useEffect(() => {
+    if (!canEdit) return;
+    let alive = true;
+    let loading = false;
+    const sync = async () => {
+      const before = useDeckStore.getState();
+      if (loading || before.dirty || before.editingElementId || before.deck?.id !== id) return;
+      loading = true;
+      const version = before.deck.updatedAt;
+      try {
+        const latest = await loadDeckWithAccess(id, false);
+        if (!alive) return;
+        if (!latest) { setStatus("missing"); return; }
+        if (latest.role === "viewer") { setViewer(true); router.replace(reviewHref); return; }
+        const after = useDeckStore.getState();
+        if (after.dirty || after.editingElementId || after.deck?.id !== id || after.deck.updatedAt !== version) return;
+        if (latest.deck.updatedAt !== version) {
+          rememberDeckBase(latest.deck);
+          // Refresh the shared deck content without following another editor's active slide.
+          loadDeck(latest.deck, after.selectedSlideId);
+        }
+      } catch {
+        // A temporary network failure leaves the local deck intact; the next poll retries.
+      } finally { loading = false; }
+    };
+    const timer = window.setInterval(() => void sync(), 2500);
+    return () => { alive = false; window.clearInterval(timer); };
+  }, [canEdit, id, loadDeck, router, reviewHref]);
 
   // The server can also tell us we may only view (for example access was changed while the page was open).
   useEffect(() => {

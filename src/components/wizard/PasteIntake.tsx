@@ -9,8 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useWizardStore } from "./wizard-state";
+import { extractOfficeText, extractPdfText, PDF_OCR_LANGUAGES, type PdfOcrLanguage } from "@/lib/import/source-files";
+import { NotionImportDialog } from "./NotionImportDialog";
+import { GoogleSlidesImportButton } from "./GoogleSlidesImportButton";
 
-const ACCEPT = ".txt,.md,.markdown,text/plain,text/markdown";
+const ACCEPT = ".txt,.md,.markdown,.docx,.pptx,.pdf,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation";
 const MAX_CHARS = 40000;
 
 const PLACEHOLDER = `Paste anything: an outline, meeting notes, a blog post, bullet points, a product brief.
@@ -35,18 +38,25 @@ export function PasteIntake({ onBuildOutline }: Props) {
   const paste = useWizardStore((s) => s.paste);
   const patchPaste = useWizardStore((s) => s.patchPaste);
   const [dragging, setDragging] = useState(false);
+  const [notionOpen, setNotionOpen] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [fileStatus, setFileStatus] = useState<string | null>(null);
+  const [ocrLanguage, setOcrLanguage] = useState<PdfOcrLanguage>("eng");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const readFile = async (file: File | undefined) => {
     if (!file) return;
-    if (!isTextFile(file)) {
-      setFileError("Only .txt and .md files are supported.");
-      return;
-    }
     setFileError(null);
-    const text = (await file.text()).slice(0, MAX_CHARS);
-    patchPaste({ text: paste.text.trim() ? `${paste.text.trimEnd()}\n\n${text}`.slice(0, MAX_CHARS) : text });
+    setFileStatus("Reading file…");
+    try {
+      const text = isTextFile(file) ? (await file.text()).slice(0, MAX_CHARS) : /\.pdf$/i.test(file.name) || file.type === "application/pdf" ? await extractPdfText(file, { language: ocrLanguage, onProgress: setFileStatus }) : await extractOfficeText(file);
+      const source = `Source file: ${file.name.replace(/[\r\n]+/g, " ").slice(0, 120)}\n${text}`;
+      patchPaste({ text: paste.text.trim() ? `${paste.text.trimEnd()}\n\n${source}`.slice(0, MAX_CHARS) : source.slice(0, MAX_CHARS) });
+    } catch (error) {
+      setFileError(error instanceof Error ? error.message : "Could not read that file.");
+    } finally {
+      setFileStatus(null);
+    }
   };
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
@@ -79,7 +89,7 @@ export function PasteIntake({ onBuildOutline }: Props) {
         />
         {dragging ? (
           <div className="pointer-events-none absolute inset-3 grid place-items-center rounded-[var(--ps-r-sm)] border-2 border-dashed border-[var(--ps-ink)] bg-[var(--ps-paper)] text-[14px] font-medium text-[var(--ps-ink)]">
-            Drop a .txt or .md file
+          Drop a text, Word, PowerPoint, or PDF file
           </div>
         ) : null}
         <input
@@ -93,13 +103,24 @@ export function PasteIntake({ onBuildOutline }: Props) {
           }}
         />
         <div className="ps-caption mt-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button variant="outline" size="sm" className={cn(SECONDARY_BTN, "h-8 px-3.5")} onClick={() => fileRef.current?.click()}>
-              <Paperclip data-icon="inline-start" /> Add .txt or .md
+              <Paperclip data-icon="inline-start" /> Add a file
             </Button>
+            <label className="flex items-center gap-1.5" htmlFor="pdf-ocr-language">
+              <span>OCR language</span>
+              <select id="pdf-ocr-language" className="ps-input h-8 py-0" value={ocrLanguage} onChange={(e) => setOcrLanguage(e.target.value as PdfOcrLanguage)}>
+                {PDF_OCR_LANGUAGES.map((language) => <option key={language.code} value={language.code}>{language.label}</option>)}
+              </select>
+            </label>
+            <span className="hidden items-center gap-1 sm:inline-flex">Scanned PDF text is read in your browser; your PDF is not uploaded.</span>
             <span className="hidden items-center gap-1 sm:inline-flex">
               <FileText size={12} /> or drop a file here
             </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" className={cn(SECONDARY_BTN, "h-8 px-3.5")} onClick={() => setNotionOpen(true)}>Import from Notion</Button>
+            <GoogleSlidesImportButton />
           </div>
           <div className="flex items-center gap-3">
             <span className={cn("tabular-nums", chars >= MAX_CHARS && "text-[var(--ps-danger)]")}>
@@ -110,12 +131,15 @@ export function PasteIntake({ onBuildOutline }: Props) {
             </Button>
           </div>
         </div>
+        {fileStatus ? <p className="mt-2 text-[13px] text-[var(--ps-ash)]" role="status" aria-live="polite">{fileStatus}</p> : null}
         {fileError ? (
           <p className="mt-2 text-[13px] text-[var(--ps-danger)]" role="alert">
             {fileError}
           </p>
         ) : null}
       </div>
+
+      <NotionImportDialog open={notionOpen} onOpenChange={setNotionOpen} />
 
       <div className="grid gap-5 border-t border-[var(--ps-line)] p-6 sm:grid-cols-2">
         <div className="grid gap-1.5">
@@ -147,7 +171,7 @@ export function PasteIntake({ onBuildOutline }: Props) {
       </div>
 
       <div className="flex items-center justify-between gap-3 border-t border-[var(--ps-line)] px-6 py-4">
-        <p className="ps-caption">{ready ? "We will structure this into slides next." : "Paste or drop some content to continue."}</p>
+      <p className="ps-caption">{ready ? "We will structure this into slides next." : "Paste or drop some content to continue."}</p>
         <Button className={cn(PRIMARY_BTN, "h-9 px-4")} onClick={onBuildOutline} disabled={!ready}>
           Build outline <ArrowRight data-icon="inline-end" weight="bold" />
         </Button>

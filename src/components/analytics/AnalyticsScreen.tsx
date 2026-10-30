@@ -94,7 +94,7 @@ export function AnalyticsScreen() {
   return (
     <AppShell active="analytics" sidebar="full" breadcrumbs={[{ label: "Studio", href: "/" }, { label: "Analytics" }]}>
       <div className="ps-page">
-        <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <header className="ps-page-hero mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="ps-heading">Analytics</h1>
             <p className="ps-body-lg mt-2">See who opens and presents your decks.</p>

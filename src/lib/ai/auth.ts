@@ -7,7 +7,7 @@ import type { AiSource } from "@/lib/api-client";
 
 export type AiProvider = "openai" | "anthropic";
 /**
- * "openrouter" is internal: it marks a key taken from the server's pool (Presenta AI), never one a visitor
+ * "openrouter" is internal: it marks a key taken from the server's pool (Presenta Studio), never one a visitor
  * sends. `model` is the pooled model chosen by the admin.
  */
 export type AiAuth = { provider: AiProvider | "openrouter"; apiKey: string; model?: string };
@@ -20,7 +20,7 @@ export const PROVIDER_HEADER = "x-ai-provider";
 export type AiResolution = {
   source: AiSource;
   auth?: AiAuth;
-  /** Set when the request is served by the pooled keys ("Presenta AI"); see `resolveAiForRequest`. */
+  /** Set when the request is served by the pooled keys ("Presenta Studio"); see `resolveAiForRequest`. */
   presenta?: { userId: string; cost: number; model: string };
 };
 
@@ -69,6 +69,6 @@ export function envSource(): AiSource {
 export function resolveAi(request: Request): AiResolution {
   const auth = readAiAuth(request.headers);
   if (auth) return { source: auth.provider === "openai" ? "openai" : "claude", auth };
-  // (The pooled "Presenta AI" source needs the session and database, so it is added by `resolveAiForRequest`.)
+  // (The pooled "Presenta Studio" source needs the session and database, so it is added by `resolveAiForRequest`.)
   return { source: serverKeyAllowed() ? envSource() : "mock" };
 }

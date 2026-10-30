@@ -172,6 +172,24 @@ export const ChartElementSchema = Base.extend({
   series: z.array(z.object({ name: z.string(), values: z.array(z.number()) })),
 });
 
+export function isSafeVideoUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+    const host = url.hostname.toLowerCase();
+    if (host === "youtu.be" || host === "youtube.com" || host.endsWith(".youtube.com") || host === "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com") || host === "vimeo.com" || host.endsWith(".vimeo.com")) return true;
+    return /\.(?:mp4|webm|ogg)$/i.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+export const VideoElementSchema = Base.extend({
+  type: z.literal("video"),
+  src: z.string().max(2048).refine(isSafeVideoUrl, "Use a YouTube or Vimeo link, or a direct MP4, WebM or Ogg video URL."),
+  title: z.string().max(120).default("Embedded video"),
+});
+
 export const ElementSchema = z.discriminatedUnion("type", [
   TextElementSchema,
   ImageElementSchema,
@@ -179,6 +197,7 @@ export const ElementSchema = z.discriminatedUnion("type", [
   CardElementSchema,
   IconElementSchema,
   ChartElementSchema,
+  VideoElementSchema,
 ]);
 
 export type TextElement = z.infer<typeof TextElementSchema>;
@@ -187,9 +206,10 @@ export type ShapeElement = z.infer<typeof ShapeElementSchema>;
 export type CardElement = z.infer<typeof CardElementSchema>;
 export type IconElement = z.infer<typeof IconElementSchema>;
 export type ChartElement = z.infer<typeof ChartElementSchema>;
+export type VideoElement = z.infer<typeof VideoElementSchema>;
 export type Element = z.infer<typeof ElementSchema>;
 export type ElementType = Element["type"];
-export const ElementTypeSchema = z.enum(["text", "image", "shape", "card", "icon", "chart"]);
+export const ElementTypeSchema = z.enum(["text", "image", "shape", "card", "icon", "chart", "video"]);
 
 /* ---------- Slides & deck ---------- */
 
@@ -219,12 +239,17 @@ export const SlideBackgroundSchema = z.union([
 ]);
 export type SlideBackground = z.infer<typeof SlideBackgroundSchema>;
 
+export const SlideTransitionSchema = z.enum(["none", "fade", "push", "zoom"]);
+export type SlideTransition = z.infer<typeof SlideTransitionSchema>;
+
 export const SlideSchema = z.object({
   id: z.string(),
   layoutId: LayoutIdSchema,
   background: SlideBackgroundSchema.default({ kind: "theme", variant: "default" }),
   elements: z.array(ElementSchema),
   notes: z.string().default(""),
+  /** Entrance effect used when this slide appears in presenter view. */
+  transition: SlideTransitionSchema.optional(),
   /** Semantic content the slide was built from; kept so layouts can be re-applied. */
   content: z.lazy(() => SlideContentSchema).optional(),
 });
@@ -338,6 +363,8 @@ export const SlideContentSchema = z.object({
   /** Image search or generation prompt for layouts with imagery. */
   imageQuery: z.string().max(140).optional(),
   notes: z.string().max(400).optional(),
+  /** Exact source labels that support this slide; rendered as a discreet footer. */
+  sources: z.array(z.string().trim().min(1).max(300)).max(3).optional(),
 });
 export type SlideContent = z.infer<typeof SlideContentSchema>;
 
@@ -441,7 +468,7 @@ export type Revision = z.infer<typeof RevisionSchema>;
 /* ---------- Brief (collected by the chat intake) ---------- */
 
 export const BriefSchema = z.object({
-  topic: z.string().max(300).optional(),
+  topic: z.string().max(2000).optional(),
   audience: z.string().max(120).optional(),
   goal: z.string().max(200).optional(),
   mustInclude: z.array(z.string().max(120)).max(10).optional(),

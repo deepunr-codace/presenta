@@ -18,7 +18,7 @@ export function BoxProps({ slide, element, patch }: Props) {
   const deleteElements = useDeckStore((s) => s.deleteElements);
   const duplicateElements = useDeckStore((s) => s.duplicateElements);
   const commit = useDeckStore((s) => s.commit);
-  const [lockRatio, setLockRatio] = useState(element.type === "image" || element.type === "icon");
+  const [lockRatio, setLockRatio] = useState(element.type === "image" || element.type === "icon" || element.type === "video");
 
   const ratio = element.h > 0 ? element.w / element.h : 1;
   const setW = (w: number) => patch(lockRatio ? { w, h: Math.max(1, Math.round(w / ratio)) } : { w });

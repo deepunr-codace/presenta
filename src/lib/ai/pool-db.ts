@@ -4,7 +4,7 @@ import { decryptSecret, encryptSecret } from "@/lib/crypto";
 import { newId } from "@/lib/deck/ids";
 
 /**
- * The pool of OpenRouter keys that serve "Presenta AI", plus the per-user daily allowance and the admin's
+ * The pool of OpenRouter keys that serve "Presenta Studio", plus the per-user daily allowance and the admin's
  * settings. Keys are encrypted at rest and never leave the server. Server only.
  */
 

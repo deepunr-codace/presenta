@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, type FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { EnvelopeSimple, GoogleLogo, Password } from "@phosphor-icons/react";
@@ -52,8 +53,8 @@ export function ProfileCard({ account, onUpdated }: Props) {
   return (
     <section className="ps-glass" data-paper data-hero>
       <div className="flex items-center gap-4">
-        <div className="ps-account-avatar" aria-hidden>
-          {initialOf(account.name, account.email)}
+        <div className="ps-account-avatar" aria-hidden data-photo={account.image ? "" : undefined}>
+          {account.image ? <Image src={account.image} alt="" fill sizes="56px" referrerPolicy="no-referrer" /> : initialOf(account.name, account.email)}
         </div>
         <div className="min-w-0">
           <h2 className="ps-cardtitle">{account.name || "Your profile"}</h2>
@@ -91,3 +92,4 @@ export function ProfileCard({ account, onUpdated }: Props) {
     </section>
   );
 }
+
