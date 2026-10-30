@@ -89,121 +89,116 @@
   text-underline-offset: 2px;
 }
 
+/* Two columns from 1024 px: the film panel on the left, the form on a calm dark column on the right.
+   Below that the panel becomes a band above the form. */
 .ps-auth-shell {
-  position: relative;
   display: flex;
   min-height: 100dvh;
-  overflow: hidden;
-  background: #07070a;
+  flex-direction: column;
+  background: #0a0a0b;
   color: #f4f2ef;
+}
+.ps-auth-hero {
+  position: relative;
+  display: flex;
+  height: 260px;
+  flex-shrink: 0;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 28px 28px 20px;
   isolation: isolate;
+  background: #07070a;
 }
 .ps-auth-video {
   position: absolute;
   inset: 0;
-  z-index: -3;
+  z-index: -2;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1.04);
 }
 .ps-auth-veil {
   position: absolute;
   inset: 0;
-  z-index: -2;
-  background:
-    linear-gradient(180deg, rgba(7, 7, 10, 0.55) 0%, rgba(7, 7, 10, 0.2) 40%, rgba(7, 7, 10, 0.75) 100%),
-    radial-gradient(ellipse at 50% 50%, rgba(7, 7, 10, 0) 0%, rgba(7, 7, 10, 0.55) 80%);
-}
-.ps-auth-glow {
-  position: absolute;
   z-index: -1;
-  width: 46vw;
-  height: 46vw;
-  max-width: 720px;
-  max-height: 720px;
-  border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.35;
-  pointer-events: none;
+  background: linear-gradient(180deg, rgba(7, 7, 10, 0.35) 0%, rgba(7, 7, 10, 0.1) 35%, rgba(7, 7, 10, 0.85) 100%);
 }
-.ps-auth-glow-a { top: -18vw; left: -14vw; background: #2f5cff; }
-.ps-auth-glow-b { right: -16vw; bottom: -20vw; background: #e8399f; }
-
-.ps-auth-main {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  width: 100%;
-  min-height: 100dvh;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-  padding: 40px 24px;
-}
-.ps-auth-logo { display: flex; justify-content: center; }
-.ps-auth-logo img {
+.ps-auth-hero-body { display: flex; flex-direction: column; gap: 18px; }
+.ps-auth-logo {
   display: block;
-  width: min(300px, 62vw);
+  width: min(220px, 60vw);
   height: auto;
-  filter: drop-shadow(0 10px 30px rgba(47, 92, 255, 0.35));
+  filter: drop-shadow(0 8px 26px rgba(47, 92, 255, 0.35));
 }
+.ps-auth-pitch { display: none; }
 .ps-auth-legal {
   margin: 0;
   font-size: 12px;
   letter-spacing: 0.04em;
-  color: rgba(244, 242, 239, 0.55);
+  color: rgba(244, 242, 239, 0.6);
+}
+.ps-auth-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px 40px;
+}
+
+@media (min-width: 1024px) {
+  .ps-auth-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  }
+  .ps-auth-hero {
+    height: auto;
+    min-height: 100dvh;
+    padding: 48px 56px;
+  }
+  .ps-auth-veil {
+    background: linear-gradient(90deg, rgba(7, 7, 10, 0.82) 0%, rgba(7, 7, 10, 0.45) 55%, rgba(7, 7, 10, 0.15) 100%), linear-gradient(180deg, rgba(7, 7, 10, 0.2) 0%, rgba(7, 7, 10, 0.7) 100%);
+  }
+  .ps-auth-hero-body {
+    flex: 1;
+    justify-content: center;
+    gap: 40px;
+  }
+  .ps-auth-logo { width: min(340px, 30vw); }
+  .ps-auth-pitch { display: flex; max-width: 520px; flex-direction: column; gap: 14px; }
+  .ps-auth-headline { margin: 0; font-size: 44px; line-height: 1.08; letter-spacing: -0.03em; font-weight: 600; }
+  .ps-auth-accent {
+    background: linear-gradient(100deg, #8fa2ff 0%, #e8399f 55%, #ff9a2e 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .ps-auth-sub { margin: 0; max-width: 42ch; font-size: 17px; line-height: 1.55; color: rgba(244, 242, 239, 0.78); }
+  .ps-auth-main { padding: 48px 56px; background: #0a0a0b; }
 }
 
 .ps-auth-card {
   position: relative;
-  max-width: 420px;
-  padding: 32px 30px 28px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 24px;
-  background: linear-gradient(160deg, rgba(20, 20, 26, 0.8), rgba(12, 12, 16, 0.72));
-  backdrop-filter: blur(22px) saturate(140%);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  overflow: hidden;
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 0;
 }
-.ps-auth-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.07) 50%, transparent 65%);
-  transform: translateX(-100%);
-  animation: ps-auth-sheen 7s ease-in-out infinite;
-  pointer-events: none;
-}
-@keyframes ps-auth-sheen {
-  0%, 55% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-.ps-auth-card > * { position: relative; }
-.ps-auth-card .ps-pagetitle { color: #f4f2ef; font-size: 26px; letter-spacing: -0.02em; }
+.ps-auth-card .ps-pagetitle { color: #f4f2ef; font-size: 28px; letter-spacing: -0.02em; }
 .ps-auth-card .ps-body { color: rgba(244, 242, 239, 0.7); }
 .ps-auth-card .ps-label { color: rgba(244, 242, 239, 0.82); }
 .ps-auth-card .ps-input {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.14);
   color: #f4f2ef;
 }
 .ps-auth-card .ps-input::placeholder { color: rgba(244, 242, 239, 0.4); }
 .ps-auth-card .ps-input:focus { border-color: #8fa2ff; box-shadow: 0 0 0 3px rgba(79, 110, 255, 0.28); }
 .ps-auth-card .ps-btn-primary { background: #f4f2ef; border-color: #f4f2ef; color: #0a0a0b; }
 .ps-auth-card .ps-btn-primary:hover:not(:disabled) { background: #ffffff; border-color: #ffffff; }
-.ps-auth-card .ps-auth-google { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.16); color: #f4f2ef; }
-.ps-auth-card .ps-auth-google:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.3); }
-.ps-auth-card .ps-auth-divider::before, .ps-auth-card .ps-auth-divider::after { background: rgba(255, 255, 255, 0.14); }
+.ps-auth-card .ps-auth-google { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.14); color: #f4f2ef; }
+.ps-auth-card .ps-auth-google:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.28); }
+.ps-auth-card .ps-auth-divider::before, .ps-auth-card .ps-auth-divider::after { background: rgba(255, 255, 255, 0.12); }
 .ps-auth-card .ps-auth-divider span { color: rgba(244, 242, 239, 0.5); }
 .ps-auth-card .ps-auth-foot { color: rgba(244, 242, 239, 0.7); }
 .ps-auth-card .ps-auth-foot a { color: #f4f2ef; }
-
-@media (prefers-reduced-motion: reduce) {
-  .ps-auth-card::before { animation: none; display: none; }
-}
-@media (max-width: 520px) {
-  .ps-auth-card { padding: 26px 22px 22px; border-radius: 20px; }
-}
