@@ -1,22 +1,48 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { ArrowCounterClockwise, ArrowRight, ArrowUp, Sparkle } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, ArrowUp, Check, Lightbulb, Sparkle } from "@phosphor-icons/react";
 import { postSuggest } from "@/lib/api-client";
-import type { Brief, SuggestRequest } from "@/lib/deck/schema";
-import { GHOST_BTN, SECONDARY_BTN } from "@/lib/styles";
-import { cn } from "@/lib/utils";
+import type { Brief, SuggestRequest, SuggestResponse } from "@/lib/deck/schema";
+import { GHOST_BTN } from "@/lib/styles";
 import { Button } from "@/components/ui/button";
 import { BriefSummaryCard } from "./BriefSummaryCard";
-import { SuggestionsPanel } from "./SuggestionsPanel";
 import { STAGE_META, STAGE_ORDER, briefPatch, firstQuestion, nextStage, toTurns } from "./chat-stages";
-import type { SuggestState } from "./SuggestionsBody";
-import { useMediaQuery } from "@/components/shell/useMediaQuery";
 import { messageId, useWizardStore } from "./wizard-state";
 
 type Props = { onBuildOutline: () => void };
 
-/** Five-question conversation that fills the brief; each assistant question comes with AI suggestions. */
+type SuggestState = { status: "loading" } | { status: "ready"; data: SuggestResponse } | { status: "error"; message: string };
+
+const splitItems = (text: string) =>
+  text
+    .split(";")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+function AssistantAvatar() {
+  return (
+    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--ps-ink)] text-[var(--ps-on-ink)]" aria-hidden>
+      <Sparkle size={13} weight="fill" />
+    </span>
+  );
+}
+
+/** Three dots while the assistant is thinking of answers. */
+function Typing() {
+  return (
+    <span className="inline-flex items-center gap-1 py-1" aria-label="Thinking of suggestions">
+      {[0, 150, 300].map((d) => (
+        <span key={d} className="size-1.5 animate-bounce rounded-full bg-[var(--ps-ash)] motion-reduce:animate-none" style={{ animationDelay: `${d}ms` }} />
+      ))}
+    </span>
+  );
+}
+
+/**
+ * The brief as a chat: the assistant asks five short questions, you answer in the message box or tap a suggested
+ * reply, and the brief fills in as you go.
+ */
 export function ChatIntake({ onBuildOutline }: Props) {
   const messages = useWizardStore((s) => s.chat.messages);
   const stage = useWizardStore((s) => s.chat.stage);
@@ -28,10 +54,8 @@ export function ChatIntake({ onBuildOutline }: Props) {
 
   const [draft, setDraft] = useState("");
   const [suggestions, setSuggestions] = useState<Record<string, SuggestState>>({});
-  const [sheetOpen, setSheetOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const desktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
     if (!messages.length) startChat(firstQuestion());
@@ -40,7 +64,7 @@ export function ChatIntake({ onBuildOutline }: Props) {
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
   const askingId = lastAssistant && lastAssistant.stage && lastAssistant.stage !== "confirm" ? lastAssistant.id : null;
 
-  // Ask for suggestions once per assistant question; "loading" is the missing entry.
+  // Ask for suggested replies once per question; "loading" is the missing entry.
   useEffect(() => {
     if (!lastAssistant || !askingId || !lastAssistant.stage || lastAssistant.stage === "confirm") return;
     if (suggestions[askingId]) return;
@@ -70,7 +94,7 @@ export function ChatIntake({ onBuildOutline }: Props) {
 
   useEffect(() => {
     const el = listRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages.length, suggestions]);
 
   const advance = (userText: string, patch: Partial<Brief> | null) => {
@@ -85,100 +109,149 @@ export function ChatIntake({ onBuildOutline }: Props) {
       next,
     );
     setDraft("");
+    requestAnimationFrame(() => inputRef.current?.focus());
   };
 
-  const send = () => {
-    const t = draft.trim();
+  const sendText = (text: string) => {
+    const t = text.trim();
     if (!t) return;
     advance(t, briefPatch(stage, t));
   };
 
   const skip = () => {
-    if (!STAGE_META[stage].optional) return;
-    advance("Skip", null);
+    if (STAGE_META[stage].optional) advance("Skip", null);
   };
 
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
-      send();
+      sendText(draft);
     }
-  };
-
-  const useSuggestion = (value: string) => {
-    setDraft(value);
-    requestAnimationFrame(() => inputRef.current?.focus());
   };
 
   const meta = STAGE_META[stage];
   const confirming = stage === "confirm";
-  const stageNumber = Math.min(STAGE_ORDER.indexOf(stage) + 1, STAGE_ORDER.length - 1);
+  const total = STAGE_ORDER.length - 1;
+  const stageNumber = Math.min(STAGE_ORDER.indexOf(stage) + 1, total);
+  const picked = meta.multi ? splitItems(draft) : [];
+
+  /** One answer: send it straight away. Several (must include): add or remove it in the message box. */
+  const tapReply = (s: string) => {
+    if (!meta.multi) {
+      sendText(s);
+      return;
+    }
+    const items = splitItems(draft);
+    setDraft((items.includes(s) ? items.filter((x) => x !== s) : [...items, s]).join("; "));
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
+  const current: SuggestState | undefined = askingId ? (suggestions[askingId] ?? { status: "loading" }) : undefined;
 
   return (
-    <section className="ps-glass overflow-hidden p-0" aria-label="Conversation">
-      <div className="flex items-center justify-between border-b border-[var(--ps-line)] px-5 py-3">
-        <p className="ps-body" aria-live="polite">
-          {confirming ? (
-            "Brief complete"
-          ) : (
-            <>
-              Question {stageNumber} of {STAGE_ORDER.length - 1} · <span className="font-medium text-[var(--ps-ink)]">{meta.label}</span>
-              {meta.optional ? <span className="text-[var(--ps-ash)]"> · optional</span> : null}
-            </>
-          )}
-        </p>
+    <section className="ps-glass flex flex-col overflow-hidden p-0" aria-label="Conversation">
+      <div className="flex items-center gap-3 border-b border-[var(--ps-line)] px-5 py-3">
+        <AssistantAvatar />
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] font-medium text-[var(--ps-ink)]">Presenta assistant</p>
+          <p className="ps-caption" aria-live="polite">
+            {confirming ? "Brief complete" : `Question ${stageNumber} of ${total} · ${meta.label}${meta.optional ? " · optional" : ""}`}
+          </p>
+        </div>
+        <div className="hidden h-1 w-24 overflow-hidden rounded-full bg-[var(--ps-plate)] sm:block" aria-hidden>
+          <div className="h-full rounded-full bg-[var(--ps-ink)] transition-[width] duration-300" style={{ width: `${((confirming ? total : stageNumber - 1) / total) * 100}%` }} />
+        </div>
         <Button variant="ghost" size="xs" className={GHOST_BTN} onClick={() => resetChat(firstQuestion())} disabled={messages.length <= 1}>
           <ArrowCounterClockwise data-icon="inline-start" /> Restart
         </Button>
       </div>
 
-      <div ref={listRef} className="max-h-[520px] min-h-[360px] space-y-3 overflow-y-auto px-5 py-5">
-        {messages.map((m) => {
-          const isAsking = m.id === askingId;
-          const st: SuggestState | undefined = suggestions[m.id] ?? (isAsking ? { status: "loading" } : undefined);
-          const multi = STAGE_META[m.stage ?? "topic"].multi;
-          return (
-            <div key={m.id} className={cn("flex flex-col", m.role === "user" ? "items-end" : "items-start")}>
-              <div className={cn("max-w-[85%] px-4 py-2.5 text-[14px] leading-6 whitespace-pre-wrap text-[var(--ps-ink)]", m.role === "user" ? "rounded-[var(--ps-r-sm)] bg-[var(--ps-plate)]" : "ps-tile")}>{m.text}</div>
-              {isAsking && st ? (
-                desktop === false ? (
-                  <div className="mt-2">
-                    <Button variant="outline" size="sm" className={SECONDARY_BTN} onClick={() => setSheetOpen(true)}>
-                      <Sparkle data-icon="inline-start" weight="fill" /> Suggestions
-                    </Button>
-                    <SuggestionsPanel variant="dialog" open={sheetOpen} onOpenChange={setSheetOpen} state={st} multi={multi} onUse={useSuggestion} onRetry={() => retrySuggestions(m.id)} />
-                  </div>
-                ) : (
-                  <div className="mt-2 w-full max-w-[85%]">
-                    <SuggestionsPanel variant="inline" state={st} multi={multi} onUse={useSuggestion} onRetry={() => retrySuggestions(m.id)} />
-                  </div>
-                )
-              ) : null}
+      <div ref={listRef} className="max-h-[520px] min-h-[360px] space-y-4 overflow-y-auto px-5 py-5" aria-live="polite">
+        {messages.map((m) =>
+          m.role === "user" ? (
+            <div key={m.id} className="flex justify-end">
+              <div className="max-w-[80%] rounded-2xl rounded-br-md bg-[var(--ps-ink)] px-4 py-2.5 text-[14px] leading-6 whitespace-pre-wrap text-[var(--ps-on-ink)]">{m.text}</div>
             </div>
-          );
-        })}
+          ) : (
+            <div key={m.id} className="flex items-end gap-2">
+              <AssistantAvatar />
+              <div className="max-w-[80%] rounded-2xl rounded-bl-md border border-[var(--ps-line)] bg-[var(--ps-plate)] px-4 py-2.5 text-[14px] leading-6 whitespace-pre-wrap text-[var(--ps-ink)]">{m.text}</div>
+            </div>
+          ),
+        )}
+
+        {/* Suggested replies for the open question, like quick replies in a messenger. */}
+        {current && !confirming ? (
+          <div className="pl-9">
+            {current.status === "loading" ? (
+              <div className="inline-flex rounded-2xl rounded-bl-md border border-[var(--ps-line)] bg-[var(--ps-plate)] px-4 py-2">
+                <Typing />
+              </div>
+            ) : current.status === "error" ? (
+              <p className="ps-caption">
+                Suggestions are not available right now.{" "}
+                <button type="button" className="ps-link" onClick={() => askingId && retrySuggestions(askingId)}>
+                  Try again
+                </button>{" "}
+                or type your answer below.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <p className="ps-caption">{meta.multi ? "Tap any that apply, then send. Or type your own." : "Tap a reply to send it, or type your own."}</p>
+                <div className="flex flex-wrap gap-2">
+                  {current.data.suggestions.map((s) => {
+                    const on = picked.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => tapReply(s)}
+                        aria-pressed={meta.multi ? on : undefined}
+                        className="ps-chip h-auto min-h-8 max-w-full rounded-2xl py-1.5 text-left whitespace-normal"
+                      >
+                        {on ? <Check size={12} weight="bold" className="shrink-0" /> : null}
+                        <span className="min-w-0">{s}</span>
+                      </button>
+                    );
+                  })}
+                  {meta.optional ? (
+                    <button type="button" onClick={skip} className="ps-chip h-auto min-h-8 rounded-2xl border-dashed py-1.5 text-[var(--ps-smoke)]">
+                      Skip this question
+                    </button>
+                  ) : null}
+                </div>
+                {current.data.hint ? (
+                  <p className="ps-caption flex items-start gap-1.5">
+                    <Lightbulb size={13} className="mt-0.5 shrink-0" /> {current.data.hint}
+                  </p>
+                ) : null}
+              </div>
+            )}
+          </div>
+        ) : null}
 
         {confirming ? <BriefSummaryCard brief={brief} onChange={patchBrief} onBuildOutline={onBuildOutline} /> : null}
       </div>
 
       {!confirming ? (
-        <div className="border-t border-[var(--ps-line)] p-5">
-          <div className="ps-prompt min-h-0 p-3">
-            <div className="flex items-end gap-2">
-              <textarea ref={inputRef} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} placeholder={meta.placeholder} rows={2} maxLength={meta.multi ? 1300 : meta.max} className="min-h-[44px] flex-1" aria-label="Your answer" />
-              <button type="button" className="ps-send shrink-0" data-icon-only="" onClick={send} disabled={!draft.trim()} aria-label="Send">
-                <ArrowUp size={14} weight="bold" />
-              </button>
-            </div>
+        <div className="border-t border-[var(--ps-line)] px-5 py-4">
+          <div className="flex items-end gap-2 rounded-2xl border border-[var(--ps-line-2)] bg-[var(--ps-canvas)] py-2 pr-2 pl-4 focus-within:border-[var(--ps-ash)]">
+            <textarea
+              ref={inputRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={onKey}
+              placeholder={meta.multi ? "Type items, separated by semicolons…" : "Type your answer…"}
+              rows={1}
+              maxLength={meta.multi ? 1300 : meta.max}
+              className="max-h-32 min-h-[36px] flex-1 resize-none bg-transparent py-1.5 text-[14px] leading-6 text-[var(--ps-ink)] outline-none placeholder:text-[var(--ps-ash)]"
+              aria-label="Your answer"
+            />
+            <button type="button" className="ps-send shrink-0" data-icon-only="" onClick={() => sendText(draft)} disabled={!draft.trim()} aria-label="Send">
+              <ArrowUp size={14} weight="bold" />
+            </button>
           </div>
-          <div className="ps-caption mt-1.5 flex items-center justify-between">
-            <span>Enter to send · Shift+Enter for a new line</span>
-            {meta.optional ? (
-              <button type="button" onClick={skip} className="ps-link inline-flex items-center gap-1 text-[12px]">
-                Skip this question <ArrowRight size={11} weight="bold" />
-              </button>
-            ) : null}
-          </div>
+          <p className="ps-caption mt-1.5">Enter to send · Shift+Enter for a new line</p>
         </div>
       ) : null}
     </section>
