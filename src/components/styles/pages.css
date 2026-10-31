@@ -201,8 +201,8 @@
 .ps-starter:hover, .ps-starter:focus-visible { transform: translateY(-3px); border-color: var(--ps-line-2); background: var(--ps-surface); }
 .ps-starter:active { transform: translateY(-1px) scale(0.99); }
 .ps-starter:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
-.ps-starter-icon { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: 10px; color: #fff; margin-bottom: 4px; }
-.ps-starter-icon svg { width: 18px; height: 18px; }
+.ps-starter-grid .ps-starter-icon { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: 10px; color: #fff; margin-bottom: 4px; }
+.ps-starter-grid .ps-starter-icon svg { width: 18px; height: 18px; }
 .ps-starter-title { font-size: 15px; line-height: 20px; font-weight: 600; color: var(--ps-ink); }
 .ps-starter-desc { font-size: 13px; line-height: 1.45; color: var(--ps-smoke); }
 .ps-starter-foot { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 10px; font-size: 12px; color: var(--ps-ash); }
