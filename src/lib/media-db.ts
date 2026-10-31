@@ -68,6 +68,13 @@ export async function insertMediaRow(row: Omit<MediaRow, "created_at">): Promise
 }
 
 /** Deletes a row the user owns and returns it (so its files can be removed), or null if it is not theirs. */
+/** Rename one of the user's items; null when it is not theirs. */
+export async function renameMediaRow(userId: string, id: string, name: string): Promise<MediaRow | null> {
+  await ensureMediaTable();
+  const rows = (await sql()`UPDATE media SET name = ${name} WHERE id = ${id} AND user_id = ${userId} RETURNING *`) as MediaRow[];
+  return rows[0] ?? null;
+}
+
 export async function deleteMediaRow(userId: string, id: string): Promise<MediaRow | null> {
   await ensureMediaTable();
   const rows = (await sql()`DELETE FROM media WHERE id = ${id} AND user_id = ${userId} RETURNING *`) as MediaRow[];

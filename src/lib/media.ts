@@ -52,6 +52,11 @@ export async function deleteMedia(id: string): Promise<void> {
   if (!res.ok) throw await readError(res, "Could not delete that item.");
 }
 
+export async function renameMedia(id: string, name: string): Promise<void> {
+  const res = await fetch(`/api/media/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+  if (!res.ok) throw await readError(res, "Could not rename that item.");
+}
+
 export function totalBytes(items: MediaItem[]): number {
   return items.reduce((n, m) => n + m.bytes, 0);
 }
