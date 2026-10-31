@@ -7,6 +7,7 @@ import { recordDrawing, type Box } from "./pdf-record";
 import { structurePage } from "./pdf-structure";
 import { postSmartPage } from "@/lib/api-client";
 import type { SmartLine, SmartPage } from "./smart-schema";
+import { hex, probePieces, renderCrop, textInk, type Ops, type PBox, type Piece } from "./pdf-pieces";
 
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_SLIDES = 100;
@@ -301,8 +302,191 @@ function cleanLetters(canvas: HTMLCanvasElement, box: Box, blocks: Block[], offX
   if (changed) ctx.putImageData(pixels, 0, 0);
 }
 
-type PageCtx = { page: PDFPageProxy; viewport: PageViewport; offX: number; offY: number; n: number; noText: OpsFilter };
+type PageCtx = { page: PDFPageProxy; viewport: PageViewport; offX: number; offY: number; n: number; noText: OpsFilter; ops: Ops };
 type PageResult = { elements: Element[]; background: Slide["background"] | null; bytes: number };
+
+const area = (b: PBox) => b.w * b.h;
+const inside = (a: PBox, b: PBox, pad: number) => a.x >= b.x - pad && a.y >= b.y - pad && a.x + a.w <= b.x + b.w + pad && a.y + a.h <= b.y + b.h + pad;
+const near = (a: PBox, b: PBox, gap: number) => a.x <= b.x + b.w + gap && b.x <= a.x + a.w + gap && a.y <= b.y + b.h + gap && b.y <= a.y + a.h + gap;
+const sameBox = (a: PBox, b: PBox, tol: number) => Math.abs(a.x - b.x) <= tol && Math.abs(a.y - b.y) <= tol && Math.abs(a.x + a.w - b.x - b.w) <= tol && Math.abs(a.y + a.h - b.y - b.h) <= tol;
+const union = (boxes: PBox[]): PBox => {
+  const x = Math.min(...boxes.map((b) => b.x));
+  const y = Math.min(...boxes.map((b) => b.y));
+  return { x, y, w: Math.max(...boxes.map((b) => b.x + b.w)) - x, h: Math.max(...boxes.map((b) => b.y + b.h)) - y };
+};
+
+type ShapeGuess = { kind: "rect" | "ellipse" | "pill"; radius: number };
+
+/** A flat one-colour piece that is a box, rounded box, pill, circle or bar, from how it fills its bounding box. */
+function shapeOf(p: Piece): ShapeGuess | null {
+  if (!p.solid || !p.evenCorners) return null;
+  const { w, h } = p.box;
+  const short = Math.min(w, h);
+  const long = Math.max(w, h);
+  if (short < 1) return null;
+  if (short <= 6 && long >= 40 && p.coverage > 0.85) return { kind: "rect", radius: 0 };
+  // Below this the piece is too small to measure its corners reliably: it stays a crisp picture.
+  if (short < 40) return null;
+  // Along the diagonal, a rounded corner of radius r starts r·(1 − 1/√2) ≈ 0.293·r in from the corner.
+  const r = p.corner / 0.293;
+  if (p.coverage >= 0.975 && r < 4) return { kind: "rect", radius: 0 };
+  const round = r >= short * 0.45;
+  if (round && Math.abs(p.coverage - Math.PI / 4) < 0.05 && Math.abs(w - h) <= Math.max(3, short * 0.12)) return { kind: "ellipse", radius: 0 };
+  if (round && p.coverage > 0.8) return { kind: "pill", radius: Math.round(short / 2) };
+  if (p.coverage > 0.86 && r >= 4) return { kind: "rect", radius: Math.round(Math.min(r, short / 2)) };
+  return null;
+}
+
+/**
+ * The standard converter: every drawing on the page is rendered on its own and measured. Letters drawn as shapes are
+ * recognised as text (and give the text boxes their colour); flat boxes, rounded cards, pills, bars and circles become
+ * editable shapes, with an outline drawn over them becoming their border; small touching pieces such as the parts of
+ * an icon or a logo become one picture; photos, gradients and illustrations become pictures; a full-page first drawing
+ * becomes the slide background. Everything keeps its exact place and stacking order.
+ */
+async function piecesPage({ page, viewport, offX, offY, n, ops }: PageCtx, blocks: Block[], report?: (f: number) => void): Promise<PageResult> {
+  const W = viewport.width;
+  const H = viewport.height;
+  const pageArea = W * H;
+  const { pieces, plan } = await probePieces(page, viewport, ops, report);
+  const textBoxes = blocks.map((b) => ({ box: { x: b.box.x - offX, y: b.box.y - offY, w: b.box.w, h: b.box.h }, size: b.lines[0].size }));
+  const votes = blocks.map(() => new Map<string, number>());
+
+  // 1. Letters drawn as shapes: inside a text box and no taller than it.
+  const art: Piece[] = [];
+  for (const p of pieces) {
+    const t = textBoxes.findIndex((tb) => inside(p.box, tb.box, Math.max(4, tb.size * 0.35)) && p.box.h <= tb.box.h + tb.size * 0.5);
+    // Letters cover little of their box; a card or bar behind the text covers nearly all of it.
+    if (t >= 0 && (p.coverage < 0.7 || !shapeOf(p))) {
+      const c = hex(p.color);
+      votes[t].set(c, (votes[t].get(c) ?? 0) + area(p.box));
+      continue;
+    }
+    art.push(p);
+  }
+
+  // 2. Background: the first drawings that cover the whole page.
+  const bgPieces: Piece[] = [];
+  while (art.length && area(art[0].box) >= pageArea * 0.95) bgPieces.push(art.shift()!);
+  let background: Slide["background"] | null = null;
+  let bytes = 0;
+  if (bgPieces.length === 1 && bgPieces[0].solid && bgPieces[0].alpha > 0.98) background = { kind: "solid", color: hex(bgPieces[0].color) };
+  else if (bgPieces.length) {
+    const c = await renderCrop(page, viewport, plan, bgPieces.flatMap((p) => p.ops), { x: 0, y: 0, w: W, h: H });
+    const src = encode(c);
+    c.width = 0;
+    bytes += Math.floor(src.length * 0.75);
+    background = { kind: "image", src, overlay: 0 };
+  }
+
+  // 3. Shapes, borders and pictures, in paint order.
+  type Item = { kind: "shape"; piece: Piece; guess: ShapeGuess; stroke?: string; strokeWidth?: number } | { kind: "pic"; pieces: Piece[] };
+  const items: Item[] = [];
+  for (const p of art) {
+    const guess = shapeOf(p);
+    if (guess) {
+      items.push({ kind: "shape", piece: p, guess });
+      continue;
+    }
+    // An outline drawn exactly round a shape is that shape's border.
+    const ring = p.solid && p.coverage < 0.5 ? [...items].reverse().find((it) => it.kind === "shape" && !it.stroke && sameBox(it.piece.box, p.box, 4)) : undefined;
+    if (ring && ring.kind === "shape") {
+      ring.stroke = hex(p.color);
+      ring.strokeWidth = Math.max(1, Math.min(8, Math.round((p.coverage * p.box.w * p.box.h) / (2 * (p.box.w + p.box.h)))));
+      continue;
+    }
+    items.push({ kind: "pic", pieces: [p] });
+  }
+
+  // Small touching pieces become one picture: the parts of an icon, a logo, an illustration. Small shapes that overlap
+  // (an icon's round badge and the symbol on it) become one picture too; a lone small shape stays a shape.
+  const small = (b: PBox) => area(b) < pageArea * 0.02;
+  const boxOf = (it: Item) => (it.kind === "pic" ? union(it.pieces.map((q) => q.box)) : it.piece.box);
+  const piecesOf = (it: Item) => (it.kind === "pic" ? it.pieces : [it.piece]);
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (let a = 0; a < items.length && !changed; a += 1) {
+      const A = items[a];
+      const boxA = boxOf(A);
+      if (!small(boxA)) continue;
+      for (let b = 0; b < items.length; b += 1) {
+        if (b === a) continue;
+        const B = items[b];
+        const boxB = boxOf(B);
+        if (!small(boxB)) continue;
+        // Two shapes only join when they overlap; a picture also gathers pieces close beside it (letters of a logo).
+        const gap = A.kind === "shape" && B.kind === "shape" ? -1 : Math.max(3, Math.min(boxA.h, boxB.h) * 0.35);
+        if (!near(boxA, boxB, gap)) continue;
+        const merged: Item = { kind: "pic", pieces: [...piecesOf(A), ...piecesOf(B)].sort((x, y) => x.ops[0] - y.ops[0]) };
+        const keep = Math.min(a, b);
+        items[keep] = merged;
+        items.splice(Math.max(a, b), 1);
+        changed = true;
+        break;
+      }
+    }
+  }
+
+  const elements: Element[] = [];
+  for (const it of items) {
+    if (it.kind === "shape") {
+      const { box, color, alpha } = it.piece;
+      elements.push({
+        id: newId("el"),
+        type: "shape",
+        kind: it.guess.kind,
+        fill: hex(color),
+        stroke: it.stroke,
+        strokeWidth: it.strokeWidth ?? 0,
+        radius: it.guess.radius,
+        x: box.x + offX,
+        y: box.y + offY,
+        w: Math.max(1, box.w),
+        h: Math.max(1, box.h),
+        rotation: 0,
+        z: elements.length + 1,
+        locked: false,
+        opacity: alpha < 0.97 ? Math.round(alpha * 100) / 100 : 1,
+      });
+      continue;
+    }
+    const box = union(it.pieces.map((q) => q.box));
+    const c = await renderCrop(page, viewport, plan, it.pieces.flatMap((q) => q.ops), box);
+    const src = encode(c);
+    c.width = 0;
+    bytes += Math.floor(src.length * 0.75);
+    elements.push({
+      id: newId("el"),
+      type: "image",
+      src,
+      alt: `PDF page ${n} picture ${elements.length + 1}`,
+      fit: "cover",
+      radius: 0,
+      position: "50% 50%",
+      overlay: 0,
+      x: Math.max(0, box.x - 1) + offX,
+      y: Math.max(0, box.y - 1) + offY,
+      w: box.w + 2,
+      h: box.h + 2,
+      rotation: 0,
+      z: elements.length + 1,
+      locked: false,
+      opacity: 1,
+    });
+  }
+
+  // 4. Text: colour from the letters seen (drawn as shapes, or real text rendered alone).
+  const ink = await textInk(page, viewport, plan, textBoxes.map((t) => t.box));
+  const bgLight = background?.kind === "solid" ? luminanceOfColor(background.color) >= 0.5 : true;
+  const colors = blocks.map((_, k) => {
+    let best: string | null = null;
+    let most = 0;
+    for (const [c, v] of votes[k]) if (v > most) [best, most] = [c, v];
+    return best ?? ink[k] ?? (bgLight ? "#111111" : "#ffffff");
+  });
+  elements.push(...textElements(blocks, colors, elements.length + 1));
+  return { elements, background, bytes };
+}
 
 /** Every drawing on the page becomes its own element: shapes stay shapes, pictures and artwork become movable images. */
 async function structuredPage({ page, viewport, offX, offY, n, noText }: PageCtx, blocks: Block[]): Promise<PageResult> {
@@ -566,7 +750,8 @@ export async function importPdfDeck(file: File, report?: (pct: number, label: st
   const lib = await getPdfJs();
   const task = lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), useSystemFonts: true, fontExtraProperties: true });
   const pdf = await task.promise;
-  const noText = textlessFilter(lib.OPS as unknown as Record<string, number>);
+  const ops = lib.OPS as unknown as Ops;
+  const noText = textlessFilter(ops);
   try {
     if (!pdf.numPages || pdf.numPages > MAX_SLIDES) throw new Error(`PDF imports support 1 to ${MAX_SLIDES} pages.`);
     const slides: Slide[] = [];
@@ -609,7 +794,7 @@ export async function importPdfDeck(file: File, report?: (pct: number, label: st
         return { lines, box: { x, y, w, h } };
       });
 
-      const ctx: PageCtx = { page, viewport, offX, offY, n, noText };
+      const ctx: PageCtx = { page, viewport, offX, offY, n, noText, ops };
       let result: PageResult | null = null;
       if (smart) {
         try {
@@ -621,6 +806,16 @@ export async function importPdfDeck(file: File, report?: (pct: number, label: st
             smart = false;
             smartNote = ` (Smart convert stopped: ${err.message})`;
           }
+        }
+      }
+      if (!result) {
+        try {
+          const from = 8 + Math.round(((n - 1) / pdf.numPages) * 88);
+          const span = 88 / pdf.numPages;
+          result = await piecesPage(ctx, blocks, (f) => report?.(from + Math.round(f * span * 0.9), `Splitting page ${n} of ${pdf.numPages} into elements…`));
+        } catch (err) {
+          // eslint-disable-next-line no-console -- the page still imports with the previous method
+          console.warn(`Page ${n}: splitting by drawing failed; trying the previous method.`, err);
         }
       }
       if (!result) {
