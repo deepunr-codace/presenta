@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { BrandFields } from "./BrandFields";
 import { StepHeader } from "./StepHeader";
-import { ThemeRadioGrid } from "./ThemeRadioGrid";
+import { StyleSourceTabs } from "./StyleSourceTabs";
 import { useWizardStore } from "./wizard-state";
 
 /** Step 3. Theme and brand preferences; the live cover preview lives in the context panel. */
@@ -41,10 +41,7 @@ export function BrandStep() {
         </div>
       ) : null}
 
-      <section aria-label="Theme" className="ps-glass">
-        <h3 className="ps-label mb-4">Theme</h3>
-        <ThemeRadioGrid value={themeId} onChange={setThemeId} />
-      </section>
+      <StyleSourceTabs />
 
       <section aria-label="Preferences" className="ps-glass grid gap-5 sm:grid-cols-2">
         <BrandFields brand={brand} themeAccent={themeAccent} onPatch={patchBrand} />
