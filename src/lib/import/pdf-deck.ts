@@ -71,6 +71,72 @@ function toBlocks(lines: Line[]): Line[][] {
   return blocks;
 }
 
+type Box = { x0: number; y0: number; x1: number; y1: number };
+
+/**
+ * Some PDFs draw their text in a way that cannot be switched off while rendering (glyph paths, Type 3 fonts). When a
+ * text box still shows ink after rendering, repaint it from the colours just left and right of it, row by row, which
+ * rebuilds flat colours and gradients. The ink colour that was found is returned, so the new text can match it.
+ */
+function removeResidualText(img: ImageData, box: Box): { residual: boolean; ink: string | null } {
+  const { data, width: w, height: h } = img;
+  const x0 = Math.max(3, Math.floor(box.x0));
+  const x1 = Math.min(w - 4, Math.ceil(box.x1));
+  const y0 = Math.max(0, Math.floor(box.y0));
+  const y1 = Math.min(h, Math.ceil(box.y1));
+  if (x1 - x0 < 6 || y1 <= y0) return { residual: false, ink: null };
+  const edge = (y: number, xs: number[]) => {
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    for (const x of xs) {
+      const i = (y * w + x) * 4;
+      r += data[i];
+      g += data[i + 1];
+      b += data[i + 2];
+    }
+    return [r / xs.length, g / xs.length, b / xs.length];
+  };
+  const estimates: number[][][] = [];
+  let strong = 0;
+  let total = 0;
+  const ink = [0, 0, 0];
+  let inkN = 0;
+  for (let y = y0; y < y1; y += 1) {
+    const L = edge(y, [x0 - 3, x0 - 2, x0 - 1]);
+    const R = edge(y, [x1 + 1, x1 + 2, x1 + 3]);
+    const row: number[][] = [];
+    for (let x = x0; x < x1; x += 1) {
+      const t = (x - x0) / (x1 - x0);
+      const e = [L[0] + (R[0] - L[0]) * t, L[1] + (R[1] - L[1]) * t, L[2] + (R[2] - L[2]) * t];
+      row.push(e);
+      const i = (y * w + x) * 4;
+      const d = Math.max(Math.abs(data[i] - e[0]), Math.abs(data[i + 1] - e[1]), Math.abs(data[i + 2] - e[2]));
+      total += 1;
+      if (d > 56) strong += 1;
+      if (d > 140) {
+        ink[0] += data[i];
+        ink[1] += data[i + 1];
+        ink[2] += data[i + 2];
+        inkN += 1;
+      }
+    }
+    estimates.push(row);
+  }
+  if (!total || strong / total < 0.02) return { residual: false, ink: null };
+  for (let y = y0; y < y1; y += 1) {
+    for (let x = x0; x < x1; x += 1) {
+      const e = estimates[y - y0][x - x0];
+      const i = (y * w + x) * 4;
+      data[i] = e[0];
+      data[i + 1] = e[1];
+      data[i + 2] = e[2];
+    }
+  }
+  const toHex = (v: number) => Math.round(v).toString(16).padStart(2, "0");
+  return { residual: true, ink: inkN ? "#" + toHex(ink[0] / inkN) + toHex(ink[1] / inkN) + toHex(ink[2] / inkN) : null };
+}
+
 function luminanceAt(data: Uint8ClampedArray, w: number, h: number, x: number, y: number, bw: number, bh: number): number {
   let sum = 0;
   let n = 0;
@@ -115,9 +181,6 @@ export async function importPdfDeck(file: File, report?: (pct: number, label: st
       context.fillRect(0, 0, canvas.width, canvas.height);
       await renderWithoutText(() => page.render({ canvas, canvasContext: context, viewport, background: "#ffffff" }).promise);
       const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-      const data = canvas.toDataURL("image/jpeg", 0.84);
-      renderedBytes += Math.floor(data.length * 0.75);
-      if (renderedBytes > MAX_RENDERED_BYTES) throw new Error("The rendered PDF pages are too large to import together. Split the PDF into smaller files.");
 
       const offX = (STAGE_W - viewport.width) / 2;
       const offY = (STAGE_H - viewport.height) / 2;
@@ -133,11 +196,25 @@ export async function importPdfDeck(file: File, report?: (pct: number, label: st
         runs.push({ str: item.str, x: e + offX, y: f - size + offY, w: item.width * scale, size, bold: /bold|black|heavy|semibold|demi/i.test(family) });
       }
 
+      const maxSize = Math.max(0, ...runs.map((r) => r.size));
+      const blocks = toBlocks(toLines(runs));
+      const inks = blocks.map((block) => {
+        const size = block[0].size;
+        const pad = Math.ceil(size * 0.14) + 2;
+        const x = Math.min(...block.map((l) => l.x));
+        const right = Math.max(...block.map((l) => l.right));
+        const last = block[block.length - 1];
+        return removeResidualText(pixels, { x0: x - offX - pad, x1: right - offX + pad, y0: block[0].y - offY - pad, y1: last.y - offY + last.size * 1.3 + pad }).ink;
+      });
+      context.putImageData(pixels, 0, 0);
+      const data = canvas.toDataURL("image/jpeg", 0.84);
+      renderedBytes += Math.floor(data.length * 0.75);
+      if (renderedBytes > MAX_RENDERED_BYTES) throw new Error("The rendered PDF pages are too large to import together. Split the PDF into smaller files.");
+
       const elements: Element[] = [
         { id: newId("el"), type: "image", src: data, alt: `PDF page ${n} artwork`, fit: "contain", radius: 0, position: "50% 50%", overlay: 0, x: offX, y: offY, w: viewport.width, h: viewport.height, rotation: 0, z: 0, locked: false, opacity: 1 },
       ];
-      const maxSize = Math.max(0, ...runs.map((r) => r.size));
-      toBlocks(toLines(runs)).forEach((block, k) => {
+      blocks.forEach((block, k) => {
         const size = block[0].size;
         const x = Math.min(...block.map((l) => l.x));
         const y = block[0].y;
@@ -166,7 +243,7 @@ export async function importPdfDeck(file: File, report?: (pct: number, label: st
           align: centred && w > size * 2 ? "center" : "left",
           valign: "top",
           autoFit: true,
-          style: { fontSize: Math.round(size), fontWeight: bold ? 700 : 400, color: bgLum < 0.5 ? "#ffffff" : "#111111", lineHeight: block.length > 1 ? Math.max(1.1, (block[1].y - block[0].y) / size) : 1.2, fontFamily: isTitle ? "display" : "body" },
+          style: { fontSize: Math.round(size), fontWeight: bold ? 700 : 400, color: inks[k] ?? (bgLum < 0.5 ? "#ffffff" : "#111111"), lineHeight: block.length > 1 ? Math.max(1.1, (block[1].y - block[0].y) / size) : 1.2, fontFamily: isTitle ? "display" : "body" },
         });
       });
 
