@@ -14,19 +14,6 @@ type Run = { str: string; x: number; y: number; w: number; size: number; bold: b
 type Line = { runs: Run[]; x: number; y: number; right: number; size: number; bold: boolean };
 
 /** Draws nothing for text while the page renders, so the page becomes artwork only; the text is rebuilt as real text boxes. */
-async function renderWithoutText<T>(draw: () => Promise<T>): Promise<T> {
-  const proto = CanvasRenderingContext2D.prototype;
-  const { fillText, strokeText } = proto;
-  proto.fillText = function noText() {};
-  proto.strokeText = function noText() {};
-  try {
-    return await draw();
-  } finally {
-    proto.fillText = fillText;
-    proto.strokeText = strokeText;
-  }
-}
-
 function toLines(runs: Run[]): Line[] {
   const sorted = [...runs].sort((a, b) => a.y - b.y || a.x - b.x);
   const lines: Line[] = [];
@@ -81,7 +68,7 @@ type Span = { x0: number; y0: number; x1: number; y1: number };
  * text box still shows ink after rendering, repaint it from the colours just left and right of it, row by row, which
  * rebuilds flat colours and gradients. The ink colour that was found is returned, so the new text can match it.
  */
-function removeResidualText(img: ImageData, box: Span): { residual: boolean; ink: string | null } {
+function removeResidualText(img: ImageData, box: Span, onlyLetters = false): { residual: boolean; ink: string | null } {
   const { data, width: w, height: h } = img;
   const x0 = Math.max(3, Math.floor(box.x0));
   const x1 = Math.min(w - 4, Math.ceil(box.x1));
@@ -100,24 +87,60 @@ function removeResidualText(img: ImageData, box: Span): { residual: boolean; ink
     }
     return [r / xs.length, g / xs.length, b / xs.length];
   };
+  const column = (x: number, ys: number[]) => {
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    for (const y of ys) {
+      const i = (y * w + x) * 4;
+      r += data[i];
+      g += data[i + 1];
+      b += data[i + 2];
+    }
+    return [r / ys.length, g / ys.length, b / ys.length];
+  };
+  // With room above and below, blend from all four sides (a Coons patch), so 2D gradients come back without a seam.
+  const Ls = Array.from({ length: y1 - y0 }, (_, k) => edge(y0 + k, [x0 - 3, x0 - 2, x0 - 1]));
+  const Rs = Array.from({ length: y1 - y0 }, (_, k) => edge(y0 + k, [x1 + 1, x1 + 2, x1 + 3]));
+  let fourSides = y0 >= 3 && y1 + 3 <= h;
+  const Ts = fourSides ? Array.from({ length: x1 - x0 }, (_, k) => column(x0 + k, [y0 - 3, y0 - 2, y0 - 1])) : [];
+  const Bs = fourSides ? Array.from({ length: x1 - x0 }, (_, k) => column(x0 + k, [y1, y1 + 1, y1 + 2])) : [];
+  const mix = (a: number[], b: number[]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+  const far = (a: number[], b: number[]) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[2] - b[2])) > 36;
+  // Above or below may be another surface (the text sits in a bar or card): then only left and right are trusted.
+  if (fourSides && (far(Ts[0], Ls[0]) || far(Ts[Ts.length - 1], Rs[0]) || far(Bs[0], Ls[Ls.length - 1]) || far(Bs[Bs.length - 1], Rs[Rs.length - 1]))) fourSides = false;
+  const c00 = fourSides ? mix(Ls[0], Ts[0]) : [];
+  const c10 = fourSides ? mix(Rs[0], Ts[Ts.length - 1]) : [];
+  const c01 = fourSides ? mix(Ls[Ls.length - 1], Bs[0]) : [];
+  const c11 = fourSides ? mix(Rs[Rs.length - 1], Bs[Bs.length - 1]) : [];
   const estimates: number[][][] = [];
   let strong = 0;
   let total = 0;
   const ink = [0, 0, 0];
   let inkN = 0;
   for (let y = y0; y < y1; y += 1) {
-    const L = edge(y, [x0 - 3, x0 - 2, x0 - 1]);
-    const R = edge(y, [x1 + 1, x1 + 2, x1 + 3]);
+    const L = Ls[y - y0];
+    const R = Rs[y - y0];
+    const v = y1 - y0 > 1 ? (y - y0) / (y1 - y0 - 1) : 0;
     const row: number[][] = [];
     for (let x = x0; x < x1; x += 1) {
       const t = (x - x0) / (x1 - x0);
-      const e = [L[0] + (R[0] - L[0]) * t, L[1] + (R[1] - L[1]) * t, L[2] + (R[2] - L[2]) * t];
+      let e = [L[0] + (R[0] - L[0]) * t, L[1] + (R[1] - L[1]) * t, L[2] + (R[2] - L[2]) * t];
+      if (fourSides) {
+        const T = Ts[x - x0];
+        const B = Bs[x - x0];
+        e = e.map((lr, c) => {
+          const tb = T[c] + (B[c] - T[c]) * v;
+          const corner = (1 - t) * (1 - v) * c00[c] + t * (1 - v) * c10[c] + (1 - t) * v * c01[c] + t * v * c11[c];
+          return Math.min(255, Math.max(0, lr + tb - corner));
+        });
+      }
       row.push(e);
       const i = (y * w + x) * 4;
       const d = Math.max(Math.abs(data[i] - e[0]), Math.abs(data[i + 1] - e[1]), Math.abs(data[i + 2] - e[2]));
       total += 1;
       if (d > 56) strong += 1;
-      if (d > 140) {
+      if (d > 100) {
         ink[0] += data[i];
         ink[1] += data[i + 1];
         ink[2] += data[i + 2];
@@ -127,6 +150,22 @@ function removeResidualText(img: ImageData, box: Span): { residual: boolean; ink
     estimates.push(row);
   }
   if (!total || strong / total < 0.02) return { residual: false, ink: null };
+  if (onlyLetters) {
+    if (!inkN) return { residual: false, ink: null };
+    const mean = [ink[0] / inkN, ink[1] / inkN, ink[2] / inkN];
+    let near = 0;
+    let far = 0;
+    for (let y = y0; y < y1; y += 1) {
+      for (let x = x0; x < x1; x += 1) {
+        const e = estimates[y - y0][x - x0];
+        const i = (y * w + x) * 4;
+        if (Math.max(Math.abs(data[i] - e[0]), Math.abs(data[i + 1] - e[1]), Math.abs(data[i + 2] - e[2])) <= 100) continue;
+        if (Math.max(Math.abs(data[i] - mean[0]), Math.abs(data[i + 1] - mean[1]), Math.abs(data[i + 2] - mean[2])) < 48) near += 1;
+        else far += 1;
+      }
+    }
+    if (near < (near + far) * 0.5) return { residual: false, ink: null };
+  }
   for (let y = y0; y < y1; y += 1) {
     for (let x = x0; x < x1; x += 1) {
       const e = estimates[y - y0][x - x0];
@@ -214,32 +253,87 @@ function textElements(blocks: Block[], colors: (string | null)[], z0: number, bo
   });
 }
 
-type PageCtx = { page: PDFPageProxy; viewport: PageViewport; offX: number; offY: number; n: number };
+/**
+ * Skips every text-showing operation while pdf.js renders, so the artwork comes out without its text however the PDF
+ * draws it: as font glyphs, as outlines, inside groups or masks. The text itself becomes editable text boxes.
+ */
+type OpsFilter = (index: number, list: { fnArray: number[] }) => boolean;
+
+function textlessFilter(ops: Record<string, number>): OpsFilter {
+  const text = new Set([ops.showText, ops.showSpacedText, ops.nextLineShowText, ops.nextLineSetSpacingShowText].filter((v) => typeof v === "number"));
+  return (i, list) => !text.has(list.fnArray[i]);
+}
+
+/**
+ * Some PDFs (Canva, Figma, "outline fonts" exports) draw every visible letter as a shape and keep the real text as an
+ * invisible layer. Those letters end up inside the artwork pictures; paint them out where an editable text box goes,
+ * using the colours just around the box. `inks` collects each box's letter colour.
+ */
+function cleanLetters(canvas: HTMLCanvasElement, box: Box, blocks: Block[], offX: number, offY: number, inks: (string | null)[]): void {
+  const sx = canvas.width / Math.max(1, box.w);
+  const sy = canvas.height / Math.max(1, box.h);
+  const hits = blocks
+    .map((b, k) => ({ b, k }))
+    .filter(({ b }) => b.box.x - offX < box.x + box.w && b.box.x - offX + b.box.w > box.x && b.box.y - offY < box.y + box.h && b.box.y - offY + b.box.h > box.y);
+  if (!hits.length) return;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return;
+  const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let changed = false;
+  for (const { b, k } of hits) {
+    const { size, x, right } = blockGeometry(b.lines);
+    const pad = Math.ceil(size * 0.14) + 2;
+    const last = b.lines[b.lines.length - 1];
+    const span: Span = {
+      x0: (x - offX - pad - box.x) * sx,
+      x1: (right - offX + pad - box.x) * sx,
+      y0: (b.lines[0].y - offY - pad - box.y) * sy,
+      y1: (last.y - offY + last.size * 1.3 + pad - box.y) * sy,
+    };
+    const out = removeResidualText(pixels, span, true);
+    if (out.residual) {
+      changed = true;
+      inks[k] ??= out.ink;
+    }
+  }
+  if (changed) ctx.putImageData(pixels, 0, 0);
+}
+
+type PageCtx = { page: PDFPageProxy; viewport: PageViewport; offX: number; offY: number; n: number; noText: OpsFilter };
 type PageResult = { elements: Element[]; background: Slide["background"] | null; bytes: number };
 
 /** Every drawing on the page becomes its own element: shapes stay shapes, pictures and artwork become movable images. */
-async function structuredPage({ page, viewport, offX, offY, n }: PageCtx, blocks: Block[]): Promise<PageResult> {
+async function structuredPage({ page, viewport, offX, offY, n, noText }: PageCtx, blocks: Block[]): Promise<PageResult> {
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.ceil(viewport.width));
   canvas.height = Math.max(1, Math.ceil(viewport.height));
   const context = canvas.getContext("2d", { willReadFrequently: true });
   if (!context) throw new Error("This browser could not prepare the PDF pages for import.");
   try {
-    const events = await recordDrawing(context, () => page.render({ canvas, canvasContext: context, viewport, background: "#ffffff" }).promise);
+    const size = { width: canvas.width, height: canvas.height };
     const textBoxes = blocks.map((b) => ({ x: b.box.x - offX, y: b.box.y - offY, w: b.box.w, h: b.box.h }));
-    const s = structurePage(events, { width: canvas.width, height: canvas.height }, textBoxes);
+    // First with text, only to read each text box's colour and weight; then the artwork alone, split into elements.
+    const withText = await recordDrawing(context, () => page.render({ canvas, canvasContext: context, viewport, background: "#ffffff" }).promise);
+    const { textColors, textBold } = structurePage(withText, size, textBoxes);
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    const artwork = await recordDrawing(context, () => page.render({ canvas, canvasContext: context, viewport, background: "#ffffff", operationsFilter: noText }).promise);
+    const s = { ...structurePage(artwork, size, textBoxes), textColors, textBold };
     let bytes = 0;
+    const inks: (string | null)[] = blocks.map(() => null);
     const elements: Element[] = s.items.map((item, k): Element => {
       const base = { id: newId("el"), x: item.box.x + offX, y: item.box.y + offY, w: Math.max(1, item.box.w), h: Math.max(1, item.box.h), rotation: 0, z: k + 1, locked: false, opacity: item.opacity };
       if (item.type === "shape") {
         return { ...base, type: "shape", kind: item.kind, fill: item.fill, stroke: item.stroke, strokeWidth: item.strokeWidth ?? 0, radius: item.radius };
       }
+      cleanLetters(item.canvas, item.box, blocks, offX, offY, inks);
       const src = encode(item.canvas);
       bytes += Math.floor(src.length * 0.75);
       return { ...base, type: "image", src, alt: `PDF page ${n} image ${k + 1}`, fit: "cover", radius: 0, position: "50% 50%", overlay: 0 };
     });
     const bgLight = s.background ? luminanceOfColor(s.background) >= 0.5 : true;
-    const colors = s.textColors.map((c) => c ?? (bgLight ? "#111111" : "#ffffff"));
+    // Letters painted out of the artwork give their real colour; an invisible text layer can report any colour.
+    const colors = s.textColors.map((c, k) => inks[k] ?? c ?? (bgLight ? "#111111" : "#ffffff"));
     elements.push(...textElements(blocks, colors, elements.length + 1, s.textBold));
     let background: Slide["background"] | null = s.background ? { kind: "solid", color: s.background } : null;
     if (s.backgroundImage) {
@@ -255,7 +349,7 @@ async function structuredPage({ page, viewport, offX, offY, n }: PageCtx, blocks
 }
 
 /** The previous method, kept for pages too complex to split: one picture of the artwork plus editable text. */
-async function flatPage({ page, viewport, offX, offY, n }: PageCtx, blocks: Block[]): Promise<PageResult> {
+async function flatPage({ page, viewport, offX, offY, n, noText }: PageCtx, blocks: Block[]): Promise<PageResult> {
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.ceil(viewport.width));
   canvas.height = Math.max(1, Math.ceil(viewport.height));
@@ -264,7 +358,7 @@ async function flatPage({ page, viewport, offX, offY, n }: PageCtx, blocks: Bloc
   try {
     context.fillStyle = "#ffffff";
     context.fillRect(0, 0, canvas.width, canvas.height);
-    await renderWithoutText(() => page.render({ canvas, canvasContext: context, viewport, background: "#ffffff" }).promise);
+    await page.render({ canvas, canvasContext: context, viewport, background: "#ffffff", operationsFilter: noText }).promise;
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
     const inks = blocks.map(({ lines }) => {
       const { size, x, right } = blockGeometry(lines);
@@ -314,6 +408,7 @@ export async function importPdfDeck(file: File, report?: (pct: number, label: st
   const lib = await getPdfJs();
   const task = lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), useSystemFonts: true, fontExtraProperties: true });
   const pdf = await task.promise;
+  const noText = textlessFilter(lib.OPS as unknown as Record<string, number>);
   try {
     if (!pdf.numPages || pdf.numPages > MAX_SLIDES) throw new Error(`PDF imports support 1 to ${MAX_SLIDES} pages.`);
     const slides: Slide[] = [];
@@ -351,7 +446,7 @@ export async function importPdfDeck(file: File, report?: (pct: number, label: st
         return { lines, box: { x, y, w, h } };
       });
 
-      const ctx: PageCtx = { page, viewport, offX, offY, n };
+      const ctx: PageCtx = { page, viewport, offX, offY, n, noText };
       let result: PageResult;
       try {
         result = await structuredPage(ctx, blocks);
