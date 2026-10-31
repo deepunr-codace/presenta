@@ -896,3 +896,6 @@
 @media (max-width: 1023px) {
   .ps-auth-title-block { display: none; }
 }
+
+/* Black overlay over the login background image. */
+.ps-auth-veil { background: rgba(0, 0, 0, 0.5) !important; }
