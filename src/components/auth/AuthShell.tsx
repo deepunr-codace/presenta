@@ -12,8 +12,7 @@ type Props = {
 export function AuthShell({ children }: Props) {
   return (
     <div className="ps-auth-shell">
-      {/* eslint-disable-next-line @next/next/no-img-element -- decorative backdrop, sized by CSS */}
-      <img className="ps-auth-video" src="/auth/login-poster.png" alt="" aria-hidden />
+      <video className="ps-auth-video" src="/auth/login-bg.mp4" poster="/auth/login-poster.png" autoPlay muted loop playsInline preload="auto" aria-hidden tabIndex={-1} />
       <div className="ps-auth-veil" aria-hidden />
       <div className="ps-auth-title-block">
         <p className="ps-auth-tagline">
