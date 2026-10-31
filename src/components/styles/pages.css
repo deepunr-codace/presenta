@@ -401,3 +401,30 @@ textarea.ps-chat-input { min-height: 40px; height: 40px; resize: none; }
 @keyframes ps-task-slide { 0% { transform: translateX(-110%); } 100% { transform: translateX(290%); } }
 @keyframes ps-task-in { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ps-task, .ps-task-bar > span { animation: none; transition: none; } .ps-task-bar[data-indeterminate="true"] > span { width: 100%; opacity: 0.5; } }
+
+/* ---- Template card three-dot menu (sits over the thumbnail, beside the slide count) ---- */
+.ps-tpl-item { position: relative; min-width: 0; }
+.ps-tpl-item .ps-tpl-count { right: 50px; }
+.ps-tpl-menu { position: absolute; top: 8px; right: 8px; z-index: 2; }
+.ps-tpl-menu-btn {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 140ms ease-out, background-color 140ms ease-out, transform 140ms ease-out;
+}
+.ps-tpl-item:hover .ps-tpl-menu-btn, .ps-tpl-menu-btn:focus-visible, .ps-tpl-menu-btn[data-popup-open] { opacity: 1; background: rgba(0, 0, 0, 0.7); }
+.ps-tpl-menu-btn:active { transform: scale(0.94); }
+.ps-tpl-menu-btn:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+.ps-tpl-item:hover .ps-tpl { transform: translateY(-4px); border-color: var(--ps-line-2); }
+.ps-tpl-item:hover .ps-tpl-body { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .ps-tpl-item:hover .ps-tpl { transform: none; } }
+.ps-tpl-menu { transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+.ps-tpl-item:hover .ps-tpl-menu { transform: translateY(-4px); }
+@media (prefers-reduced-motion: reduce) { .ps-tpl-item:hover .ps-tpl-menu { transform: none; } }

@@ -1,7 +1,7 @@
 import { sql } from "@/lib/auth/db";
 import { ensureCollabTables } from "@/lib/collab-db";
 import { newId } from "@/lib/deck/ids";
-import { DeckImportSchema, DeckSchema, type Deck } from "@/lib/deck/schema";
+import { DeckImportSchema, DeckSchema, type Deck, type Slide } from "@/lib/deck/schema";
 import { ensureDeckTables, getDeckData, upsertDeck } from "@/lib/decks-db";
 import { assertRoom } from "@/lib/storage";
 import type { TemplateCategory, TemplateScope } from "@/lib/template-scopes";
@@ -29,6 +29,8 @@ export type TemplateEntry = {
   isMine: boolean;
   slideCount: number;
   themeId: string;
+  /** The first slide, for the card thumbnail. Large embedded pictures are left out to keep the list small. */
+  cover: Slide | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -121,6 +123,7 @@ type TemplateRow = {
   owner_name: string;
   theme_id: string;
   slide_count: number;
+  cover: unknown;
   created_at: string;
   updated_at: string;
 };
@@ -135,7 +138,7 @@ export async function listVisibleTemplates(userId: string): Promise<TemplateEntr
   await ensureTemplateTables();
   const rows = (await sql()`
     SELECT t.id, t.title, t.description, t.category, t.scope, t.owner_id,
-      COALESCE(u.name, u.email) AS owner_name, t.theme_id, t.slide_count, t.created_at, t.updated_at
+      COALESCE(u.name, u.email) AS owner_name, t.theme_id, t.slide_count, t.data->'slides'->0 AS cover, t.created_at, t.updated_at
     FROM templates t JOIN users u ON u.id = t.owner_id
     WHERE t.owner_id = ${userId}
        OR t.scope = 'global'
@@ -176,6 +179,21 @@ export async function listVisibleTemplates(userId: string): Promise<TemplateEntr
   return rows.map((r) => toEntry(r, byTemplate.get(r.id) ?? [], userId));
 }
 
+/** Embedded pictures bigger than this are dropped from a cover; pictures stored as links always stay. */
+const COVER_MAX_INLINE = 160 * 1024;
+
+function stripBigDataUrls(node: unknown): unknown {
+  if (typeof node === "string") return node.startsWith("data:") && node.length > COVER_MAX_INLINE ? "" : node;
+  if (Array.isArray(node)) return node.map(stripBigDataUrls);
+  if (node && typeof node === "object") return Object.fromEntries(Object.entries(node).map(([k, v]) => [k, stripBigDataUrls(v)]));
+  return node;
+}
+
+function coverOf(raw: unknown): Slide | null {
+  if (!raw || typeof raw !== "object") return null;
+  return stripBigDataUrls(raw) as Slide;
+}
+
 function toEntry(r: TemplateRow, links: TeamLinkRow[], userId: string): TemplateEntry {
   return {
     id: r.id,
@@ -190,6 +208,7 @@ function toEntry(r: TemplateRow, links: TeamLinkRow[], userId: string): Template
     isMine: r.owner_id === userId,
     slideCount: r.slide_count,
     themeId: r.theme_id,
+    cover: coverOf(r.cover),
     createdAt: iso(r.created_at),
     updatedAt: iso(r.updated_at),
   };
@@ -200,7 +219,7 @@ export async function getTemplateEntry(userId: string, id: string): Promise<Temp
   await ensureTemplateTables();
   const rows = (await sql()`
     SELECT t.id, t.title, t.description, t.category, t.scope, t.owner_id,
-      COALESCE(u.name, u.email) AS owner_name, t.theme_id, t.slide_count, t.created_at, t.updated_at
+      COALESCE(u.name, u.email) AS owner_name, t.theme_id, t.slide_count, t.data->'slides'->0 AS cover, t.created_at, t.updated_at
     FROM templates t JOIN users u ON u.id = t.owner_id
     WHERE t.id = ${id}
       AND (

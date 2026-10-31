@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Globe, Presentation, Trash, UploadSimple, UsersThree, Lock } from "@phosphor-icons/react";
+import { ArrowRight, Globe, UploadSimple, UsersThree, Lock } from "@phosphor-icons/react";
 import { AppShell } from "@/components/shell/AppShell";
 import { useToast } from "@/components/shell/Toast";
 import { cloneDeck, seedWizardFromPrompt } from "@/components/home/home-data";
@@ -16,11 +16,29 @@ import { STUDIO_PACKS } from "@/lib/deck/studio-packs";
 
 const ALL_DESIGNED_DECKS: TemplateDeckDef[] = [...TEMPLATE_DECKS, ...STUDIO_PACKS];
 import type { ThemeId } from "@/lib/deck/schema";
-import { saveDeck } from "@/lib/persist";
+import { fitForSave, saveDeck } from "@/lib/persist";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { fetchTeams, type TeamSummary } from "@/lib/collab";
-import { deleteTemplate, fetchTemplates, startFromTemplate, updateTemplate, type TemplateEntry, type TemplateScope } from "@/lib/templates";
+import { createTemplate, deleteTemplate, fetchTemplates, startFromTemplate, updateTemplate, type TemplateEntry, type TemplateScope } from "@/lib/templates";
 import { CATEGORIES, TEMPLATES, type Template } from "./templates-data";
+import { EditTemplateDialog } from "./EditTemplateDialog";
+import { TemplateCardMenu } from "./TemplateCardMenu";
 import { UploadTemplateDialog } from "./UploadTemplateDialog";
+
+/** Cards shown per section before "Load more"; each press shows this many more. */
+const PAGE = { core: 6, network: 6, starters: 8 } as const;
+type Section = keyof typeof PAGE;
+
+function LoadMore({ shown, total, onMore }: { shown: number; total: number; onMore: () => void }) {
+  if (shown >= total) return null;
+  return (
+    <div className="mt-5 flex justify-center">
+      <button type="button" className="ps-btn ps-btn-xs" onClick={onMore}>
+        Load more <span className="ps-caption">{total - shown} left</span>
+      </button>
+    </div>
+  );
+}
 
 const TABS = CATEGORIES.map((c) => ({ id: c, label: c }));
 
@@ -71,7 +89,10 @@ export function TemplatesScreen() {
   const [uploading, setUploading] = useState(false);
   const [scopeFilter, setScopeFilter] = useState("all");
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<TemplateEntry | null>(null);
+  const [editing, setEditing] = useState<TemplateEntry | null>(null);
+  const [limits, setLimits] = useState<Record<Section, number>>({ ...PAGE });
+  const more = (k: Section) => setLimits((l) => ({ ...l, [k]: l[k] + PAGE[k] }));
   const [busyDesignedId, setBusyDesignedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -97,6 +118,7 @@ export function TemplatesScreen() {
   }, []);
 
   const choose = (id: string) => {
+    setLimits({ ...PAGE });
     router.replace(id === "All" ? "/templates" : `/templates?category=${encodeURIComponent(id)}`, { scroll: false });
   };
 
@@ -151,9 +173,24 @@ export function TemplatesScreen() {
       setError(err instanceof Error ? err.message : "Could not delete the template.");
     } finally {
       setBusyId(null);
-      setConfirmId(null);
+      setDeleting(null);
     }
   };
+
+  /** Keep a copy of a built-in deck in my library, as a personal template. */
+  const saveCopy = async (t: TemplateDeckDef) => {
+    setError(null);
+    try {
+      const template = await createTemplate({ title: t.title, description: "", category: t.category as TemplateEntry["category"], scope: "personal", deck: await fitForSave(cloneDeck(t.deck, t.title)) });
+      setSaved((prev) => [template, ...(prev ?? [])]);
+      toast("Saved to your templates.", { tone: "success" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save the template.");
+    }
+  };
+
+  /** Edits answer without the cover, so the card keeps the one it already has. */
+  const replaceSaved = (next: TemplateEntry) => setSaved((prev) => (prev ?? []).map((x) => (x.id === next.id ? { ...next, cover: next.cover ?? x.cover } : x)));
 
   /** "personal", "global", or "team:<id>". Publishing to one team replaces the previous list. */
   const changeVisibility = async (t: TemplateEntry, value: string) => {
@@ -163,7 +200,7 @@ export function TemplatesScreen() {
         value === "personal" || value === "global"
           ? await updateTemplate(t.id, { scope: value })
           : await updateTemplate(t.id, { scope: "team", teamIds: [value.slice(5)] });
-      setSaved((prev) => (prev ?? []).map((x) => (x.id === t.id ? next : x)));
+      replaceSaved(next);
       toast("Visibility updated.", { tone: "success" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not change who can use this template.");
@@ -172,8 +209,6 @@ export function TemplatesScreen() {
     }
   };
 
-  /** The current value of the visibility picker: a template can be in several teams, so the first one is shown. */
-  const visibilityValue = (t: TemplateEntry) => (t.scope === "team" ? `team:${t.teamIds[0] ?? ""}` : t.scope);
 
   return (
     <AppShell active="templates" sidebar="full" breadcrumbs={[{ label: "Studio", href: "/" }, { label: "Templates" }]}>
@@ -198,12 +233,12 @@ export function TemplatesScreen() {
           <section className="mb-10" aria-label="Core library">
             <h2 className="ps-cardtitle mb-4">Core Library</h2>
             <ul className="ps-tpl-grid" aria-label="Designed templates">
-              {shownDesigned.map((t) => {
+              {shownDesigned.slice(0, limits.core).map((t) => {
                 const cover = t.deck.slides[0];
                 const theme = THEMES[t.deck.themeId];
                 const busy = busyDesignedId === t.id;
                 return (
-                  <li key={t.id}>
+                  <li key={t.id} className="ps-tpl-item">
                     <button type="button" className="ps-tpl" onClick={() => void openDesigned(t)} disabled={busy} aria-label={`Use the ${t.title} template`}>
                       <span className="ps-tpl-art" aria-hidden>
                         <FitSlide slide={cover} theme={theme} className="pointer-events-none" />
@@ -217,10 +252,12 @@ export function TemplatesScreen() {
                         </span>
                       </span>
                     </button>
+                    <TemplateCardMenu title={t.title} onUse={() => void openDesigned(t)} onSaveCopy={() => void saveCopy(t)} />
                   </li>
                 );
               })}
             </ul>
+            <LoadMore shown={limits.core} total={shownDesigned.length} onMore={() => more("core")} />
           </section>
         ) : null}
 
@@ -243,83 +280,44 @@ export function TemplatesScreen() {
               <span className="ps-caption">
                 {saved.length} {saved.length === 1 ? "template" : "templates"}
               </span>
-              <PillTabs className="ml-auto" variant="segmented" items={SCOPE_TABS} value={scopeFilter} onChange={setScopeFilter} ariaLabel="Who can use it" />
+              <PillTabs className="ml-auto" variant="segmented" items={SCOPE_TABS} value={scopeFilter} onChange={(id) => {
+                  setScopeFilter(id);
+                  setLimits((l) => ({ ...l, network: PAGE.network }));
+                }} ariaLabel="Who can use it" />
             </div>
 
             {shownSaved.length ? (
               <ul className="ps-tpl-grid" aria-label="Saved templates">
-                {shownSaved.map((t) => {
+                {shownSaved.slice(0, limits.network).map((t) => {
                   const [from, to] = swatchOf(t.themeId);
+                  const theme = THEMES[t.themeId as ThemeId];
                   const busy = busyId === t.id;
                   return (
-                    <li key={t.id} className="ps-tpl-cell">
-                      <button
-                        type="button"
-                        className="ps-tpl"
-                        onClick={() => void openSaved(t)}
-                        disabled={busy}
-                        aria-label={`Use the ${t.title} template`}
-                      >
+                    <li key={t.id} className="ps-tpl-item">
+                      <button type="button" className="ps-tpl" onClick={() => void openSaved(t)} disabled={busy} aria-label={`Use the ${t.title} template`}>
                         <span className="ps-tpl-art" style={{ background: `linear-gradient(135deg, ${from}, ${to})` }} aria-hidden>
+                          {t.cover && theme ? <FitSlide slide={t.cover} theme={theme} className="pointer-events-none" /> : null}
                           <span className="ps-tpl-scope" data-scope={t.scope} title={t.teamNames.join(", ") || undefined}>
                             <ScopeIcon scope={t.scope} />
                             {scopeBadge(t)}
-                          </span>
-                          <span className="ps-tpl-slide">
-                            <span className="ps-tpl-icon">
-                              <Presentation weight="fill" />
-                            </span>
-                            <i style={{ width: "58%" }} />
-                            <i style={{ width: "82%" }} />
-                            <i style={{ width: "44%" }} />
                           </span>
                           <span className="ps-tpl-count">{t.slideCount} slides</span>
                         </span>
                         <span className="ps-tpl-body">
                           <span className="ps-tpl-cat">{t.category}</span>
                           <span className="ps-tpl-title">{t.title}</span>
-                          <span className="ps-tpl-desc">{t.description || `Saved by ${t.ownerName}.`}</span>
+                          <span className="ps-tpl-desc">{t.description || (t.isMine ? "Yours" : `Shared by ${t.ownerName}`)}</span>
                           <span className="ps-tpl-use">
-                            {busy ? "Opening…" : "Use template"} <ArrowRight size={14} weight="bold" aria-hidden />
+                            {busy ? "Working…" : "Use template"} <ArrowRight size={14} weight="bold" aria-hidden />
                           </span>
                         </span>
                       </button>
-
-                      <div className="ps-tpl-owner">
-                        <span className="ps-caption min-w-0 flex-1 truncate">{t.isMine ? "Yours" : `Shared by ${t.ownerName}`}</span>
-                        {t.isMine ? (
-                          <>
-                            <select
-                              className="ps-select-xs"
-                              aria-label={`Who can use ${t.title}`}
-                              value={visibilityValue(t)}
-                              disabled={busy}
-                              onChange={(e) => void changeVisibility(t, e.target.value)}
-                            >
-                              <option value="personal">Personal</option>
-                              {t.scope === "team" && !t.teamIds.length ? <option value="team:">Team · no team</option> : null}
-                              {teams.map((team) => (
-                                <option key={team.id} value={`team:${team.id}`}>
-                                  Team · {team.name}
-                                </option>
-                              ))}
-                              {t.scope === "team" && t.teamIds[0] && !teams.some((team) => team.id === t.teamIds[0]) ? (
-                                <option value={`team:${t.teamIds[0]}`}>Team · {t.teamNames[0] ?? "former team"}</option>
-                              ) : null}
-                              <option value="global">Global</option>
-                            </select>
-                            {confirmId === t.id ? (
-                              <button type="button" className="ps-btn ps-btn-xs" data-danger="true" disabled={busy} onClick={() => void remove(t)}>
-                                Delete
-                              </button>
-                            ) : (
-                              <button type="button" className="ps-iconbtn ps-iconbtn-xs" aria-label={`Delete ${t.title}`} title="Delete template" onClick={() => setConfirmId(t.id)}>
-                                <Trash size={12} />
-                              </button>
-                            )}
-                          </>
-                        ) : null}
-                      </div>
+                      <TemplateCardMenu
+                        title={t.title}
+                        onUse={() => void openSaved(t)}
+                        sharedBy={t.isMine ? undefined : t.ownerName}
+                        mine={t.isMine ? { template: t, teams, onEdit: () => setEditing(t), onVisibility: (v) => void changeVisibility(t, v), onDelete: () => setDeleting(t) } : undefined}
+                      />
                     </li>
                   );
                 })}
@@ -327,6 +325,7 @@ export function TemplatesScreen() {
             ) : (
               <p className="ps-body">No saved templates in this category. Upload one, or pick another filter.</p>
             )}
+            <LoadMore shown={limits.network} total={shownSaved.length} onMore={() => more("network")} />
           </section>
         ) : (
           <section className="mb-10" aria-label="Template network">
@@ -347,7 +346,7 @@ export function TemplatesScreen() {
           <h2 className="ps-cardtitle mb-4">Quick Starters</h2>
           {shownBuiltIn.length ? (
             <ul className="ps-starter-grid" aria-label="Templates">
-              {shownBuiltIn.map((t) => (
+              {shownBuiltIn.slice(0, limits.starters).map((t) => (
                 <li key={t.id}>
                   <button type="button" className="ps-starter" onClick={() => openStarter(t)} aria-label={`Use the ${t.title} template`}>
                     <span className="ps-starter-icon" style={{ background: `linear-gradient(135deg, ${t.tint[0]}, ${t.tint[1]})` }} aria-hidden>
@@ -366,6 +365,7 @@ export function TemplatesScreen() {
           ) : (
             <p className="ps-body">No built-in starters in this category.</p>
           )}
+          <LoadMore shown={limits.starters} total={shownBuiltIn.length} onMore={() => more("starters")} />
         </section>
       </div>
 
@@ -377,6 +377,36 @@ export function TemplatesScreen() {
             toast("Template published.", { tone: "success" });
           }}
         />
+      ) : null}
+
+      {editing ? (
+        <EditTemplateDialog
+          template={editing}
+          onClose={() => setEditing(null)}
+          onSaved={(next) => {
+            replaceSaved(next);
+            toast("Template updated.", { tone: "success" });
+          }}
+        />
+      ) : null}
+
+      {deleting ? (
+        <Dialog open onOpenChange={(open) => !open && busyId !== deleting.id && setDeleting(null)}>
+          <DialogContent style={{ maxWidth: "min(26rem, calc(100% - 2rem))" }}>
+            <DialogHeader>
+              <DialogTitle>Delete this template?</DialogTitle>
+              <DialogDescription>
+                &ldquo;{deleting.title}&rdquo; is removed from the library for everyone who can see it. Decks already made from it are not affected.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <button type="button" className="ps-btn" onClick={() => setDeleting(null)} disabled={busyId === deleting.id}>Cancel</button>
+              <button type="button" className="ps-btn" data-danger="true" onClick={() => void remove(deleting)} disabled={busyId === deleting.id}>
+                {busyId === deleting.id ? "Deleting…" : "Delete template"}
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </AppShell>
   );
