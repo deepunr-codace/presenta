@@ -905,3 +905,10 @@
   .ps-auth-shell { display: flex; min-height: 100dvh; flex-direction: column; align-items: center; justify-content: center; }
   .ps-auth-main { margin: 0 auto; padding: 24px 16px; }
 }
+
+/* Darker black overlay over the login background: 65% black, deepening towards the edges. */
+.ps-auth-veil {
+  background:
+    radial-gradient(ellipse 85% 85% at 50% 50%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.25) 100%),
+    rgba(0, 0, 0, 0.65) !important;
+}
