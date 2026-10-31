@@ -427,21 +427,22 @@ export async function sendTeamMessage(userId: string, teamId: string, body: stri
 const rank = (r: DeckRole) => (r === "owner" ? 3 : r === "editor" ? 2 : 1);
 
 /** What `userId` may do with deck `deckId`: their own deck, or one shared with them directly or through a team. */
-export async function resolveAccess(userId: string, deckId: string): Promise<{ ownerId: string; role: DeckRole } | null> {
+/** `viaLink`: the only access is from opening a public link, which shows the slides but not the speaker notes. */
+export async function resolveAccess(userId: string, deckId: string): Promise<{ ownerId: string; role: DeckRole; viaLink?: boolean } | null> {
   await ensureCollabTables();
   const own = (await sql()`SELECT 1 FROM decks WHERE user_id = ${userId} AND id = ${deckId}`) as unknown[];
   if (own.length) return { ownerId: userId, role: "owner" };
   const rows = (await sql()`
-    SELECT s.owner_id, s.role FROM deck_shares s
+    SELECT s.owner_id, s.role, s.via_link FROM deck_shares s
     JOIN decks d ON d.user_id = s.owner_id AND d.id = s.deck_id AND d.trashed_at IS NULL
     WHERE s.deck_id = ${deckId}
       AND ((s.kind = 'user' AND s.grantee_id = ${userId})
         OR (s.kind = 'team' AND s.grantee_id IN (SELECT team_id FROM team_members WHERE user_id = ${userId})))
       AND (NOT s.via_link OR EXISTS (SELECT 1 FROM deck_links l WHERE l.owner_id = s.owner_id AND l.deck_id = s.deck_id AND l.access = 'anyone_view' AND (l.expires_at IS NULL OR l.expires_at > now())))
-  `) as { owner_id: string; role: ShareRole }[];
+  `) as { owner_id: string; role: ShareRole; via_link: boolean }[];
   if (!rows.length) return null;
   const best = rows.reduce((a, b) => (rank(b.role) > rank(a.role) ? b : a));
-  return { ownerId: best.owner_id, role: best.role };
+  return { ownerId: best.owner_id, role: best.role, viaLink: rows.every((r) => r.via_link) };
 }
 
 export type DeckComment = { id: string; userId: string; name: string; parentId: string | null; slideId: string | null; body: string; resolvedAt: string | null; createdAt: string };

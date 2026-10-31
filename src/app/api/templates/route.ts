@@ -4,6 +4,7 @@ import { TEMPLATE_CATEGORIES, TEMPLATE_SCOPES } from "@/lib/template-scopes";
 import { createTemplate, listVisibleTemplates, TEMPLATE_MAX_BYTES } from "@/lib/templates-db";
 import { withUser } from "../_lib/guard";
 import { readJsonBody } from "../_lib/respond";
+import { adminUser } from "@/lib/admin-guard";
 
 export const runtime = "nodejs";
 
@@ -35,6 +36,9 @@ export function POST(request: Request) {
   return withUser("POST /api/templates", async (user) => {
     const body = await readJsonBody(request, NewTemplateSchema, TEMPLATE_MAX_BYTES);
     if (!body.ok) return body.response;
+    if (body.data.scope === "global" && !(await adminUser())) {
+      return NextResponse.json({ error: "Only an admin can publish a template for everyone. Share it with a team instead." }, { status: 403 });
+    }
     const template = await createTemplate(user.id, body.data);
     return NextResponse.json({ template }, { status: 201 });
   });

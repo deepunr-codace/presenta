@@ -43,7 +43,8 @@ export async function resolveAiForRequest(request: Request, opts: { cost?: numbe
   const cost = opts.cost ?? 1;
   try {
     const userId = await currentUserId();
-    if (!userId) return base;
+    // The server's own key never serves anonymous visitors: anyone on the internet could spend it.
+    if (!userId) return base.source === "mock" ? base : { source: "mock" };
     const assigned = await assignedKeyFor(userId).catch(() => null);
     if (assigned) return { source: sourceOf(assigned.provider), auth: assigned, assigned: true };
     const [settings, hasKeys] = await Promise.all([getPresentaSettings(), poolHasKeys()]);

@@ -22,8 +22,9 @@ export function encryptSecret(plain: string): string {
 
 export function decryptSecret(stored: string): string {
   const [iv, tag, data] = stored.split(".").map((p) => Buffer.from(p, "base64"));
-  if (!iv || !tag || !data) throw new Error("Stored secret is malformed.");
-  const decipher = createDecipheriv("aes-256-gcm", secretKey(), iv);
+  if (!iv || !tag || !data || iv.length !== 12 || tag.length !== 16) throw new Error("Stored secret is malformed.");
+  // A fixed 16-byte tag: a shortened tag would make forging a stored value far easier.
+  const decipher = createDecipheriv("aes-256-gcm", secretKey(), iv, { authTagLength: 16 });
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
 }

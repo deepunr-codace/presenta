@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sanitizeDeckText } from "@/lib/deck/sanitize";
 import { z } from "zod";
 import { CLIENT_HEADER } from "@/lib/client-id";
 import { CollabError, holdsEditLock, resolveAccess } from "@/lib/collab-db";
@@ -41,7 +42,7 @@ export function POST(request: Request, { params }: Ctx) {
     if (!snapshot) return bad("That version could not be found.", 404);
     try {
       await createDeckVersion(access.ownerId, id, user.id, "Before restoring a version");
-      const restored = { ...snapshot, updatedAt: new Date().toISOString() };
+      const restored = sanitizeDeckText({ ...snapshot, updatedAt: new Date().toISOString() });
       const jsonSize = Buffer.byteLength(JSON.stringify(restored));
       const oldSize = await deckSize(access.ownerId, id);
       await assertRoom(access.ownerId, jsonSize, oldSize);

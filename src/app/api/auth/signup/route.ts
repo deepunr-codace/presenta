@@ -5,7 +5,8 @@ import { EmailInUseError, createUser } from "@/lib/auth/users";
 const SignupSchema = z.object({
   name: z.string().trim().min(1, "Enter your name.").max(80),
   email: z.string().trim().email("Enter a valid email."),
-  password: z.string().min(8, "Use at least 8 characters."),
+  // bcrypt reads only the first 72 bytes; a longer password would silently match any password sharing them.
+  password: z.string().min(8, "Use at least 8 characters.").max(72, "Use at most 72 characters."),
 });
 
 export async function POST(request: Request) {

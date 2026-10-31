@@ -8,6 +8,8 @@ export type UserRecord = {
   email: string;
   passwordHash: string | null;
   image: string | null;
+  /** Set once the address has been proven (a Google sign-in). */
+  emailVerified: boolean;
 };
 
 type UserRow = {
@@ -16,10 +18,11 @@ type UserRow = {
   email: string;
   password_hash: string | null;
   image: string | null;
+  email_verified_at?: string | null;
 };
 
 function fromRow(row: UserRow): UserRecord {
-  return { id: row.id, name: row.name, email: row.email, passwordHash: row.password_hash, image: row.image };
+  return { id: row.id, name: row.name, email: row.email, passwordHash: row.password_hash, image: row.image, emailVerified: Boolean(row.email_verified_at) };
 }
 
 export async function findUserByEmail(email: string): Promise<UserRecord | null> {
@@ -49,7 +52,7 @@ export async function createUser(name: string, email: string, password: string):
   const passwordHash = await bcrypt.hash(password, 12);
   const id = newId("user");
   await sql()`INSERT INTO users (id, name, email, password_hash) VALUES (${id}, ${name}, ${normalizedEmail}, ${passwordHash})`;
-  return { id, name, email: normalizedEmail, passwordHash, image: null };
+  return { id, name, email: normalizedEmail, passwordHash, image: null, emailVerified: false };
 }
 
 export async function verifyPassword(user: UserRecord, password: string): Promise<boolean> {
@@ -63,12 +66,20 @@ export async function upsertOAuthUser(email: string, name: string | null, image:
   const normalizedEmail = email.toLowerCase();
   const existing = await findUserByEmail(normalizedEmail);
   if (existing) {
-    await sql()`UPDATE users SET name = COALESCE(${name}, name), image = COALESCE(${image}, image) WHERE id = ${existing.id}`;
-    return { ...existing, name: name ?? existing.name, image: image ?? existing.image };
+    // Google proves the owner of this address. A password set on it before it was ever proven may belong to someone
+    // who registered the address first to take over the account later, so it stops working.
+    const dropPassword = Boolean(existing.passwordHash) && !existing.emailVerified;
+    await sql()`
+      UPDATE users SET name = COALESCE(${name}, name), image = COALESCE(${image}, image),
+        email_verified_at = COALESCE(email_verified_at, now()),
+        password_hash = CASE WHEN ${dropPassword} THEN NULL ELSE password_hash END
+      WHERE id = ${existing.id}
+    `;
+    return { ...existing, name: name ?? existing.name, image: image ?? existing.image, emailVerified: true, passwordHash: dropPassword ? null : existing.passwordHash };
   }
   const id = newId("user");
-  await sql()`INSERT INTO users (id, name, email, image) VALUES (${id}, ${name}, ${normalizedEmail}, ${image})`;
-  return { id, name, email: normalizedEmail, passwordHash: null, image };
+  await sql()`INSERT INTO users (id, name, email, image, email_verified_at) VALUES (${id}, ${name}, ${normalizedEmail}, ${image}, now())`;
+  return { id, name, email: normalizedEmail, passwordHash: null, image, emailVerified: true };
 }
 
 export async function updateUserName(id: string, name: string): Promise<void> {

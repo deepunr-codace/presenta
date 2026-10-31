@@ -3,7 +3,7 @@ import { newId } from "@/lib/deck/ids";
 import { DeckImportSchema, DeckSchema, type Deck, type ThemeId } from "@/lib/deck/schema";
 import type { DriveDeck } from "@/lib/drive-db";
 import { uploadDataUrl } from "@/lib/media";
-import { sanitizeHtml, stripTags } from "@/lib/text";
+import { sanitizeDeckText } from "@/lib/deck/sanitize";
 import { importPptx } from "@/lib/import/pptx";
 import { importPdfDeck } from "@/lib/import/pdf-deck";
 import { jsonToDeck } from "@/lib/import/json-deck";
@@ -185,18 +185,6 @@ function reIdDuplicates(deck: Deck): Deck {
 }
 
 /** Strip anything but the editor's own tags from text, and every tag from card copy. Mutates and returns `deck`. */
-function sanitizeDeckText(deck: Deck): Deck {
-  for (const slide of deck.slides) {
-    for (const el of slide.elements) {
-      if (el.type === "text") el.html = sanitizeHtml(el.html);
-      else if (el.type === "card") {
-        el.title = stripTags(el.title);
-        el.body = stripTags(el.body);
-      }
-    }
-  }
-  return deck;
-}
 
 /**
  * Import a Presenta JSON backup, PPTX, or PDF file. Data is validated and

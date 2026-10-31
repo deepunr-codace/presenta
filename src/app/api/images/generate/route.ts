@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { auth } from "@/auth";
 import { z } from "zod";
-import { resolveAi } from "@/lib/ai";
+import { resolveAi, resolveAiForRequest } from "@/lib/ai";
 import { jsonError, jsonFailure, jsonOk, readJsonBody } from "../../_lib/respond";
 
 export const runtime = "nodejs";
@@ -18,7 +18,13 @@ export async function POST(request: Request) {
   const body = await readJsonBody(request, RequestSchema);
   if (!body.ok) return body.response;
 
-  const ai = resolveAi(request);
+  // The visitor's own key or one an admin assigned them; otherwise the server's key, for signed-in users only.
+  const session = await auth();
+  let ai = await resolveAiForRequest(request, { cost: 0 });
+  if (ai.source !== "openai") {
+    const server = resolveAi(request);
+    if (server.source === "openai" && (server.auth || session?.user?.id)) ai = server;
+  }
   if (ai.source !== "openai" || ai.auth?.provider === "anthropic" || ai.auth?.provider === "openrouter") {
     return jsonError(400, "auth", "Image generation requires an OpenAI API key. Add an OpenAI key in Settings to use this feature.");
   }
@@ -26,7 +32,6 @@ export async function POST(request: Request) {
   if (!apiKey) return jsonError(400, "auth", "Image generation requires an OpenAI API key. Add an OpenAI key in Settings to use this feature.");
 
   try {
-    const session = await auth();
     const safetyIdentifier = session?.user?.id ? createHash("sha256").update(session.user.id).digest("hex") : undefined;
     const timeout = AbortSignal.timeout(105_000);
     const signal = typeof AbortSignal.any === "function" ? AbortSignal.any([request.signal, timeout]) : request.signal;

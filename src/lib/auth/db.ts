@@ -34,7 +34,12 @@ export function ensureUsersTable(): Promise<void> {
         image TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
-    `.then(() => undefined);
+    `
+      .then(() => db`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ`)
+      // Accounts without a password can only have come from Google, which proved the address.
+      .then(() => db`UPDATE users SET email_verified_at = created_at WHERE email_verified_at IS NULL AND password_hash IS NULL`)
+      .then(() => undefined);
+    ensured.catch(() => (ensured = null));
   }
   return ensured;
 }

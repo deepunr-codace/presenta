@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { sanitizeDeckText } from "@/lib/deck/sanitize";
+import type { Deck } from "@/lib/deck/schema";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { CollabError, currentEditor, resolveAccess } from "@/lib/collab-db";
@@ -32,7 +34,13 @@ export async function GET(_req: Request, { params }: Params) {
     if (!data) return NextResponse.json({ error: "Deck not found." }, { status: 404 });
 
     const editor = await currentEditor(access.ownerId, id);
-    return NextResponse.json({ deck: data, role: access.role, editor });
+    const deck = data as Deck;
+    if (Array.isArray(deck.slides)) {
+      sanitizeDeckText(deck);
+      // Someone who only opened a public link sees what the link shows: the slides, not the speaker notes.
+      if (access.viaLink) for (const slide of deck.slides) slide.notes = "";
+    }
+    return NextResponse.json({ deck, role: access.role, editor });
   } catch (err) {
     if (err instanceof CollabError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error("GET /api/decks/[id] failed", err);
@@ -71,6 +79,7 @@ export async function PUT(req: Request, { params }: Params) {
   }
 
   if (deck.id !== id) return NextResponse.json({ error: "Deck id in the body does not match the URL." }, { status: 400 });
+  sanitizeDeckText(deck);
 
   try {
     const access = await resolveAccess(session.user.id, id);
@@ -99,7 +108,7 @@ export async function PUT(req: Request, { params }: Params) {
       const remote = remoteParsed.data;
       const baseline = base ?? remote;
       const comparable = (value: typeof remote) => JSON.stringify({ ...value, updatedAt: "" });
-      const candidate = comparable(remote) === comparable(baseline) ? deck : mergeDecks(baseline, deck, remote);
+      const candidate = sanitizeDeckText(comparable(remote) === comparable(baseline) ? deck : mergeDecks(baseline, deck, remote));
       candidate.updatedAt = new Date(Math.max(Date.now(), Date.parse(remote.updatedAt) + 1)).toISOString();
       const json = JSON.stringify(candidate);
       await assertRoom(access.ownerId, Buffer.byteLength(json), oldSize);

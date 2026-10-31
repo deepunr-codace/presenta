@@ -4,6 +4,7 @@ import { TEMPLATE_CATEGORIES, TEMPLATE_SCOPES } from "@/lib/template-scopes";
 import { deleteTemplate, updateTemplate } from "@/lib/templates-db";
 import { withUser } from "../../_lib/guard";
 import { readJsonBody } from "../../_lib/respond";
+import { adminUser } from "@/lib/admin-guard";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,9 @@ export function PATCH(request: Request, { params }: Ctx) {
   return withUser("PATCH /api/templates/[id]", async (user) => {
     const body = await readJsonBody(request, PatchSchema);
     if (!body.ok) return body.response;
+    if (body.data.scope === "global" && !(await adminUser())) {
+      return NextResponse.json({ error: "Only an admin can publish a template for everyone. Share it with a team instead." }, { status: 403 });
+    }
     const template = await updateTemplate(user.id, (await params).id, body.data);
     return NextResponse.json({ template });
   });

@@ -4,6 +4,7 @@ import { newId } from "@/lib/deck/ids";
 import { DeckImportSchema, DeckSchema, type Deck, type Slide } from "@/lib/deck/schema";
 import { ensureDeckTables, getDeckData, upsertDeck } from "@/lib/decks-db";
 import { assertRoom } from "@/lib/storage";
+import { sanitizeDeckText, sanitizeSlideText } from "@/lib/deck/sanitize";
 import type { TemplateCategory, TemplateScope } from "@/lib/template-scopes";
 
 /**
@@ -190,8 +191,8 @@ function stripBigDataUrls(node: unknown): unknown {
 }
 
 function coverOf(raw: unknown): Slide | null {
-  if (!raw || typeof raw !== "object") return null;
-  return stripBigDataUrls(raw) as Slide;
+  if (!raw || typeof raw !== "object" || !Array.isArray((raw as { elements?: unknown }).elements)) return null;
+  return sanitizeSlideText(stripBigDataUrls(raw) as Slide);
 }
 
 function toEntry(r: TemplateRow, links: TeamLinkRow[], userId: string): TemplateEntry {
@@ -285,7 +286,7 @@ function parseDeck(value: unknown): Deck {
     const where = first?.path.length ? ` at ${first.path.join(".")}` : "";
     throw new TemplateError(`That file is not a Presenta deck${where}: ${first?.message ?? "invalid"}.`, 422);
   }
-  return parsed.data;
+  return sanitizeDeckText(parsed.data);
 }
 
 async function resolveDeck(userId: string, input: NewTemplateInput): Promise<Deck> {
@@ -398,7 +399,7 @@ export async function createDeckFromTemplate(userId: string, id: string): Promis
   if (!parsed.success) throw new TemplateError("This template's deck could not be read. Ask its owner to publish it again.", 422);
 
   const now = new Date().toISOString();
-  const deck: Deck = { ...structuredClone(parsed.data), id: newId("deck"), createdAt: now, updatedAt: now };
+  const deck: Deck = sanitizeDeckText({ ...structuredClone(parsed.data), id: newId("deck"), createdAt: now, updatedAt: now });
   await assertRoom(userId, Buffer.byteLength(JSON.stringify(deck)));
   await upsertDeck(userId, deck);
   return { deckId: deck.id, title: deck.title };
