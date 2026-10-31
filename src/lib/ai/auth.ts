@@ -22,7 +22,14 @@ export type AiResolution = {
   auth?: AiAuth;
   /** Set when the request is served by the pooled keys ("Presenta Studio"); see `resolveAiForRequest`. */
   presenta?: { userId: string; cost: number; model: string };
+  /** The key was assigned to this user by an admin (so it is not the visitor's own, and not limited). */
+  assigned?: boolean;
 };
+
+export function sourceOf(provider: AiProvider | "openrouter"): AiSource {
+  if (provider === "openrouter") return "presenta";
+  return provider === "openai" ? "openai" : provider === "gemini" ? "gemini" : "claude";
+}
 
 const KEY_PATTERN = /^[A-Za-z0-9._-]{20,400}$/;
 
@@ -68,7 +75,7 @@ export function envSource(): AiSource {
 /** Resolve a request: the visitor's key first, then the server key where allowed, otherwise the offline mock. */
 export function resolveAi(request: Request): AiResolution {
   const auth = readAiAuth(request.headers);
-  if (auth) return { source: auth.provider === "openai" ? "openai" : auth.provider === "gemini" ? "gemini" : "claude", auth };
+  if (auth) return { source: sourceOf(auth.provider), auth };
   // (The pooled "Presenta Studio" source needs the session and database, so it is added by `resolveAiForRequest`.)
   return { source: serverKeyAllowed() ? envSource() : "mock" };
 }

@@ -1,5 +1,6 @@
 import type { AiAuth, AiResolution } from "./auth";
-import { resolveAi } from "./auth";
+import { resolveAi, sourceOf } from "./auth";
+import { assignedKeyFor } from "./user-keys-db";
 import { AiError } from "./errors";
 import { getPresentaSettings, listPoolKeys, recordPoolKeyError, releaseAllowance, reserveAllowance, takePoolKey, usedToday, type KeyPenalty } from "./pool-db";
 
@@ -29,7 +30,8 @@ async function poolHasKeys(): Promise<boolean> {
 }
 
 /**
- * Resolve who serves a request. A visitor's own key wins; otherwise a signed-in user is served by Presenta Studio
+ * Resolve who serves a request. A visitor's own key wins; then a key an admin assigned to the signed-in user;
+ * otherwise a signed-in user is served by Presenta Studio
  * when an admin has it on and at least one pooled key is enabled; otherwise the existing server-key / offline rules apply.
  * `cost` is how many requests of the daily allowance this call uses (0 to only check availability).
  * Throws a `rate_limit` AiError when the allowance is spent.
@@ -42,6 +44,8 @@ export async function resolveAiForRequest(request: Request, opts: { cost?: numbe
   try {
     const userId = await currentUserId();
     if (!userId) return base;
+    const assigned = await assignedKeyFor(userId).catch(() => null);
+    if (assigned) return { source: sourceOf(assigned.provider), auth: assigned, assigned: true };
     const [settings, hasKeys] = await Promise.all([getPresentaSettings(), poolHasKeys()]);
     if (!settings.enabled || !hasKeys) return base;
 

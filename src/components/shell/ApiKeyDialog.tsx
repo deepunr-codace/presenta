@@ -45,6 +45,8 @@ function KeyForm({ onClose }: { onClose: () => void }) {
 
   const meta = PROVIDERS.find((p) => p.id === provider);
   const presentaActive = Boolean(health?.hasKey && health.provider === "presenta" && !health.byok);
+  const assignedActive = Boolean(health?.assigned && !health.byok);
+  const assignedLabel = health?.provider === "openai" ? "OpenAI" : health?.provider === "gemini" ? "Gemini" : "Anthropic";
   const usePresenta = () => {
     clearStoredKey();
     onClose();
@@ -74,6 +76,11 @@ function KeyForm({ onClose }: { onClose: () => void }) {
         </DialogHeader>
 
 
+        {assignedActive && !saved ? (
+          <p className="ps-keydialog-saved" role="status">
+            Your admin set up an {assignedLabel} key for you. It is used automatically; add a key below only to use your own instead.
+          </p>
+        ) : null}
         {saved ? (
           <p className="ps-keydialog-saved" role="status">
             Using your {PROVIDERS.find((p) => p.id === saved.provider)?.label} key <code>{maskKey(saved.apiKey)}</code>

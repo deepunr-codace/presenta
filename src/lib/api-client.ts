@@ -32,6 +32,8 @@ export type AiHealth = {
   provider: AiSource;
   /** Served by the visitor's own key. */
   byok: boolean;
+  /** Served by a key an admin assigned to this user. */
+  assigned?: boolean;
   /** The server's own key may serve requests without one. */
   serverKey: boolean;
   /** Today's free Presenta Studio allowance, when it is the active source. */

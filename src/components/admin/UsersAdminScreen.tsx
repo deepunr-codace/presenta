@@ -34,6 +34,85 @@ type Detail = {
   aiDaily: { day: string; count: number }[];
 };
 
+type Provider = "openai" | "anthropic" | "gemini";
+type AssignedKey = { provider: Provider; hint: string; setBy: string; updatedAt: string };
+const PROVIDERS: { id: Provider; label: string }[] = [
+  { id: "openai", label: "OpenAI" },
+  { id: "anthropic", label: "Anthropic" },
+  { id: "gemini", label: "Gemini" },
+];
+
+/** The AI keys assigned to one user: set, replace or remove a key per provider. The key itself is never shown again. */
+function UserKeys({ id }: { id: string }) {
+  const [keys, setKeys] = useState<AssignedKey[] | null>(null);
+  const [drafts, setDrafts] = useState<Record<Provider, string>>({ openai: "", anthropic: "", gemini: "" });
+  const [busy, setBusy] = useState<Provider | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    fetch(`/api/admin/users/${encodeURIComponent(id)}/keys`)
+      .then(async (r) => {
+        const body = (await r.json().catch(() => null)) as { keys?: AssignedKey[]; error?: string } | null;
+        if (!r.ok || !body?.keys) throw new Error(body?.error ?? "Could not load the keys.");
+        if (live) setKeys(body.keys);
+      })
+      .catch((err: unknown) => live && setError(err instanceof Error ? err.message : "Could not load the keys."));
+    return () => {
+      live = false;
+    };
+  }, [id]);
+
+  const call = async (provider: Provider, method: "PUT" | "DELETE", body: Record<string, string>) => {
+    setBusy(provider);
+    setError(null);
+    try {
+      const r = await fetch(`/api/admin/users/${encodeURIComponent(id)}/keys`, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ provider, ...body }) });
+      const res = (await r.json().catch(() => null)) as { keys?: AssignedKey[]; error?: string } | null;
+      if (!r.ok || !res?.keys) throw new Error(res?.error ?? "Something went wrong.");
+      setKeys(res.keys);
+      setDrafts((d) => ({ ...d, [provider]: "" }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div>
+      <p className="ps-caption mb-2">AI keys for this user</p>
+      <p className="ps-caption mb-3">A key set here serves this person&apos;s AI requests instead of Presenta Studio, with no daily limit. They see which provider is in use, never the key. OpenAI is used first when several are set.</p>
+      {error ? <ErrorNotice compact className="mb-2" message={error} /> : null}
+      <div className="flex flex-col gap-2">
+        {PROVIDERS.map((p) => {
+          const set = keys?.find((k) => k.provider === p.id);
+          return (
+            <div key={p.id} className="ps-control-row">
+              <input
+                className="ps-input"
+                type="password"
+                autoComplete="off"
+                value={drafts[p.id]}
+                onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
+                placeholder={set ? `${p.label} · set by ${set.setBy} · …${set.hint} (paste a new key to replace)` : `${p.label} key`}
+                aria-label={`${p.label} key for this user`}
+                disabled={keys === null}
+              />
+              <button type="button" className="ps-btn ps-btn-primary" disabled={busy !== null || !drafts[p.id].trim()} onClick={() => void call(p.id, "PUT", { apiKey: drafts[p.id].trim() })}>
+                {busy === p.id ? "Saving…" : set ? "Replace" : "Set"}
+              </button>
+              <button type="button" className="ps-btn" data-danger={set ? "true" : undefined} disabled={!set || busy !== null} onClick={() => void call(p.id, "DELETE", {})}>
+                Remove
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 type SortKey = "joined" | "active" | "decks" | "storage" | "ai30d" | "views";
 const SORTS: { id: SortKey; label: string }[] = [
   { id: "active", label: "Last active" },
@@ -140,6 +219,9 @@ function UserDetail({ id }: { id: string }) {
       <div>
         <p className="ps-caption mb-2">AI requests, last 30 days</p>
         <AiBars daily={detail.aiDaily} now={detail.at} />
+      </div>
+      <div className="lg:col-span-2">
+        <UserKeys id={id} />
       </div>
     </div>
   );
