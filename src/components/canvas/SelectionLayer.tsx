@@ -49,6 +49,23 @@ export function SelectionLayer({ slide, slideWrap, selectedIds, scale, editing, 
   const [guides, setGuides] = useState<HTMLElement[]>([]);
   const [shift, setShift] = useState(false);
   const frames = useRef(new Map<string, Frame>());
+  /** Whether a mouse button or finger is down right now, so a click that is already over never starts a drag. */
+  const pressed = useRef(false);
+
+  useEffect(() => {
+    const down = () => (pressed.current = true);
+    const up = () => (pressed.current = false);
+    window.addEventListener("pointerdown", down, true);
+    window.addEventListener("pointerup", up, true);
+    window.addEventListener("pointercancel", up, true);
+    window.addEventListener("blur", up);
+    return () => {
+      window.removeEventListener("pointerdown", down, true);
+      window.removeEventListener("pointerup", up, true);
+      window.removeEventListener("pointercancel", up, true);
+      window.removeEventListener("blur", up);
+    };
+  }, []);
 
   const elementById = useMemo(() => new Map(slide.elements.map((e) => [e.id, e])), [slide.elements]);
 
@@ -67,6 +84,8 @@ export function SelectionLayer({ slide, slideWrap, selectedIds, scale, editing, 
       if (pendingDrag && next.length && mv) {
         const ev = pendingDrag;
         mv.waitToChangeTarget().then(() => {
+          // A quick click is released before the new selection box is ready: select only, do not drag.
+          if (!pressed.current) return;
           try {
             moveableRef.current?.dragStart(ev);
           } catch {
@@ -160,6 +179,14 @@ export function SelectionLayer({ slide, slideWrap, selectedIds, scale, editing, 
     e.set([f.tx, f.ty]);
   };
   const onDrag = (e: OnDrag) => {
+    // Moving the mouse with no button held is never a drag, even if the drag missed its release.
+    const input = e.inputEvent as MouseEvent | undefined;
+    if (input && "buttons" in input && input.type.startsWith("mouse") || (input && (input as PointerEvent).pointerType === "mouse")) {
+      if (input.buttons === 0) {
+        e.stopDrag();
+        return;
+      }
+    }
     const f = frameOf(e.target);
     [f.tx, f.ty] = e.beforeTranslate;
     paint(e.target, f);
