@@ -210,7 +210,7 @@ export async function importDeckFile(file: File, report?: (pct: number | null, l
   let deck: Deck;
   if (/\.pptx$/i.test(file.name)) {
     report?.(10, "Reading the PowerPoint…");
-    deck = await importPptx(file);
+    deck = await importPptx(file, (pct, label) => report?.(pct, label));
   } else if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") {
     deck = await importPdfDeck(file, (pct, label) => report?.(pct, label), { smart: options.smart });
   } else {
