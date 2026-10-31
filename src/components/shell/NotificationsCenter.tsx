@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Bell as BellIcon } from "lucide-react";
@@ -17,6 +17,23 @@ export function NotificationsCenter() {
   const [items, setItems] = useState<AppNotification[]>([]);
   const [open, setOpen] = useState(false);
   const unread = items.reduce((total, item) => total + Number(!item.read), 0);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   const sync = useCallback(() => {
     if (userId) setItems(getAppNotifications(userId));
@@ -110,7 +127,7 @@ export function NotificationsCenter() {
   if (!userId) return null;
 
   return (
-    <div className="ps-notifications">
+    <div className="ps-notifications" ref={rootRef}>
       <button type="button" className="ps-iconbtn ps-notifications-trigger" aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`} aria-expanded={open} aria-controls="ps-notification-panel" onClick={() => setOpen((value) => !value)}>
         <BellIcon size={18} strokeWidth={1.8} aria-hidden />
         {unread ? <span className="ps-notifications-badge">{unread > 9 ? "9+" : unread}</span> : null}
