@@ -72,7 +72,7 @@ export async function upsertOAuthUser(email: string, name: string | null, image:
     await sql()`
       UPDATE users SET name = COALESCE(${name}, name), image = COALESCE(${image}, image),
         email_verified_at = COALESCE(email_verified_at, now()),
-        password_hash = CASE WHEN ${dropPassword} THEN NULL ELSE password_hash END
+        password_hash = CASE WHEN ${dropPassword}::boolean THEN NULL ELSE password_hash END
       WHERE id = ${existing.id}
     `;
     return { ...existing, name: name ?? existing.name, image: image ?? existing.image, emailVerified: true, passwordHash: dropPassword ? null : existing.passwordHash };
