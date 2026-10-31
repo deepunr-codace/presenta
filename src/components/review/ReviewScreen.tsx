@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo } from "react";
-import { Clock, Stack, TextAa } from "@phosphor-icons/react";
+import { Clock, SidebarSimple, Stack, TextAa } from "@phosphor-icons/react";
 import { resolveTheme } from "@/lib/deck/themes";
 import { useDeckEvent } from "@/hooks/useDeckEvent";
 import { timeAgo } from "@/lib/time";
@@ -10,6 +10,7 @@ import { DeckActions } from "@/components/editor/DeckActions";
 import { ThemeSwatch } from "@/components/editor/ThemeSwatch";
 import { useDeck } from "@/components/present/useDeck";
 import { Sidebar } from "@/components/sidebar/Sidebar";
+import { useSidebarStore } from "@/components/sidebar/sidebar-store";
 import { DeckNotFound } from "@/components/ui-kit/DeckNotFound";
 import { LoadingState } from "@/components/ui-kit/LoadingState";
 import { SectionTitle } from "@/components/ui-kit/SectionTitle";
@@ -37,6 +38,8 @@ export function ReviewScreen({ id }: Props) {
   const theme = useMemo(() => (deck ? resolveTheme(deck) : null), [deck]);
   const words = useMemo(() => (deck ? deckWordCount(deck) : 0), [deck]);
   const count = deck?.slides.length ?? 0;
+  const sidebarOpen = useSidebarStore((s) => s.open);
+  const setSidebarOpen = useSidebarStore((s) => s.setOpen);
 
   useEffect(() => {
     if (!fetched) return;
@@ -79,48 +82,55 @@ export function ReviewScreen({ id }: Props) {
 
   return (
     <div className="ps-review">
-      <main className="ps-review-main">
-        <header className="ps-review-head">
-          <div className="min-w-0 flex-1 basis-56">
-            <h1 className="ps-review-title">{deck.title || "Untitled deck"}</h1>
-            <div className="ps-review-meta">
-              <span className="ps-review-meta-theme" title={theme.description}>
-                <ThemeSwatch pair={theme.swatch} className="h-3 w-5 rounded-[2px]" />
-                {theme.name}
-              </span>
-              <span aria-hidden>·</span>
-              <span>
-                {count} slide{count === 1 ? "" : "s"}
-              </span>
-              <span aria-hidden>·</span>
-              <span>updated {timeAgo(deck.updatedAt)}</span>
+      {/* The top bar spans the page and the side panel, as in the editor. */}
+      <header className="ps-review-head">
+        <div className="min-w-0 flex-1 basis-56">
+          <h1 className="ps-review-title">{deck.title || "Untitled deck"}</h1>
+          <div className="ps-review-meta">
+            <span className="ps-review-meta-theme" title={theme.description}>
+              <ThemeSwatch pair={theme.swatch} className="h-3 w-5 rounded-[2px]" />
+              {theme.name}
+            </span>
+            <span aria-hidden>·</span>
+            <span>
+              {count} slide{count === 1 ? "" : "s"}
+            </span>
+            <span aria-hidden>·</span>
+            <span>updated {timeAgo(deck.updatedAt)}</span>
+          </div>
+        </div>
+        <div className="ps-review-actions">
+          <DeckActions id={deck.id} mode="review" />
+          <button type="button" className="ps-iconbtn" aria-pressed={sidebarOpen} onClick={() => setSidebarOpen(!sidebarOpen)} title={sidebarOpen ? "Hide the side panel" : "Show the side panel"} aria-label={sidebarOpen ? "Hide the side panel" : "Show the side panel"}>
+            <SidebarSimple size={16} mirrored />
+          </button>
+        </div>
+      </header>
+      <div className="ps-review-body">
+        <main className="ps-review-main">
+          <ReviewHero slide={deck.slides[index]} theme={theme} index={index} count={count} onIndexChange={setIndex} />
+
+          <section aria-label="Deck stats" className="ps-review-stats">
+            <ReviewStatCard icon={<Stack />} title="Slides" value={String(count)} caption={count === 1 ? "One slide in this deck" : "Slides in this deck"} />
+            <ReviewStatCard icon={<TextAa />} title="Words" value={words.toLocaleString()} caption="Visible text across all slides" />
+            <ReviewStatCard icon={<Clock />} title="Reading time" value={readingMinutes(words)} unit="min" caption={`At ${WORDS_PER_MINUTE} words per minute`} />
+          </section>
+
+          <section aria-label="All slides" className="ps-review-all">
+            <SectionTitle title="All slides" caption="Click a slide to preview it" className="mb-3" />
+            <div className="ps-review-grid">
+              {deck.slides.map((s, i) => (
+                <SlideThumb key={s.id} slide={s} theme={theme} index={i} active={i === index} onSelect={() => setIndex(i)} editHref={editHref(deck.id, s.id)} />
+              ))}
             </div>
+          </section>
+        </main>
+
+        {sidebarOpen ? (
+          <div className="ps-review-side">
+            <Sidebar tabs={["assistant", "details"]} defaultScope="deck" details={<DeckDetails deck={deck} theme={theme} />} />
           </div>
-          <div className="ps-review-actions">
-            <DeckActions id={deck.id} mode="review" />
-          </div>
-        </header>
-
-        <ReviewHero slide={deck.slides[index]} theme={theme} index={index} count={count} onIndexChange={setIndex} />
-
-        <section aria-label="Deck stats" className="ps-review-stats">
-          <ReviewStatCard icon={<Stack />} title="Slides" value={String(count)} caption={count === 1 ? "One slide in this deck" : "Slides in this deck"} />
-          <ReviewStatCard icon={<TextAa />} title="Words" value={words.toLocaleString()} caption="Visible text across all slides" />
-          <ReviewStatCard icon={<Clock />} title="Reading time" value={readingMinutes(words)} unit="min" caption={`At ${WORDS_PER_MINUTE} words per minute`} />
-        </section>
-
-        <section aria-label="All slides" className="ps-review-all">
-          <SectionTitle title="All slides" caption="Click a slide to preview it" className="mb-3" />
-          <div className="ps-review-grid">
-            {deck.slides.map((s, i) => (
-              <SlideThumb key={s.id} slide={s} theme={theme} index={i} active={i === index} onSelect={() => setIndex(i)} editHref={editHref(deck.id, s.id)} />
-            ))}
-          </div>
-        </section>
-      </main>
-
-      <div className="ps-review-side">
-        <Sidebar tabs={["assistant", "details"]} defaultScope="deck" details={<DeckDetails deck={deck} theme={theme} />} />
+        ) : null}
       </div>
     </div>
   );

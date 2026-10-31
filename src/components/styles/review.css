@@ -5,7 +5,9 @@
 
 /* ---------- Layout ---------- */
 
-.ps-review { display: flex; height: 100%; min-height: 0; background: var(--ps-canvas); color: var(--ps-ink); }
+.ps-review { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--ps-canvas); color: var(--ps-ink); }
+/* Below the top bar: the scrolling page and the side panel. */
+.ps-review-body { display: flex; flex: 1; min-height: 0; }
 /* The editor and review pages are workspaces with their own 24 px gutter, so the breadcrumb line follows that
    gutter instead of the centred 1280 px column the document-style pages use. */
 .ps-deck-shell > .ps-crumbbar { max-width: none; padding: 12px 24px; }
@@ -17,7 +19,7 @@
 
 /* ---------- Title row ---------- */
 
-.ps-review-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 14px; }
+.ps-review-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; flex-shrink: 0; padding: 16px 24px 12px; }
 .ps-review-title {
   font-size: 28px;
   line-height: 1.15;
@@ -139,16 +141,11 @@
   .ps-stat-value { font-size: 28px; }
 }
 
-/* ---- Slim top bar, matching the editor: one 44 px row with the title, meta and compact pill actions ---- */
+/* ---- Slim top bar, matching the editor: one 44 px row across the page and the side panel ---- */
 @media (min-width: 768px) {
-  .ps-review-main { padding-top: 0; }
   .ps-review-head {
-    position: sticky;
-    top: 0;
-    z-index: 20;
     flex-wrap: nowrap;
     height: 44px;
-    margin: 0 -24px 20px;
     padding: 0 10px 0 24px;
     border-bottom: 1px solid color-mix(in srgb, var(--ps-line) 70%, transparent);
     background: color-mix(in srgb, var(--ps-canvas) 88%, transparent);
@@ -165,7 +162,15 @@
   .ps-review-actions .ps-btn.ps-btn-primary { padding: 0 14px; }
   .ps-review-actions .ps-btn svg { width: 14px; height: 14px; }
   .ps-review-actions .ps-toolbar-sep { height: 14px; margin: 0 6px; }
+  .ps-review-actions .ps-iconbtn { width: 30px; height: 30px; border-radius: 9999px; margin-left: 4px; }
 }
 @media (min-width: 768px) and (max-width: 1100px) {
   .ps-review-meta { display: none; }
+}
+/* The side panel is not shown on narrow screens, so neither is its toggle. */
+@media (max-width: 1023px) {
+  .ps-review-actions .ps-iconbtn { display: none; }
+}
+@media (max-width: 767px) {
+  .ps-review-head { padding: 16px 16px 4px; }
 }
