@@ -8,7 +8,15 @@ import { deckSegment } from "@/lib/deck/links";
 import { deckUrlSlug } from "@/lib/deck/slug";
 import { useToast } from "@/components/shell/Toast";
 import { runTask } from "@/lib/tasks";
-import { downloadBlob, exportDeckJson, importDeckFile, loadDeckById, saveDeck, trashDeck, type DeckSummary } from "@/lib/persist";
+import {
+  downloadBlob,
+  exportDeckJson,
+  importDeckFile,
+  loadDeckById,
+  saveDeck,
+  trashDeck,
+  type DeckSummary,
+} from "@/lib/persist";
 import type { DeckActions } from "./deck-actions";
 import { cloneDeck } from "./home-data";
 
@@ -72,20 +80,37 @@ export function useDeckActions(refresh: () => Promise<void>) {
   const importFile = useCallback(
     (file: File | undefined) => {
       if (!file) return;
-      void run("Importing…", async () => {
-        const mode = await askPdfMode(file);
+      // Ask how to convert before anything says "Importing…", so a cancelled dialog leaves no trace.
+      void askPdfMode(file).then((mode) => {
         if (!mode) return;
-        const deck = await runTask(`Importing ${file.name}`, async (report) => {
-          const d = await importDeckFile(file, report, { smart: mode === "smart" });
-          report(99, "Saving to your account…");
-          await saveDeck(d);
-          return d;
-        }, "Imported. Opening your deck…");
-        router.push(`/deck/${deckUrlSlug(deck.title, deck.id)}`);
+        return run("Importing…", async () => {
+          const deck = await runTask(
+            `Importing ${file.name}`,
+            async (report) => {
+              const d = await importDeckFile(file, report, {
+                smart: mode === "smart",
+              });
+              report(99, "Saving to your account…");
+              await saveDeck(d);
+              return d;
+            },
+            "Imported. Opening your deck…",
+          );
+          router.push(`/deck/${deckUrlSlug(deck.title, deck.id)}`);
+        });
       });
     },
     [run, router],
   );
 
-  return { actions, busy, error, setError, pendingDelete, setPendingDelete, confirmDelete, importFile };
+  return {
+    actions,
+    busy,
+    error,
+    setError,
+    pendingDelete,
+    setPendingDelete,
+    confirmDelete,
+    importFile,
+  };
 }

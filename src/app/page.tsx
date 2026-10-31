@@ -6,7 +6,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Presentation, Stack } from "@phosphor-icons/react";
 import { SAMPLE_DECK } from "@/lib/deck/sample";
 import { runTask } from "@/lib/tasks";
-import { trashDeck, downloadBlob, exportDeckJson, importDeckFile, listDecks, loadDeckById, saveDeck, type DeckSummary } from "@/lib/persist";
+import {
+  trashDeck,
+  downloadBlob,
+  exportDeckJson,
+  importDeckFile,
+  listDecks,
+  loadDeckById,
+  saveDeck,
+  type DeckSummary,
+} from "@/lib/persist";
 import { deckSlug } from "@/components/editor/deck-slug";
 import { deckSegment } from "@/lib/deck/links";
 import { deckUrlSlug } from "@/lib/deck/slug";
@@ -20,7 +29,11 @@ import { SharedDecks } from "@/components/home/SharedDecks";
 import { StatCard } from "@/components/home/StatCard";
 import { StatSkeleton } from "@/components/home/StatSkeleton";
 import type { DeckActions } from "@/components/home/deck-actions";
-import { cloneDeck, seedWizardForPaste, seedWizardFromPrompt } from "@/components/home/home-data";
+import {
+  cloneDeck,
+  seedWizardForPaste,
+  seedWizardFromPrompt,
+} from "@/components/home/home-data";
 import { ALT_STARTS, type Intent } from "@/components/home/starters";
 import { useDayPart } from "@/components/home/useDayPart";
 import { AppShell } from "@/components/shell/AppShell";
@@ -49,7 +62,9 @@ export default function HomePage() {
     try {
       setDecks(await listDecks());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not read saved decks.");
+      setError(
+        err instanceof Error ? err.message : "Could not read saved decks.",
+      );
       setDecks([]);
     }
   }, []);
@@ -62,7 +77,9 @@ export default function HomePage() {
       })
       .catch((err: unknown) => {
         if (!alive) return;
-        setError(err instanceof Error ? err.message : "Could not read saved decks.");
+        setError(
+          err instanceof Error ? err.message : "Could not read saved decks.",
+        );
         setDecks([]);
       });
     return () => {
@@ -82,8 +99,16 @@ export default function HomePage() {
     }
   }, []);
 
-  const openDeck = useCallback((id: string, slug?: string) => router.push(`/deck/${deckSegment(id, slug)}`), [router]);
-  const editDeck = useCallback((id: string, slug?: string) => router.push(`/edit/${deckSegment(id, slug)}`), [router]);
+  const openDeck = useCallback(
+    (id: string, slug?: string) =>
+      router.push(`/deck/${deckSegment(id, slug)}`),
+    [router],
+  );
+  const editDeck = useCallback(
+    (id: string, slug?: string) =>
+      router.push(`/edit/${deckSegment(id, slug)}`),
+    [router],
+  );
 
   const openSample = () =>
     run("Opening sample…", async () => {
@@ -94,16 +119,24 @@ export default function HomePage() {
 
   const onImportFile = (file: File | undefined) => {
     if (!file) return;
-    void run("Importing…", async () => {
-      const mode = await askPdfMode(file);
+    // Ask how to convert before anything says "Importing…", so a cancelled dialog leaves no trace.
+    void askPdfMode(file).then((mode) => {
       if (!mode) return;
-      const deck = await runTask(`Importing ${file.name}`, async (report) => {
-        const d = await importDeckFile(file, report, { smart: mode === "smart" });
-        report(99, "Saving to your account…");
-        await saveDeck(d);
-        return d;
-      }, "Imported. Opening your deck…");
-      openDeck(deck.id, deckUrlSlug(deck.title, deck.id));
+      return run("Importing…", async () => {
+        const deck = await runTask(
+          `Importing ${file.name}`,
+          async (report) => {
+            const d = await importDeckFile(file, report, {
+              smart: mode === "smart",
+            });
+            report(99, "Saving to your account…");
+            await saveDeck(d);
+            return d;
+          },
+          "Imported. Opening your deck…",
+        );
+        openDeck(deck.id, deckUrlSlug(deck.title, deck.id));
+      });
     });
   };
 
@@ -144,7 +177,9 @@ export default function HomePage() {
       queueAgentPrompt(text);
       router.push("/agent");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start Agent mode.");
+      setError(
+        err instanceof Error ? err.message : "Could not start Agent mode.",
+      );
     }
   };
 
@@ -159,17 +194,28 @@ export default function HomePage() {
     }
   };
 
-  const actions: DeckActions = { onOpen: openDeck, onEdit: editDeck, onDuplicate: (id) => void duplicate(id), onExport: (id) => void exportJson(id), onDelete: setPendingDelete };
+  const actions: DeckActions = {
+    onOpen: openDeck,
+    onEdit: editDeck,
+    onDuplicate: (id) => void duplicate(id),
+    onExport: (id) => void exportJson(id),
+    onDelete: setPendingDelete,
+  };
 
   const stats = useMemo(() => {
     const list = decks ?? [];
-    return { decks: list.length, slides: list.reduce((sum, d) => sum + d.slideCount, 0) };
+    return {
+      decks: list.length,
+      slides: list.reduce((sum, d) => sum + d.slideCount, 0),
+    };
   }, [decks]);
 
   const sorted = useMemo(() => {
     const list = decks ?? [];
     if (sort !== "name") return list;
-    return [...list].sort((a, b) => (a.title || "Untitled deck").localeCompare(b.title || "Untitled deck"));
+    return [...list].sort((a, b) =>
+      (a.title || "Untitled deck").localeCompare(b.title || "Untitled deck"),
+    );
   }, [decks, sort]);
 
   const hasDecks = Boolean(decks?.length);
@@ -197,11 +243,20 @@ export default function HomePage() {
               <h1 className="ps-home-title">
                 What are we building <span className="ps-accent">today</span>?
               </h1>
-              <p className="ps-body-lg mt-2">Good {part ?? "day"}. Describe a deck to start one, or pick up a recent deck below.</p>
+              <p className="ps-body-lg mt-2">
+                Good {part ?? "day"}. Describe a deck to start one, or pick up a
+                recent deck below.
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               {ALT_STARTS.map((a) => (
-                <button key={a.id} type="button" className="ps-btn" onClick={() => onIntent(a.id)} disabled={busy !== null}>
+                <button
+                  key={a.id}
+                  type="button"
+                  className="ps-btn"
+                  onClick={() => onIntent(a.id)}
+                  disabled={busy !== null}
+                >
                   {a.icon}
                   {a.label}
                 </button>
@@ -209,7 +264,14 @@ export default function HomePage() {
             </div>
           </header>
 
-          <HomeHero status={busy ?? "Presenta can make mistakes. Review important details."} busy={busy !== null} onSubmit={startFromPrompt} onAgentSubmit={startWithAgent} />
+          <HomeHero
+            status={
+              busy ?? "Presenta can make mistakes. Review important details."
+            }
+            busy={busy !== null}
+            onSubmit={startFromPrompt}
+            onAgentSubmit={startWithAgent}
+          />
 
           <div className="ps-home-stats mt-8 grid gap-4 sm:grid-cols-3">
             {loading ? (
@@ -220,36 +282,83 @@ export default function HomePage() {
               </>
             ) : (
               <>
-                <StatCard title="Decks" icon={<Stack />} value={stats.decks.toLocaleString()} unit={stats.decks === 1 ? "deck" : "decks"} caption="Saved to your account" />
-                <StatCard title="Slides" icon={<Presentation />} value={stats.slides.toLocaleString()} unit={stats.slides === 1 ? "slide" : "slides"} caption={hasDecks ? `Across ${stats.decks} deck${stats.decks === 1 ? "" : "s"}` : "Nothing generated yet"} />
+                <StatCard
+                  title="Decks"
+                  icon={<Stack />}
+                  value={stats.decks.toLocaleString()}
+                  unit={stats.decks === 1 ? "deck" : "decks"}
+                  caption="Saved to your account"
+                />
+                <StatCard
+                  title="Slides"
+                  icon={<Presentation />}
+                  value={stats.slides.toLocaleString()}
+                  unit={stats.slides === 1 ? "slide" : "slides"}
+                  caption={
+                    hasDecks
+                      ? `Across ${stats.decks} deck${stats.decks === 1 ? "" : "s"}`
+                      : "Nothing generated yet"
+                  }
+                />
                 <LastEditedCard summary={decks?.[0] ?? null} />
               </>
             )}
           </div>
 
-          {error ? <ErrorNotice compact className="mt-4" message={error} /> : null}
+          {error ? (
+            <ErrorNotice compact className="mt-4" message={error} />
+          ) : null}
 
-          <section id="decks" className="mt-12 scroll-mt-6" aria-labelledby="recent-decks-title">
+          <section
+            id="decks"
+            className="mt-12 scroll-mt-6"
+            aria-labelledby="recent-decks-title"
+          >
             <SectionTitle
               title={<span id="recent-decks-title">Recent decks</span>}
-              caption={loading ? undefined : hasDecks ? `${decks?.length} deck${decks?.length === 1 ? "" : "s"} · export JSON to move one elsewhere` : undefined}
-              action={hasDecks ? <PillTabs variant="segmented" items={SORTS} value={sort} onChange={setSort} ariaLabel="Sort decks" /> : null}
+              caption={
+                loading
+                  ? undefined
+                  : hasDecks
+                    ? `${decks?.length} deck${decks?.length === 1 ? "" : "s"} · export JSON to move one elsewhere`
+                    : undefined
+              }
+              action={
+                hasDecks ? (
+                  <PillTabs
+                    variant="segmented"
+                    items={SORTS}
+                    value={sort}
+                    onChange={setSort}
+                    ariaLabel="Sort decks"
+                  />
+                ) : null
+              }
               className="mb-5"
             />
             {loading ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-hidden>
+              <div
+                className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                aria-hidden
+              >
                 <StatSkeleton />
                 <StatSkeleton />
                 <StatSkeleton />
               </div>
             ) : hasDecks ? (
-              <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-label="Recent decks">
+              <ul
+                className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                aria-label="Recent decks"
+              >
                 {sorted.map((d) => (
                   <DeckCard key={d.id} summary={d} actions={actions} />
                 ))}
               </ul>
             ) : (
-              <EmptyDecksCard onSample={() => void openSample()} busy={busy !== null} />
+              <EmptyDecksCard
+                onSample={() => void openSample()}
+                busy={busy !== null}
+              />
             )}
           </section>
 
@@ -257,7 +366,11 @@ export default function HomePage() {
         </div>
       </div>
 
-      <DeleteDeckDialog deck={pendingDelete} onCancel={() => setPendingDelete(null)} onConfirm={confirmDelete} />
+      <DeleteDeckDialog
+        deck={pendingDelete}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+      />
     </AppShell>
   );
 }
