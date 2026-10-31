@@ -565,14 +565,12 @@ async function smartPage(ctx: PageCtx, blocks: Block[]): Promise<PageResult> {
   const W = viewport.width;
   const H = viewport.height;
   const lines = blocks.flatMap((b) => b.lines);
-  const smartLines: SmartLine[] = lines.slice(0, 200).map((l, id) => ({
-    id,
-    text: lineText(l).slice(0, 300),
-    x: ((l.x - offX) / W) * 1000,
-    y: ((l.y - offY) / H) * 1000,
-    w: ((l.right - l.x) / W) * 1000,
-    h: ((l.size * 1.2) / H) * 1000,
-  }));
+  const grid = (v: number) => Math.max(0, Math.min(1000, v));
+  const smartLines: SmartLine[] = lines.slice(0, 200).map((l, id) => {
+    const x = grid(((l.x - offX) / W) * 1000);
+    const y = grid(((l.y - offY) / H) * 1000);
+    return { id, text: lineText(l).slice(0, 300), x, y, w: grid(((l.right - l.x) / W) * 1000), h: grid(((l.size * 1.2) / H) * 1000) };
+  });
 
   const res = await postSmartPage({ image: await pagePicture(ctx), lines: smartLines, aspect: W / H });
   if (!res.ok) throw new SmartConvertError(res.error, res.code === "rate_limit" || res.code === "auth");
@@ -749,10 +747,10 @@ export async function importPdfDeck(file: File, report?: (pct: number, label: st
   report?.(4, "Opening the PDF…");
   const lib = await getPdfJs();
   const task = lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), useSystemFonts: true, fontExtraProperties: true });
-  const pdf = await task.promise;
   const ops = lib.OPS as unknown as Ops;
   const noText = textlessFilter(ops);
   try {
+    const pdf = await task.promise;
     if (!pdf.numPages || pdf.numPages > MAX_SLIDES) throw new Error(`PDF imports support 1 to ${MAX_SLIDES} pages.`);
     const slides: Slide[] = [];
     let renderedBytes = 0;
@@ -779,6 +777,9 @@ export async function importPdfDeck(file: File, report?: (pct: number, label: st
         const [a, b, , , e, f] = lib.Util.transform(viewport.transform, item.transform);
         const size = Math.hypot(a, b);
         if (size < 4) continue;
+        // Tilted text (a sticker, a rotated label) stays part of its artwork: a text box here would be level and
+        // sit on top of the tilted original.
+        if (Math.abs(b) > Math.abs(a) * 0.05) continue;
         const style = content.styles[item.fontName];
         let fontName = "";
         try {
@@ -835,6 +836,7 @@ export async function importPdfDeck(file: File, report?: (pct: number, label: st
         notes: `Imported from ${file.name} · page ${n}`,
         elements: result.elements,
       });
+      page.cleanup();
     }
     report?.(97, "Finishing the deck…");
     const now = new Date().toISOString();

@@ -10,6 +10,15 @@ const SourceSchema = z.object({ title: z.string().max(240), url: z.string().url(
 const ResultSchema = z.object({ summary: z.string().min(1).max(12000), sources: z.array(SourceSchema).max(12) });
 type ResearchSource = z.infer<typeof SourceSchema>;
 
+/** The site name of a URL, or "" when it is not a URL (cleanSources then drops the source). */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
+
 function cleanSources(values: ResearchSource[]): ResearchSource[] {
   const seen = new Set<string>();
   return values.filter((source) => {
@@ -42,7 +51,7 @@ export async function POST(request: Request) {
       const data = await response.json() as { output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string; annotations?: Array<{ type?: string; url?: string; title?: string }> }> }> };
       const blocks = (data.output ?? []).flatMap((item) => item.type === "message" ? item.content ?? [] : []);
       const summary = blocks.filter((block) => block.type === "output_text" || block.type === "text").map((block) => block.text ?? "").join("\n").trim();
-      const sources = cleanSources(blocks.flatMap((block) => (block.annotations ?? []).filter((annotation) => annotation.type === "url_citation" && annotation.url).map((annotation) => ({ title: annotation.title ?? new URL(annotation.url!).hostname, url: annotation.url! }))));
+      const sources = cleanSources(blocks.flatMap((block) => (block.annotations ?? []).filter((annotation) => annotation.type === "url_citation" && annotation.url).map((annotation) => ({ title: annotation.title ?? hostOf(annotation.url!), url: annotation.url! }))));
       const result = ResultSchema.safeParse({ summary, sources });
       if (!result.success || !sources.length) throw new AiError("api", "OpenAI returned no usable web citations. Try a more specific topic.");
       return jsonOk(result.data, ai.source);
@@ -66,7 +75,7 @@ export async function POST(request: Request) {
       const data = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; groundingMetadata?: { groundingChunks?: Array<{ web?: { uri?: string; title?: string } }> } }> };
       const candidate = data.candidates?.[0];
       const summary = (candidate?.content?.parts ?? []).map((part) => part.text ?? "").join("\n").trim();
-      const sources = cleanSources((candidate?.groundingMetadata?.groundingChunks ?? []).filter((chunk) => chunk.web?.uri).map((chunk) => ({ title: chunk.web!.title ?? new URL(chunk.web!.uri!).hostname, url: chunk.web!.uri! })));
+      const sources = cleanSources((candidate?.groundingMetadata?.groundingChunks ?? []).filter((chunk) => chunk.web?.uri).map((chunk) => ({ title: chunk.web!.title ?? hostOf(chunk.web!.uri!), url: chunk.web!.uri! })));
       const result = ResultSchema.safeParse({ summary, sources });
       if (!result.success || !sources.length) throw new AiError("api", "Gemini returned no usable web sources. Try a more specific topic.");
       return jsonOk(result.data, ai.source);
@@ -83,7 +92,7 @@ export async function POST(request: Request) {
     const data = await response.json() as { content?: Array<{ type?: string; text?: string; citations?: Array<{ url?: string; title?: string }> }> };
     const blocks = data.content ?? [];
     const summary = blocks.filter((block) => block.type === "text").map((block) => block.text ?? "").join("\n").trim();
-    const sources = cleanSources(blocks.flatMap((block) => (block.citations ?? []).filter((citation) => citation.url).map((citation) => ({ title: citation.title ?? new URL(citation.url!).hostname, url: citation.url! }))));
+    const sources = cleanSources(blocks.flatMap((block) => (block.citations ?? []).filter((citation) => citation.url).map((citation) => ({ title: citation.title ?? hostOf(citation.url!), url: citation.url! }))));
     const result = ResultSchema.safeParse({ summary, sources });
     if (!result.success || !sources.length) throw new AiError("api", "Anthropic returned no usable web citations. Try a more specific topic.");
     return jsonOk(result.data, ai.source);

@@ -137,8 +137,16 @@ function scheduleSave(deck: Deck): void {
     saveTimer = null;
     const d = pendingDeck;
     pendingDeck = null;
-    if (d) inflight = persistNow(d);
+    if (d) inflight = queueSave(d);
   }, AUTOSAVE_MS);
+}
+
+/** Start a save after the one in flight finishes, so two saves never race (stale base, double uploads). */
+function queueSave(deck: Deck): Promise<void> {
+  const previous = inflight ?? Promise.resolve();
+  const next = previous.catch(() => undefined).then(() => persistNow(deck));
+  inflight = next;
+  return next;
 }
 
 /** Save any pending autosave immediately. Resolves once the write is done. */
@@ -149,7 +157,7 @@ export async function flushSave(): Promise<void> {
   }
   const d = pendingDeck;
   pendingDeck = null;
-  if (d) inflight = persistNow(d);
+  if (d) inflight = queueSave(d);
   if (inflight) await inflight;
 }
 

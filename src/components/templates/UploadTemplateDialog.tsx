@@ -172,7 +172,10 @@ export function UploadTemplateDialog({ onClose, onCreated }: Props) {
                   {fileDeck ? `${fileName} · ${fileDeck.slides.length} ${fileDeck.slides.length === 1 ? "slide" : "slides"}` : "Choose a PowerPoint, PDF or deck JSON file"}
                 </span>
                 <span className="ps-btn ps-btn-xs">Browse</span>
-                <input type="file" className="sr-only" accept=".json,application/json,.pdf,application/pdf,.pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" onChange={(e) => void pickFile(e.target.files?.[0])} aria-label="Deck file" />
+                <input type="file" className="sr-only" accept=".json,application/json,.pdf,application/pdf,.pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" onChange={(e) => {
+                    void pickFile(e.target.files?.[0]);
+                    e.target.value = "";
+                  }} aria-label="Deck file" />
               </label>
               <p className="ps-caption mt-1">PowerPoint (.pptx), PDF or an exported deck (JSON). Each page or slide becomes an editable slide.</p>
             </div>

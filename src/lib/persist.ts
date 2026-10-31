@@ -53,7 +53,7 @@ const json = (method: string, body: unknown): RequestInit => ({ method, headers:
 
 /* ---------- Large embedded images ---------- */
 
-const externalized = new Map<string, string>();
+const externalized = new Map<string, Promise<string>>();
 const deckBases = new Map<string, Deck>();
 
 /** Every `data:image/...` string in the deck, with the object and key that hold it. */
@@ -86,11 +86,14 @@ export async function fitForSave(deck: Deck): Promise<Deck> {
   let size = JSON.stringify(copy).length;
   for (const f of found) {
     if (size <= SAVE_BODY_SOFT_LIMIT) break;
-    let url = externalized.get(f.value);
-    if (!url) {
-      url = await uploadDataUrl(f.value, "Slide image");
-      externalized.set(f.value, url);
+    let pending = externalized.get(f.value);
+    if (!pending) {
+      pending = uploadDataUrl(f.value, "Slide image");
+      externalized.set(f.value, pending);
+      // A failed upload is tried again by the next save.
+      pending.catch(() => externalized.delete(f.value));
     }
+    const url = await pending;
     f.holder[f.key] = url;
     size -= f.value.length - url.length;
   }

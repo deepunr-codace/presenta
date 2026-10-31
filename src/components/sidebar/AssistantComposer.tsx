@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { ArrowUp, CircleNotch } from "@phosphor-icons/react";
 import { scopePlaceholder, type Scope } from "@/lib/assistant/scope";
 
@@ -19,11 +19,13 @@ export function AssistantComposer({
   onSend,
 }: Props) {
   const [draft, setDraft] = useState("");
+  const box = useRef<HTMLTextAreaElement>(null);
 
   const submit = () => {
     const text = draft.trim();
     if (!text || busy || disabled) return;
     setDraft("");
+    if (box.current) box.current.style.height = "";
     onSend(text);
   };
 
@@ -39,6 +41,7 @@ export function AssistantComposer({
     <div className="ps-composer">
       <div className="ps-chat-input">
         <textarea
+          ref={box}
           value={draft}
           rows={1}
           placeholder={scopePlaceholder(scope)}

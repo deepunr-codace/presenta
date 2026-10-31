@@ -374,7 +374,7 @@ type Ctx = {
   styles: MasterStyles;
   layoutPh: Placeholder[];
   masterPh: Placeholder[];
-  images: { bytes: number; skipped: number };
+  images: { bytes: number; skipped: number; cache: Map<string, string | null> };
   elements: DeckElement[];
 };
 
@@ -392,18 +392,21 @@ async function pictureElement(ctx: Ctx, part: Part, blipFill: Element, box: Box,
   }
   const rect = child(blipFill, "srcRect");
   const crop = rect ? { l: num(rect, "l") / 100000, t: num(rect, "t") / 100000, r: num(rect, "r") / 100000, b: num(rect, "b") / 100000 } : null;
-  const bytes = await entry.async("uint8array");
-  const src = await pictureSrc(bytes, mime, crop && (crop.l || crop.t || crop.r || crop.b) ? crop : null);
+  const useCrop = crop && (crop.l || crop.t || crop.r || crop.b) ? crop : null;
+  // The same picture (a master's logo or background) appears on every slide: decode and count it once.
+  const key = `${target}|${useCrop ? [useCrop.l, useCrop.t, useCrop.r, useCrop.b].join(",") : ""}`;
+  let src = ctx.images.cache.get(key);
+  if (src === undefined) {
+    const encoded = await pictureSrc(await entry.async("uint8array"), mime, useCrop);
+    const size = encoded ? Math.floor(encoded.length * 0.75) : 0;
+    src = encoded && ctx.images.bytes + size <= MAX_IMAGE_BYTES ? encoded : null;
+    if (src) ctx.images.bytes += size;
+    ctx.images.cache.set(key, src);
+  }
   if (!src) {
     ctx.images.skipped += 1;
     return null;
   }
-  const size = Math.floor(src.length * 0.75);
-  if (ctx.images.bytes + size > MAX_IMAGE_BYTES) {
-    ctx.images.skipped += 1;
-    return null;
-  }
-  ctx.images.bytes += size;
   return { ...base(box, ctx.elements.length), type: "image", src, alt: "Imported picture", fit: "cover", radius, position: "50% 50%", overlay: 0 } as DeckElement;
 }
 
@@ -722,7 +725,7 @@ export async function importPptx(file: File, report?: (pct: number, label: strin
     return cache.get(path)!;
   };
 
-  const images = { bytes: 0, skipped: 0 };
+  const images = { bytes: 0, skipped: 0, cache: new Map<string, string | null>() };
   const slides: Slide[] = [];
   for (const [index, path] of slidePaths.entries()) {
     report?.(5 + Math.round((index / slidePaths.length) * 90), `Reading slide ${index + 1} of ${slidePaths.length}…`);

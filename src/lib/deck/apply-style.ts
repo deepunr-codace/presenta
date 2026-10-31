@@ -114,7 +114,10 @@ function rebuild(gen: Slide, tplSlide: Slide): Slide {
       texts.push(fill(slot, html));
     }
   });
-  if (!slots.length && words.length && heading) {
+  if (!heading && !slots.length) {
+    // The template slide has no text at all: keep the generated text boxes where they were.
+    texts.push(...gen.elements.filter((e): e is TextEl => e.type === "text").map((e) => structuredClone(e)));
+  } else if (!slots.length && words.length && heading) {
     // A template slide with a heading only: the rest goes in a box under it, in the heading's style but smaller.
     const h = texts[0] ?? fill(heading, "");
     texts.push({ ...structuredClone(h), id: newId("el"), html: words.map((w) => w.html).join(""), y: h.y + h.h + 24, h: 360, style: { ...h.style, fontSize: Math.max(22, Math.round((h.style?.fontSize ?? 64) * 0.4)), fontWeight: 400 } });

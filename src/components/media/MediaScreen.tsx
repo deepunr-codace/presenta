@@ -107,6 +107,10 @@ export function MediaScreen() {
   }, []);
 
   const upload = async (files: File[]) => {
+    if (busy) {
+      setErrors(["Wait for the current upload to finish, then add more files."]);
+      return;
+    }
     const accepted = files.filter(
       (f) =>
         f.type.startsWith("image/") ||
@@ -181,7 +185,8 @@ export function MediaScreen() {
     }
     setDeleting(false);
     setConfirm(null);
-    setSelected(new Set());
+    const gone = new Set(targets.map((m) => m.id));
+    setSelected((prev) => new Set([...prev].filter((id) => !gone.has(id))));
     setErrors(problems);
     await refresh();
     if (done) toast(done === 1 ? "Deleted." : `${done} files deleted.`);
