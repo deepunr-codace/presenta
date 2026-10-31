@@ -14,7 +14,7 @@ import { importPdfDeck } from "@/lib/import/pdf-deck";
  */
 
 /** Imported files above this size are refused before they are read. */
-export const IMPORT_MAX_BYTES = 20 * 1024 * 1024;
+export const IMPORT_MAX_BYTES = 50 * 1024 * 1024;
 
 /** A saved deck is sent in one request, and the host caps a request body at about 4.5 MB. */
 const SAVE_BODY_SOFT_LIMIT = 3.5 * 1024 * 1024;
