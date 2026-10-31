@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import type * as PdfJs from "pdfjs-dist";
 
 const MAX_SOURCE_CHARS = 40_000;
 const MAX_ARCHIVE_BYTES = 25 * 1024 * 1024;
@@ -10,9 +11,9 @@ export const PDF_OCR_LANGUAGES = [
 ] as const;
 export type PdfOcrLanguage = (typeof PDF_OCR_LANGUAGES)[number]["code"];
 
-let pdfJs: Promise<typeof import("pdfjs-dist")> | null = null;
+let pdfJs: Promise<typeof PdfJs> | null = null;
 
-export function getPdfJs(): Promise<typeof import("pdfjs-dist")> {
+export function getPdfJs(): Promise<typeof PdfJs> {
   pdfJs ??= import("pdfjs-dist").then((lib) => {
     lib.GlobalWorkerOptions.workerSrc = new URL("../../../node_modules/pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
     return lib;
