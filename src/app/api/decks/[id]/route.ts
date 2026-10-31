@@ -109,8 +109,19 @@ export async function PUT(req: Request, { params }: Params) {
     const oldSize = await deckSize(access.ownerId, id);
     await createAutoDeckVersion(access.ownerId, id, session.user.id);
     let savedDeck: typeof deck | null = null;
+    // Fast path: nobody saved since this editor's base, so there is nothing to merge and the stored deck need not be
+    // downloaded. Only its stamp is read; the write is still conditional on that stamp.
+    if (base) {
+      const stamp = await getDeckStamp(access.ownerId, id);
+      if (stamp && stamp === base.updatedAt) {
+        const candidate = { ...deck, updatedAt: new Date(Math.max(Date.now(), Date.parse(stamp) + 1)).toISOString() };
+        const json = JSON.stringify(candidate);
+        await assertRoom(access.ownerId, Buffer.byteLength(json), oldSize);
+        if (await compareAndSwapDeckContent(access.ownerId, candidate, stamp)) savedDeck = candidate;
+      }
+    }
     // Re-read and retry if another save lands between our read and conditional write.
-    for (let attempt = 0; attempt < 4; attempt += 1) {
+    for (let attempt = 0; attempt < 4 && !savedDeck; attempt += 1) {
       const remoteParsed = DeckSchema.safeParse(await getDeckData(access.ownerId, id));
       if (!remoteParsed.success) return NextResponse.json({ error: "The saved deck could not be merged." }, { status: 409 });
       const remote = remoteParsed.data;
