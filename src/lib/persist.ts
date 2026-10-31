@@ -153,6 +153,21 @@ export async function loadDeckWithAccess(id: string, rememberBase = true): Promi
   return { deck: parsed.data, role: body.role ?? "owner", editor: body.editor ?? null };
 }
 
+/**
+ * Whether the saved deck still has this `updatedAt` stamp. Returns the deck only when it changed, so an idle editor
+ * polling for other people's edits transfers a few bytes instead of the whole deck.
+ */
+export async function loadDeckIfChanged(id: string, since: string): Promise<DeckAccess | { unchanged: true; role: DeckAccess["role"] } | null> {
+  const res = await fetch(`/api/decks/${encodeURIComponent(id)}?since=${encodeURIComponent(since)}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw await readError(res, "The deck could not be loaded.");
+  const body = (await res.json()) as { unchanged?: boolean; deck?: unknown; role?: DeckAccess["role"]; editor?: string | null };
+  if (body.unchanged) return { unchanged: true, role: body.role ?? "owner" };
+  const parsed = DeckSchema.safeParse(body.deck);
+  if (!parsed.success) return null;
+  return { deck: parsed.data, role: body.role ?? "owner", editor: body.editor ?? null };
+}
+
 export async function loadDeckById(id: string): Promise<Deck | null> {
   return (await loadDeckWithAccess(id))?.deck ?? null;
 }

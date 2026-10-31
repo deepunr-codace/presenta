@@ -4,7 +4,7 @@ import type { Deck } from "@/lib/deck/schema";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { CollabError, currentEditor, resolveAccess } from "@/lib/collab-db";
-import { compareAndSwapDeckContent, createAutoDeckVersion, deleteDeckRow, getDeckData, setDeckTrashed, upsertDeck } from "@/lib/decks-db";
+import { compareAndSwapDeckContent, createAutoDeckVersion, deleteDeckRow, getDeckData, getDeckStamp, setDeckTrashed, upsertDeck } from "@/lib/decks-db";
 import { DeckSchema } from "@/lib/deck/schema";
 import { mergeDecks } from "@/lib/deck/merge";
 import { assertRoom, deckSize, StorageFullError } from "@/lib/storage";
@@ -20,7 +20,7 @@ type Params = { params: Promise<{ id: string }> };
 
 /* ---------- GET ---------- */
 
-export async function GET(_req: Request, { params }: Params) {
+export async function GET(req: Request, { params }: Params) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
@@ -29,6 +29,14 @@ export async function GET(_req: Request, { params }: Params) {
   try {
     const access = await resolveAccess(session.user.id, id);
     if (!access) return NextResponse.json({ error: "Deck not found." }, { status: 404 });
+
+    // ?since=<updatedAt>: an editor's background check. When nothing changed, answer without the deck.
+    const since = new URL(req.url).searchParams.get("since");
+    if (since) {
+      const stamp = await getDeckStamp(access.ownerId, id);
+      if (stamp === null) return NextResponse.json({ error: "Deck not found." }, { status: 404 });
+      if (stamp === since) return NextResponse.json({ unchanged: true, role: access.role });
+    }
 
     const data = await getDeckData(access.ownerId, id);
     if (!data) return NextResponse.json({ error: "Deck not found." }, { status: 404 });

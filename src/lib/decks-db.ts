@@ -104,6 +104,13 @@ export async function listAllDeckIds(userId: string): Promise<string[]> {
   return rows.map((r) => r.id);
 }
 
+/** Only the deck's `updatedAt` stamp, so a poll can tell whether anything changed without downloading the deck. */
+export async function getDeckStamp(userId: string, id: string): Promise<string | null> {
+  await ensureDeckTables();
+  const rows = (await sql()`SELECT data->>'updatedAt' AS stamp FROM decks WHERE user_id = ${userId} AND id = ${id} LIMIT 1`) as { stamp: string | null }[];
+  return rows.length ? (rows[0].stamp ?? "") : null;
+}
+
 /** The full deck (trashed decks included, so the trash can still be previewed), or null. */
 export async function getDeckData(userId: string, id: string): Promise<unknown | null> {
   await ensureDeckTables();
@@ -169,11 +176,15 @@ export type DeckVersionSummary = { id: string; createdBy: string; name: string; 
 /** Store a named snapshot of the current deck. Keeps the newest 100 versions for this deck. */
 export async function createDeckVersion(ownerId: string, deckId: string, userId: string, label: string): Promise<string> {
   await ensureDeckTables();
-  const rows = (await sql()`SELECT data FROM decks WHERE user_id = ${ownerId} AND id = ${deckId} AND trashed_at IS NULL`) as { data: unknown }[];
-  if (!rows[0]) throw new Error("Deck not found.");
   const id = newId("version");
   const cleanLabel = label.trim().replace(/\s+/g, " ").slice(0, 80) || "Checkpoint";
-  await sql()`INSERT INTO deck_versions (id, owner_id, deck_id, created_by, label, snapshot) VALUES (${id}, ${ownerId}, ${deckId}, ${userId}, ${cleanLabel}, ${JSON.stringify(rows[0].data)}::jsonb)`;
+  // Copied inside the database: the deck is not downloaded and sent back.
+  const rows = (await sql()`
+    INSERT INTO deck_versions (id, owner_id, deck_id, created_by, label, snapshot)
+    SELECT ${id}, ${ownerId}, ${deckId}, ${userId}, ${cleanLabel}, data FROM decks WHERE user_id = ${ownerId} AND id = ${deckId} AND trashed_at IS NULL
+    RETURNING id
+  `) as { id: string }[];
+  if (!rows[0]) throw new Error("Deck not found.");
   await sql()`DELETE FROM deck_versions WHERE owner_id = ${ownerId} AND deck_id = ${deckId} AND id IN (SELECT id FROM deck_versions WHERE owner_id = ${ownerId} AND deck_id = ${deckId} ORDER BY created_at DESC, id DESC OFFSET 100)`;
   return id;
 }

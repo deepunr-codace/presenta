@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { loadDeckWithAccess, rememberDeckBase } from "@/lib/persist";
+import { loadDeckIfChanged, loadDeckWithAccess, rememberDeckBase } from "@/lib/persist";
 import { flushSave, useDeckStore } from "@/store/deck-store";
 import { Stage } from "@/components/canvas/Stage";
 import { Sidebar } from "@/components/sidebar/Sidebar";
@@ -76,14 +76,16 @@ export function EditorScreen({ id }: Props) {
     let loading = false;
     const sync = async () => {
       const before = useDeckStore.getState();
-      if (loading || before.dirty || before.editingElementId || before.deck?.id !== id) return;
+      // A hidden tab does not poll; it catches up when it is shown again.
+      if (loading || document.hidden || before.dirty || before.editingElementId || before.deck?.id !== id) return;
       loading = true;
       const version = before.deck.updatedAt;
       try {
-        const latest = await loadDeckWithAccess(id, false);
+        const latest = version ? await loadDeckIfChanged(id, version) : await loadDeckWithAccess(id, false);
         if (!alive) return;
         if (!latest) { setStatus("missing"); return; }
         if (latest.role === "viewer") { setViewer(true); router.replace(reviewHref); return; }
+        if ("unchanged" in latest) return;
         const after = useDeckStore.getState();
         if (after.dirty || after.editingElementId || after.deck?.id !== id || after.deck.updatedAt !== version) return;
         if (latest.deck.updatedAt !== version) {
@@ -95,8 +97,10 @@ export function EditorScreen({ id }: Props) {
         // A temporary network failure leaves the local deck intact; the next poll retries.
       } finally { loading = false; }
     };
-    const timer = window.setInterval(() => void sync(), 2500);
-    return () => { alive = false; window.clearInterval(timer); };
+    const timer = window.setInterval(() => void sync(), 4000);
+    const onShow = () => { if (!document.hidden) void sync(); };
+    document.addEventListener("visibilitychange", onShow);
+    return () => { alive = false; window.clearInterval(timer); document.removeEventListener("visibilitychange", onShow); };
   }, [canEdit, id, loadDeck, router, reviewHref]);
 
   // The server can also tell us we may only view (for example access was changed while the page was open).
