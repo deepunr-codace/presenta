@@ -7,6 +7,8 @@ import { AppShell } from "@/components/shell/AppShell";
 type Props = {
   id: string;
   children: ReactNode;
+  /** The breadcrumb line; the editor leaves it out so its own tool bar is the only bar. */
+  crumbs?: boolean;
 };
 
 const CRUMBS = [
@@ -19,7 +21,7 @@ const CRUMBS = [
  * (Export, Edit, Present) live in the editor tool row and the review title row per DESIGN.md §6, so they
  * are not passed to the shell as well.
  */
-export function DeckShell({ id, children }: Props) {
+export function DeckShell({ id, children, crumbs = true }: Props) {
   const title = useDeckStore((s) => (s.deck?.id === id ? s.deck.title : null));
   return (
     <AppShell
@@ -27,7 +29,7 @@ export function DeckShell({ id, children }: Props) {
       sidebar="full"
       sidebarStartCollapsed
       className="ps-deck-shell"
-      breadcrumbs={[...CRUMBS, { label: title || "Deck" }]}
+      breadcrumbs={crumbs ? [...CRUMBS, { label: title || "Deck" }] : undefined}
     >
       {children}
     </AppShell>

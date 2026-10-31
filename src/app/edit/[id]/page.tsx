@@ -15,7 +15,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
   const id = await resolveDeckRouteId(idOrSlug);
   // EditorScreen reads `?slide=` with useSearchParams, which needs a Suspense boundary.
   return (
-    <DeckShell id={id}>
+    <DeckShell id={id} crumbs={false}>
       <Suspense fallback={null}>
         <EditorScreen id={id} />
       </Suspense>

@@ -176,3 +176,27 @@
 @media (prefers-reduced-motion: reduce) {
   .ps-editor * { transition-duration: 0ms !important; }
 }
+
+/* ---- Slim editor bar: one 44 px row, compact pill buttons, hairline groups ---- */
+@media (min-width: 768px) {
+  .ps-toolbar {
+    height: 44px;
+    padding: 0 10px 0 14px;
+    border-bottom-color: color-mix(in srgb, var(--ps-line) 70%, transparent);
+    background: color-mix(in srgb, var(--ps-canvas) 88%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+  .ps-toolbar-main { gap: 4px; }
+  .ps-toolbar-right { gap: 6px; padding-left: 12px; }
+  .ps-toolbar-actions { gap: 2px; }
+  .ps-toolbar .ps-btn { height: 30px; padding: 0 11px; border-radius: 9999px; font-size: 13px; gap: 6px; }
+  .ps-toolbar .ps-btn.ps-btn-ghost { color: var(--ps-smoke); }
+  .ps-toolbar .ps-btn.ps-btn-ghost:hover { color: var(--ps-ink); background: var(--ps-plate); }
+  .ps-toolbar .ps-btn.ps-btn-primary { height: 30px; padding: 0 14px; }
+  .ps-toolbar .ps-btn svg { width: 14px; height: 14px; }
+  .ps-toolbar .ps-iconbtn { width: 30px; height: 30px; border-radius: 9999px; }
+  .ps-toolbar-title { height: 30px; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
+  .ps-toolbar-sep { height: 14px; margin: 0 6px; }
+  .ps-toolbar .ps-save { height: 24px; font-size: 11.5px; }
+}
