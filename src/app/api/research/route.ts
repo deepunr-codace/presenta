@@ -27,8 +27,8 @@ export async function POST(request: Request) {
   if (!body.ok) return body.response;
   try {
     const ai = await resolveAiForRequest(request, { cost: 0 });
-    if (ai.source === "presenta") return jsonError(400, "invalid", "Web research is not available with the pooled Presenta Studio model yet. Add an OpenAI or Anthropic key in Settings to use Agent research.");
-    if (ai.source === "mock") return jsonError(400, "auth", "Add an OpenAI or Anthropic API key in Settings to use Agent web research.");
+    if (ai.source === "presenta") return jsonError(400, "invalid", "Web research is not available with the pooled Presenta Studio model yet. Add an OpenAI, Anthropic or Gemini key in Settings to use Agent research.");
+    if (ai.source === "mock") return jsonError(400, "auth", "Add an OpenAI, Anthropic or Gemini API key in Settings to use Agent web research.");
     const signal = AbortSignal.any([request.signal, AbortSignal.timeout(90_000)]);
     if (ai.source === "openai") {
       const apiKey = ai.auth?.apiKey ?? process.env.OPENAI_API_KEY?.trim();
@@ -45,6 +45,30 @@ export async function POST(request: Request) {
       const sources = cleanSources(blocks.flatMap((block) => (block.annotations ?? []).filter((annotation) => annotation.type === "url_citation" && annotation.url).map((annotation) => ({ title: annotation.title ?? new URL(annotation.url!).hostname, url: annotation.url! }))));
       const result = ResultSchema.safeParse({ summary, sources });
       if (!result.success || !sources.length) throw new AiError("api", "OpenAI returned no usable web citations. Try a more specific topic.");
+      return jsonOk(result.data, ai.source);
+    }
+
+    if (ai.source === "gemini") {
+      // Gemini with Google Search grounding: the sources come back as grounding chunks beside the text.
+      const apiKey = ai.auth?.apiKey;
+      if (!apiKey) throw new AiError("auth", "No Gemini API key is available. Add your key in Settings.");
+      const model = process.env.GEMINI_MODEL?.trim() || "gemini-3.5-flash";
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+        method: "POST", signal,
+        headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: "Research the user's presentation request using current web sources. Write a concise factual research brief with key findings and caveats. Use only claims supported by the search results." }] },
+          contents: [{ role: "user", parts: [{ text: `Research request: ${body.data.query}` }] }],
+          tools: [{ google_search: {} }],
+        }),
+      });
+      if (!response.ok) throw new AiError(response.status === 401 || response.status === 403 ? "auth" : response.status === 429 ? "rate_limit" : "api", response.status === 429 ? "Gemini has no quota left for web research right now. Try again later." : `Gemini web research failed (HTTP ${response.status}).`, response.status);
+      const data = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; groundingMetadata?: { groundingChunks?: Array<{ web?: { uri?: string; title?: string } }> } }> };
+      const candidate = data.candidates?.[0];
+      const summary = (candidate?.content?.parts ?? []).map((part) => part.text ?? "").join("\n").trim();
+      const sources = cleanSources((candidate?.groundingMetadata?.groundingChunks ?? []).filter((chunk) => chunk.web?.uri).map((chunk) => ({ title: chunk.web!.title ?? new URL(chunk.web!.uri!).hostname, url: chunk.web!.uri! })));
+      const result = ResultSchema.safeParse({ summary, sources });
+      if (!result.success || !sources.length) throw new AiError("api", "Gemini returned no usable web sources. Try a more specific topic.");
       return jsonOk(result.data, ai.source);
     }
 
