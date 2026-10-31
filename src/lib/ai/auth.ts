@@ -5,7 +5,7 @@ import type { AiSource } from "@/lib/api-client";
  * or logged); the server's own env key is used only where it is allowed (see `serverKeyAllowed`).
  */
 
-export type AiProvider = "openai" | "anthropic";
+export type AiProvider = "openai" | "anthropic" | "gemini";
 /**
  * "openrouter" is internal: it marks a key taken from the server's pool (Presenta Studio), never one a visitor
  * sends. `model` is the pooled model chosen by the admin.
@@ -27,7 +27,7 @@ export type AiResolution = {
 const KEY_PATTERN = /^[A-Za-z0-9._-]{20,400}$/;
 
 export function isAiProvider(value: unknown): value is AiProvider {
-  return value === "openai" || value === "anthropic";
+  return value === "openai" || value === "anthropic" || value === "gemini";
 }
 
 export function isPlausibleKey(key: string): boolean {
@@ -68,7 +68,7 @@ export function envSource(): AiSource {
 /** Resolve a request: the visitor's key first, then the server key where allowed, otherwise the offline mock. */
 export function resolveAi(request: Request): AiResolution {
   const auth = readAiAuth(request.headers);
-  if (auth) return { source: auth.provider === "openai" ? "openai" : "claude", auth };
+  if (auth) return { source: auth.provider === "openai" ? "openai" : auth.provider === "gemini" ? "gemini" : "claude", auth };
   // (The pooled "Presenta Studio" source needs the session and database, so it is added by `resolveAiForRequest`.)
   return { source: serverKeyAllowed() ? envSource() : "mock" };
 }

@@ -68,7 +68,7 @@ export function MessageBubble({ message: m, canUndo, onUndo, onShow, onRetry, di
             Show
           </button>
         ) : null}
-        <span className="ml-auto">{m.source === "claude" ? "Claude" : m.source === "openai" ? "OpenAI" : m.source === "presenta" ? "Presenta Studio" : m.source === "mock" ? "Offline" : ""}</span>
+        <span className="ml-auto">{m.source === "claude" ? "Claude" : m.source === "openai" ? "OpenAI" : m.source === "gemini" ? "Gemini" : m.source === "presenta" ? "Presenta Studio" : m.source === "mock" ? "Offline" : ""}</span>
       </div>
     </div>
   );

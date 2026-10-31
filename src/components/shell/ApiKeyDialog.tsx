@@ -13,6 +13,7 @@ type Tab = "presenta" | AiProvider;
 const PROVIDERS: { id: AiProvider; label: string; hint: string; docs: string }[] = [
   { id: "openai", label: "OpenAI", hint: "sk-…", docs: "https://platform.openai.com/api-keys" },
   { id: "anthropic", label: "Anthropic", hint: "sk-ant-…", docs: "https://console.anthropic.com/settings/keys" },
+  { id: "gemini", label: "Gemini", hint: "AIza… or AQ.…", docs: "https://aistudio.google.com/apikey" },
 ];
 
 /**

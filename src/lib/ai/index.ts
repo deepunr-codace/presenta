@@ -5,7 +5,7 @@ import type { SmartPage, SmartPageRequest } from "@/lib/import/smart-schema";
 import { AI_MODEL as CLAUDE_MODEL, claudeGenerate, claudeOutline, claudeRevise, claudeSmartPage, claudeSuggest, type AiCallOptions } from "./claude";
 import { AiError } from "./errors";
 import { mockGenerate, mockOutline, mockRevise, mockSuggest } from "./mock";
-import { openAiGenerate, openAiModel, openAiOutline, openAiRevise, openAiSmartPage, openAiSuggest } from "./openai";
+import { GEMINI_MODEL, openAiGenerate, openAiModel, openAiOutline, openAiRevise, openAiSmartPage, openAiSuggest } from "./openai";
 import { withPoolKey } from "./presenta";
 
 export type { AiCallOptions };
@@ -32,6 +32,7 @@ export function hasAiKey(): boolean {
 /** Model name for a source (Claude's when running on the mock). Presenta Studio never reveals its model. */
 export function activeModel(source: AiSource = aiSource()): string {
   if (source === "presenta") return "Presenta Studio";
+  if (source === "gemini") return GEMINI_MODEL;
   return source === "openai" ? openAiModel() : CLAUDE_MODEL;
 }
 
@@ -43,7 +44,8 @@ function pick<T>(opts: AiRunOptions, run: { claude: (o: AiCallOptions) => Promis
   // Presenta Studio: the same chat-completions path as OpenAI, with a key from the pool.
   if (ai.source === "presenta" && ai.presenta) return withPoolKey(ai.presenta, (auth) => run.openai({ ...call, auth }));
   if (ai.source === "claude") return run.claude(call);
-  if (ai.source === "openai") return run.openai(call);
+  // Gemini speaks the same Chat Completions API through Google's OpenAI-compatible endpoint.
+  if (ai.source === "openai" || ai.source === "gemini") return run.openai(call);
   return Promise.resolve(run.mock());
 }
 

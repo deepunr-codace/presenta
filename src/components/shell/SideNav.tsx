@@ -305,7 +305,7 @@ function WorkspaceCard({ onClose, mod }: { onClose: () => void; mod: string }) {
 function AiStatus() {
   const health = useAiHealth();
   const openKeyDialog = useApiKeyDialog((s) => s.setOpen);
-  const provider = health ? (health.provider === "presenta" ? "Presenta Studio" : health.provider === "openai" ? "OpenAI" : health.provider === "claude" ? "Claude" : "Offline demo") : "Checking…";
+  const provider = health ? (health.provider === "presenta" ? "Presenta Studio" : health.provider === "openai" ? "OpenAI" : health.provider === "gemini" ? "Gemini" : health.provider === "claude" ? "Claude" : "Offline demo") : "Checking…";
   const live = Boolean(health?.hasKey);
   // The free daily allowance as a slim ring: full when nothing is used, warming to amber and red as it runs out.
   const quota = health?.quota && !health.byok ? health.quota : null;

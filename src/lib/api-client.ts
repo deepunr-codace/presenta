@@ -18,7 +18,7 @@ import type { SmartPage, SmartPageRequest } from "@/lib/import/smart-schema";
  * same envelope, so callers narrow on `ok` and never see a thrown error.
  */
 
-export type AiSource = "claude" | "openai" | "presenta" | "mock";
+export type AiSource = "claude" | "openai" | "gemini" | "presenta" | "mock";
 
 export type ApiErrorCode = AiErrorCode | "too_large" | "cancelled";
 
@@ -38,8 +38,8 @@ export type AiHealth = {
   quota?: { used: number; limit: number };
 };
 
-/** Hard deadline for one API call from the browser; the server gives the AI 55 s per attempt. */
-const REQUEST_TIMEOUT_MS = 90_000;
+/** Hard deadline for one API call from the browser; the server gives the AI 55 s per attempt (Gemini one 110 s attempt). */
+const REQUEST_TIMEOUT_MS = 125_000;
 
 /** Request bodies may omit fields the schema defaults (slideCount, tone, ...); the route applies the defaults. */
 type Body<T> = Partial<T> & Pick<T, Extract<keyof T, "mode" | "input" | "deck" | "instruction" | "stage" | "question">>;
@@ -57,7 +57,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function isApiResult<T>(v: unknown): v is ApiResult<T> {
   if (!isRecord(v) || typeof v.ok !== "boolean") return false;
-  if (v.ok) return "data" in v && (v.source === "claude" || v.source === "openai" || v.source === "presenta" || v.source === "mock");
+  if (v.ok) return "data" in v && (v.source === "claude" || v.source === "openai" || v.source === "gemini" || v.source === "presenta" || v.source === "mock");
   return typeof v.error === "string" && typeof v.code === "string";
 }
 
@@ -140,6 +140,7 @@ export function getHealth(signal?: AbortSignal): Promise<ApiResult<AiHealth>> {
 
 export function sourceLabel(source: AiSource | null | undefined): string {
   if (source === "claude") return "Claude";
+  if (source === "gemini") return "Gemini";
   if (source === "openai") return "OpenAI";
   if (source === "presenta") return "Presenta Studio";
   if (source === "mock") return "Offline mock";
