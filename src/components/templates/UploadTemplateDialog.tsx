@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import type { Deck } from "@/lib/deck/schema";
 import { fetchTeams, type TeamSummary } from "@/lib/collab";
 import { runTask } from "@/lib/tasks";
-import { importDeckFile, listDecks, type DeckSummary } from "@/lib/persist";
+import { fitForSave, importDeckFile, listDecks, type DeckSummary } from "@/lib/persist";
 import {
   TEMPLATE_CATEGORIES,
   TEMPLATE_SCOPE_LABEL,
@@ -102,15 +102,14 @@ export function UploadTemplateDialog({ onClose, onCreated }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const input: NewTemplateInput = {
-        title,
-        description,
-        category,
-        scope,
-        ...(scope === "team" ? { teamIds } : {}),
-        ...(source === "deck" ? { deckId } : { deck: fileDeck }),
-      };
+      const base: NewTemplateInput = { title, description, category, scope, ...(scope === "team" ? { teamIds } : {}) };
       onCreated(await runTask("Publishing template", async (report) => {
+        let input: NewTemplateInput = { ...base, deckId };
+        if (source === "file" && fileDeck) {
+          // Big pictures (PDF imports) go to the media library first, so the request stays under the upload size limit.
+          report(null, "Uploading the images…");
+          input = { ...base, deck: await fitForSave(fileDeck) };
+        }
         report(null, "Uploading your template…");
         return createTemplate(input);
       }, "Template published"));

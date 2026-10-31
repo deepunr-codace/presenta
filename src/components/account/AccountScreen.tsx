@@ -120,10 +120,15 @@ export function AccountScreen() {
                 <Block id="admin" className="xl:col-span-2">
                   <section className="ps-glass" data-paper>
                     <h2 className="ps-cardtitle">Admin</h2>
-                    <p className="ps-body mt-1">Manage the AI keys, model and daily allowance behind Presenta Studio.</p>
-                    <Link href="/admin/ai" className="ps-btn ps-btn-xs mt-3 inline-flex">
-                      Open Presenta Studio settings
-                    </Link>
+                    <p className="ps-body mt-1">See every user and their usage, and manage the AI keys, model and daily allowance behind Presenta Studio.</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Link href="/admin/users" className="ps-btn ps-btn-xs inline-flex">
+                        Users and usage
+                      </Link>
+                      <Link href="/admin/ai" className="ps-btn ps-btn-xs inline-flex">
+                        Presenta Studio settings
+                      </Link>
+                    </div>
                   </section>
                 </Block>
               ) : null}

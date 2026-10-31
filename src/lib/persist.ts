@@ -76,9 +76,10 @@ function findDataUrls(node: unknown, out: { holder: Record<string, unknown>; key
 
 /**
  * Keep a save under the request-size cap: when the deck is too big because of embedded base64 images, upload the
- * largest ones to the media library and save their URLs instead. The deck in the editor is not changed.
+ * largest ones to the media library and save their URLs instead. The deck in the editor is not changed. Also used before
+ * publishing an uploaded deck as a template, which has the same cap.
  */
-async function fitForSave(deck: Deck): Promise<Deck> {
+export async function fitForSave(deck: Deck): Promise<Deck> {
   if (JSON.stringify(deck).length <= SAVE_BODY_SOFT_LIMIT) return deck;
   const copy = structuredClone(deck);
   const found = findDataUrls(copy).filter((f) => f.value.length >= MIN_EXTERNALIZE_CHARS).sort((a, b) => b.value.length - a.value.length);

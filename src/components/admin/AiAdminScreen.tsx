@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { AdminNav } from "@/components/admin/AdminNav";
 import { AppShell } from "@/components/shell/AppShell";
 import { useToast } from "@/components/shell/Toast";
 import { ErrorNotice } from "@/components/ui-kit/ErrorNotice";
@@ -119,6 +120,7 @@ export function AiAdminScreen() {
             Free AI for your customers, served from a pool of keys. They only ever see &ldquo;Presenta Studio&rdquo;. If a key hits its limit, the next one takes over on the same request.
           </p>
         </header>
+        <AdminNav current="/admin/ai" />
 
         {error ? <ErrorNotice compact className="mb-4" message={error} /> : null}
         {!state && !error ? <div className="ps-glass h-40 animate-pulse" aria-hidden /> : null}
