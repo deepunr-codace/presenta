@@ -20,6 +20,8 @@ export type MediaRow = {
   duration: number | null;
   key: string;
   thumb_key: string;
+  /** "library" for files the person added; "deck" for pictures moved out of a deck when it was saved. */
+  source?: "library" | "deck";
   created_at: string;
 };
 
@@ -48,6 +50,7 @@ export function ensureMediaTable(): Promise<void> {
         `,
       )
       .then(() => sql()`CREATE INDEX IF NOT EXISTS media_user_created ON media (user_id, created_at DESC)`)
+      .then(() => sql()`ALTER TABLE media ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'library'`)
       .then(() => undefined);
     ensured.catch(() => (ensured = null));
   }
@@ -56,14 +59,14 @@ export function ensureMediaTable(): Promise<void> {
 
 export async function listMediaRows(userId: string): Promise<MediaRow[]> {
   await ensureMediaTable();
-  return (await sql()`SELECT * FROM media WHERE user_id = ${userId} ORDER BY created_at DESC`) as MediaRow[];
+  return (await sql()`SELECT * FROM media WHERE user_id = ${userId} AND source = 'library' ORDER BY created_at DESC`) as MediaRow[];
 }
 
 export async function insertMediaRow(row: Omit<MediaRow, "created_at">): Promise<void> {
   await ensureMediaTable();
   await sql()`
-    INSERT INTO media (id, user_id, name, kind, mime, bytes, width, height, duration, key, thumb_key)
-    VALUES (${row.id}, ${row.user_id}, ${row.name}, ${row.kind}, ${row.mime}, ${row.bytes}, ${row.width}, ${row.height}, ${row.duration}, ${row.key}, ${row.thumb_key})
+    INSERT INTO media (id, user_id, name, kind, mime, bytes, width, height, duration, key, thumb_key, source)
+    VALUES (${row.id}, ${row.user_id}, ${row.name}, ${row.kind}, ${row.mime}, ${row.bytes}, ${row.width}, ${row.height}, ${row.duration}, ${row.key}, ${row.thumb_key}, ${row.source ?? "library"})
   `;
 }
 

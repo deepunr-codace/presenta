@@ -19,8 +19,9 @@ export const IMPORT_MAX_BYTES = 50 * 1024 * 1024;
 
 /** A saved deck is sent in one request, and the host caps a request body at about 4.5 MB. */
 const SAVE_BODY_SOFT_LIMIT = 3.5 * 1024 * 1024;
-/** Embedded images smaller than this are never moved out of the deck. */
-const MIN_EXTERNALIZE_CHARS = 100 * 1024;
+/** Embedded pictures at least this long are moved to R2 file storage on save; tiny icons stay in the deck. */
+const MIN_EXTERNALIZE_CHARS = 12 * 1024;
+const UPLOADS_AT_ONCE = 4;
 
 export type DeckSummary = {
   id: string;
@@ -74,29 +75,39 @@ function findDataUrls(node: unknown, out: { holder: Record<string, unknown>; key
   return out;
 }
 
+/** Upload one embedded picture once; saves that run meanwhile share the same upload. */
+function externalize(dataUrl: string): Promise<string> {
+  let pending = externalized.get(dataUrl);
+  if (!pending) {
+    pending = uploadDataUrl(dataUrl, "Slide image", { deck: true });
+    externalized.set(dataUrl, pending);
+    // A failed upload is tried again by the next save.
+    pending.catch(() => externalized.delete(dataUrl));
+  }
+  return pending;
+}
+
 /**
- * Keep a save under the request-size cap: when the deck is too big because of embedded base64 images, upload the
- * largest ones to the media library and save their URLs instead. The deck in the editor is not changed. Also used before
- * publishing an uploaded deck as a template, which has the same cap.
+ * Move the deck's embedded base64 pictures to R2 file storage and save their URLs instead, so the database keeps only
+ * short links. These are deck pictures and do not show in the media library. The deck in the editor is not changed.
+ * If an upload fails the picture stays embedded, unless the deck would then be over the request-size cap. Also used
+ * before publishing a deck as a template.
  */
 export async function fitForSave(deck: Deck): Promise<Deck> {
-  if (JSON.stringify(deck).length <= SAVE_BODY_SOFT_LIMIT) return deck;
   const copy = structuredClone(deck);
-  const found = findDataUrls(copy).filter((f) => f.value.length >= MIN_EXTERNALIZE_CHARS).sort((a, b) => b.value.length - a.value.length);
-  let size = JSON.stringify(copy).length;
-  for (const f of found) {
-    if (size <= SAVE_BODY_SOFT_LIMIT) break;
-    let pending = externalized.get(f.value);
-    if (!pending) {
-      pending = uploadDataUrl(f.value, "Slide image");
-      externalized.set(f.value, pending);
-      // A failed upload is tried again by the next save.
-      pending.catch(() => externalized.delete(f.value));
-    }
-    const url = await pending;
-    f.holder[f.key] = url;
-    size -= f.value.length - url.length;
+  const found = findDataUrls(copy).filter((f) => f.value.length >= MIN_EXTERNALIZE_CHARS);
+  if (!found.length) return deck;
+  // A few uploads at a time: an imported PDF can carry a hundred pictures.
+  const results: PromiseSettledResult<string>[] = [];
+  for (let i = 0; i < found.length; i += UPLOADS_AT_ONCE) {
+    results.push(...(await Promise.allSettled(found.slice(i, i + UPLOADS_AT_ONCE).map((f) => externalize(f.value)))));
   }
+  let failed: unknown = null;
+  results.forEach((r, i) => {
+    if (r.status === "fulfilled") found[i].holder[found[i].key] = r.value;
+    else failed ??= r.reason;
+  });
+  if (failed && JSON.stringify(copy).length > SAVE_BODY_SOFT_LIMIT) throw failed;
   return copy;
 }
 

@@ -140,18 +140,21 @@ async function put(url: string, blob: Blob, mime: string): Promise<void> {
   if (!res.ok) throw new Error("The upload to storage failed. Try again.");
 }
 
-/** Upload an embedded base64 image to the library and return its public URL. Browser only. */
-export async function uploadDataUrl(dataUrl: string, name: string): Promise<string> {
+/**
+ * Upload an embedded base64 image to R2 and return its public URL. With `deck: true` it is stored as a deck picture,
+ * which is not listed in the media library. Browser only.
+ */
+export async function uploadDataUrl(dataUrl: string, name: string, opts: { deck?: boolean } = {}): Promise<string> {
   const blob = await (await fetch(dataUrl)).blob();
   const ext = blob.type === "image/jpeg" ? "jpg" : blob.type === "image/svg+xml" ? "svg" : (blob.type.split("/")[1] ?? "png");
-  return (await addMediaFile(new File([blob], `${name}.${ext}`, { type: blob.type }))).url;
+  return (await addMediaFile(new File([blob], `${name}.${ext}`, { type: blob.type }), opts)).url;
 }
 
 /**
  * Add an image or video file to the library. Images are scaled and validated like any upload; videos must be MP4 or WebM
  * up to 100 MB. A thumbnail is made in the browser and both files go straight to R2. Browser only.
  */
-export async function addMediaFile(file: File): Promise<MediaItem> {
+export async function addMediaFile(file: File, opts: { deck?: boolean } = {}): Promise<MediaItem> {
   const isVideo = VIDEO_TYPES.has(file.type);
   const name = file.name.replace(/\.[a-z0-9]+$/i, "") || (isVideo ? "Untitled video" : "Untitled image");
 
@@ -181,7 +184,7 @@ export async function addMediaFile(file: File): Promise<MediaItem> {
   const res = await fetch("/api/media", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, mime, bytes: body.size, width, height, duration, thumbMime: thumb.mime, thumbBytes: thumb.blob.size }),
+    body: JSON.stringify({ name, mime, bytes: body.size, width, height, duration, thumbMime: thumb.mime, thumbBytes: thumb.blob.size, source: opts.deck ? "deck" : "library" }),
   });
   if (!res.ok) throw await readError(res, "Could not start the upload.");
   const { item, uploadUrl, thumbUploadUrl } = (await res.json()) as { item: MediaItem; uploadUrl: string; thumbUploadUrl: string };

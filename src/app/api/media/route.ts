@@ -52,6 +52,8 @@ const CreateSchema = z.object({
   duration: z.number().min(0).max(24 * 3600).nullable().optional(),
   thumbMime: z.enum(["image/jpeg", "image/png"]),
   thumbBytes: z.number().int().positive().max(MEDIA_THUMB_MAX_BYTES),
+  /** "deck": a picture moved out of a saved deck. It is stored like any upload but not listed in the library. */
+  source: z.enum(["library", "deck"]).optional(),
 });
 
 const EXT: Record<string, string> = {
@@ -102,6 +104,7 @@ export async function POST(request: Request) {
       duration: isVideo ? (body.duration ?? null) : null,
       key,
       thumb_key: thumbKey,
+      source: body.source ?? "library",
     };
     await insertMediaRow(row);
     return NextResponse.json({ item: toItem({ ...row, created_at: new Date().toISOString() }), uploadUrl, thumbUploadUrl });
