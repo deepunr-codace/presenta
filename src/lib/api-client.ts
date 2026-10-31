@@ -11,6 +11,7 @@ import type {
   SuggestRequest,
   SuggestResponse,
 } from "@/lib/deck/schema";
+import type { SmartPage, SmartPageRequest } from "@/lib/import/smart-schema";
 
 /**
  * Typed client for the app's JSON API routes. Every route answers with the
@@ -112,6 +113,16 @@ export function postSuggest(req: SuggestBody, signal?: AbortSignal): Promise<Api
 
 export function postOutline(req: OutlineBody, signal?: AbortSignal): Promise<ApiResult<Outline>> {
   return post<Outline>("/api/outline", req, signal);
+}
+
+/** Smart convert of one PDF page; uses one AI request. Long timeout: reading a picture takes a while. */
+export function postSmartPage(req: SmartPageRequest, signal?: AbortSignal): Promise<ApiResult<SmartPage>> {
+  return request<SmartPage>("/api/import/smart-page", {
+    method: "POST",
+    headers: { "content-type": "application/json", ...aiKeyHeaders() },
+    body: JSON.stringify(req),
+    signal: withDeadline(signal, 130_000),
+  });
 }
 
 export function postResearch(query: string, signal?: AbortSignal): Promise<ApiResult<ResearchResult>> {

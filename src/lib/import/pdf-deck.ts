@@ -5,6 +5,8 @@ import { escapeHtml } from "@/lib/text";
 import type { PDFPageProxy, PageViewport } from "pdfjs-dist";
 import { recordDrawing, type Box } from "./pdf-record";
 import { structurePage } from "./pdf-structure";
+import { postSmartPage } from "@/lib/api-client";
+import type { SmartLine, SmartPage } from "./smart-schema";
 
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_SLIDES = 100;
@@ -348,6 +350,157 @@ async function structuredPage({ page, viewport, offX, offY, n, noText }: PageCtx
   }
 }
 
+const HEX = /^#[0-9a-f]{6}$/i;
+const hexOr = (c: string, fallback: string) => (HEX.test(c.trim()) ? c.trim() : fallback);
+
+/** A picture of the page as it looks, for the AI to read: at most 1600 px wide, JPEG. */
+async function pagePicture({ page, viewport }: PageCtx): Promise<string> {
+  const scale = Math.min(1, 1600 / viewport.width);
+  const vp = page.getViewport({ scale: (viewport.scale ?? 1) * scale });
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.ceil(vp.width));
+  canvas.height = Math.max(1, Math.ceil(vp.height));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("This browser could not prepare the PDF pages for import.");
+  try {
+    await page.render({ canvas, canvasContext: context, viewport: vp, background: "#ffffff" }).promise;
+    return canvas.toDataURL("image/jpeg", 0.82);
+  } finally {
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+}
+
+/**
+ * Smart convert: the AI reads the page picture and its text lines and returns the layout: flat boxes and circles
+ * become editable shapes, photos, icons and decorations become separately movable pictures cut from the page, and the
+ * text lines are grouped into text boxes with their colour and weight. Positions come back on a 0–1000 grid.
+ */
+async function smartPage(ctx: PageCtx, blocks: Block[]): Promise<PageResult> {
+  const { page, viewport, offX, offY, n, noText } = ctx;
+  const W = viewport.width;
+  const H = viewport.height;
+  const lines = blocks.flatMap((b) => b.lines);
+  const smartLines: SmartLine[] = lines.slice(0, 200).map((l, id) => ({
+    id,
+    text: lineText(l).slice(0, 300),
+    x: ((l.x - offX) / W) * 1000,
+    y: ((l.y - offY) / H) * 1000,
+    w: ((l.right - l.x) / W) * 1000,
+    h: ((l.size * 1.2) / H) * 1000,
+  }));
+
+  const res = await postSmartPage({ image: await pagePicture(ctx), lines: smartLines, aspect: W / H });
+  if (!res.ok) throw new SmartConvertError(res.error, res.code === "rate_limit" || res.code === "auth");
+  const layout: SmartPage = res.data;
+
+  // The artwork without any real text, to cut pictures from.
+  const art = document.createElement("canvas");
+  art.width = Math.max(1, Math.ceil(W));
+  art.height = Math.max(1, Math.ceil(H));
+  const actx = art.getContext("2d", { willReadFrequently: true });
+  if (!actx) throw new Error("This browser could not prepare the PDF pages for import.");
+  try {
+    await page.render({ canvas: art, canvasContext: actx, viewport, background: "#ffffff", operationsFilter: noText }).promise;
+
+    const toBox = (e: { x: number; y: number; w: number; h: number }): Box => {
+      const x = Math.max(0, Math.min(W, (e.x / 1000) * W));
+      const y = Math.max(0, Math.min(H, (e.y / 1000) * H));
+      return { x, y, w: Math.max(1, Math.min(W - x, (e.w / 1000) * W)), h: Math.max(1, Math.min(H - y, (e.h / 1000) * H)) };
+    };
+    const inks: (string | null)[] = blocks.map(() => null);
+    const elements: Element[] = [];
+    let background: Slide["background"] = { kind: "solid", color: hexOr(layout.background, "#ffffff") };
+    let bytes = 0;
+
+    const cut = (box: Box): string => {
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(box.w));
+      c.height = Math.max(1, Math.round(box.h));
+      c.getContext("2d")?.drawImage(art, box.x, box.y, box.w, box.h, 0, 0, c.width, c.height);
+      // Outlined letters (Canva and similar) are part of the artwork: paint them out where a text box goes.
+      cleanLetters(c, box, blocks, offX, offY, inks);
+      const src = encode(c);
+      bytes += Math.floor(src.length * 0.75);
+      c.width = 0;
+      c.height = 0;
+      return src;
+    };
+
+    const used = new Set<number>();
+    const textGroups: { ids: number[]; color: string | null; bold: boolean; align: "left" | "center" | "right" }[] = [];
+
+    for (const e of layout.elements) {
+      if (e.type === "text") {
+        const ids = e.lines.filter((id) => id >= 0 && id < smartLines.length && !used.has(id));
+        ids.forEach((id) => used.add(id));
+        if (ids.length) textGroups.push({ ids, color: HEX.test(e.color.trim()) ? e.color.trim() : null, bold: e.weight === "bold", align: e.align });
+        continue;
+      }
+      const box = toBox(e);
+      if (box.w < 2 || box.h < 2) continue;
+      const opacity = Math.max(0.05, Math.min(1, e.opacity || 1));
+      const base = { id: newId("el"), x: box.x + offX, y: box.y + offY, w: box.w, h: box.h, rotation: 0, z: elements.length + 1, locked: false, opacity };
+      if (e.type === "image") {
+        // Something that covers the whole page is the page's backdrop, not a picture to drag around.
+        if (box.w * box.h >= W * H * 0.9 && !elements.length) {
+          background = { kind: "image", src: cut({ x: 0, y: 0, w: W, h: H }), overlay: 0 };
+          continue;
+        }
+        elements.push({ ...base, type: "image", src: cut(box), alt: `PDF page ${n} picture ${elements.length + 1}`, fit: "cover", radius: 0, position: "50% 50%", overlay: 0 });
+        continue;
+      }
+      const fill = hexOr(e.color, "#e5e7eb");
+      const border = HEX.test(e.border.trim()) ? e.border.trim() : undefined;
+      const kind = e.shape === "ellipse" ? "ellipse" : e.shape === "pill" ? "pill" : "rect";
+      const radius = e.shape === "rounded" ? Math.round(Math.min(32, Math.min(box.w, box.h) * 0.18)) : e.shape === "pill" ? Math.round(Math.min(box.w, box.h) / 2) : 0;
+      elements.push({ ...base, type: "shape", kind, fill, stroke: border, strokeWidth: border ? 2 : 0, radius });
+    }
+
+    // Text boxes: the AI's groups, in reading order; any line it left out becomes its own box.
+    const groupBlocks: Block[] = [];
+    const groupStyle: { color: string | null; bold: boolean; align: "left" | "center" | "right" }[] = [];
+    for (const g of textGroups) {
+      const ls = g.ids.map((id) => lines[id]).sort((a, b) => a.y - b.y || a.x - b.x);
+      const { x, y, w, h } = blockGeometry(ls);
+      groupBlocks.push({ lines: ls, box: { x, y, w, h } });
+      groupStyle.push(g);
+    }
+    lines.forEach((l, id) => {
+      if (id < smartLines.length && used.has(id)) return;
+      const { x, y, w, h } = blockGeometry([l]);
+      groupBlocks.push({ lines: [l], box: { x, y, w, h } });
+      groupStyle.push({ color: null, bold: false, align: "left" });
+    });
+    // Letter colour: what was painted out of the pictures beats what the AI saw, which beats a default.
+    const inkOf = (b: Block) => {
+      const k = blocks.findIndex((o) => o.lines.some((l) => b.lines.includes(l)));
+      return k >= 0 ? inks[k] : null;
+    };
+    const bgLight = background.kind === "solid" ? luminanceOfColor(background.color) >= 0.5 : true;
+    const colors = groupBlocks.map((b, k) => groupStyle[k].color ?? inkOf(b) ?? (bgLight ? "#111111" : "#ffffff"));
+    const texts = textElements(groupBlocks, colors, elements.length + 1, groupStyle.map((g) => g.bold));
+    texts.forEach((t, k) => {
+      if (t.type === "text" && groupStyle[k].align !== "left") t.align = groupStyle[k].align;
+    });
+    elements.push(...texts);
+    return { elements, background, bytes };
+  } finally {
+    art.width = 0;
+    art.height = 0;
+  }
+}
+
+/** A Smart convert failure; `stop` means no later page will work either (allowance spent, no AI). */
+class SmartConvertError extends Error {
+  constructor(
+    message: string,
+    readonly stop: boolean,
+  ) {
+    super(message);
+  }
+}
+
 /** The previous method, kept for pages too complex to split: one picture of the artwork plus editable text. */
 async function flatPage({ page, viewport, offX, offY, n, noText }: PageCtx, blocks: Block[]): Promise<PageResult> {
   const canvas = document.createElement("canvas");
@@ -402,7 +555,12 @@ function luminanceOfColor(c: string): number {
  * editable text boxes, boxes and circles as shapes, photos, icons and logos as separately movable images, and the page
  * colour as the slide background. A page with too many tiny pieces falls back to one artwork picture plus text.
  */
-export async function importPdfDeck(file: File, report?: (pct: number, label: string) => void): Promise<Deck> {
+export type PdfImportOptions = {
+  /** Smart convert: an AI lays out each page (uses one AI request per page); pages it cannot do use the standard way. */
+  smart?: boolean;
+};
+
+export async function importPdfDeck(file: File, report?: (pct: number, label: string) => void, options: PdfImportOptions = {}): Promise<Deck> {
   if (file.size > MAX_FILE_BYTES) throw new Error("PDF files must be smaller than 50 MB.");
   report?.(4, "Opening the PDF…");
   const lib = await getPdfJs();
@@ -413,8 +571,13 @@ export async function importPdfDeck(file: File, report?: (pct: number, label: st
     if (!pdf.numPages || pdf.numPages > MAX_SLIDES) throw new Error(`PDF imports support 1 to ${MAX_SLIDES} pages.`);
     const slides: Slide[] = [];
     let renderedBytes = 0;
+    let smart = Boolean(options.smart);
+    let smartNote = "";
     for (let n = 1; n <= pdf.numPages; n += 1) {
-      report?.(8 + Math.round(((n - 1) / pdf.numPages) * 88), `Converting page ${n} of ${pdf.numPages} into editable slides…`);
+      report?.(
+        8 + Math.round(((n - 1) / pdf.numPages) * 88),
+        smart ? `Smart converting page ${n} of ${pdf.numPages}…` : `Converting page ${n} of ${pdf.numPages} into editable slides…${smartNote}`,
+      );
       const page = await pdf.getPage(n);
       const base = page.getViewport({ scale: 1 });
       const scale = Math.min(STAGE_W / base.width, STAGE_H / base.height);
@@ -447,12 +610,26 @@ export async function importPdfDeck(file: File, report?: (pct: number, label: st
       });
 
       const ctx: PageCtx = { page, viewport, offX, offY, n, noText };
-      let result: PageResult;
-      try {
-        result = await structuredPage(ctx, blocks);
-      } catch {
-        // Too many tiny pieces, or a drawing we could not read: keep this page as one picture plus editable text.
-        result = await flatPage(ctx, blocks);
+      let result: PageResult | null = null;
+      if (smart) {
+        try {
+          result = await smartPage(ctx, blocks);
+        } catch (err) {
+          // eslint-disable-next-line no-console -- the page still imports the standard way; keep the cause for debugging
+          console.warn(`Smart convert failed on page ${n}; using the standard converter.`, err);
+          if (err instanceof SmartConvertError && err.stop) {
+            smart = false;
+            smartNote = ` (Smart convert stopped: ${err.message})`;
+          }
+        }
+      }
+      if (!result) {
+        try {
+          result = await structuredPage(ctx, blocks);
+        } catch {
+          // Too many tiny pieces, or a drawing we could not read: keep this page as one picture plus editable text.
+          result = await flatPage(ctx, blocks);
+        }
       }
       renderedBytes += result.bytes;
       if (renderedBytes > MAX_RENDERED_BYTES) throw new Error("The PDF's pictures are too large to import together. Split the PDF into smaller files.");

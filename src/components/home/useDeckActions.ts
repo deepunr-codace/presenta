@@ -1,5 +1,6 @@
 "use client";
 
+import { askPdfMode } from "@/lib/pdf-mode";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { deckSlug } from "@/components/editor/deck-slug";
@@ -72,8 +73,10 @@ export function useDeckActions(refresh: () => Promise<void>) {
     (file: File | undefined) => {
       if (!file) return;
       void run("Importing…", async () => {
+        const mode = await askPdfMode(file);
+        if (!mode) return;
         const deck = await runTask(`Importing ${file.name}`, async (report) => {
-          const d = await importDeckFile(file, report);
+          const d = await importDeckFile(file, report, { smart: mode === "smart" });
           report(99, "Saving to your account…");
           await saveDeck(d);
           return d;

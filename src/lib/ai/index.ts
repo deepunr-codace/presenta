@@ -1,9 +1,11 @@
 import type { AiSource } from "@/lib/api-client";
 import type { GenerateRequest, Generation, Outline, OutlineRequest, ReviseRequest, Revision, SuggestRequest, SuggestResponse } from "@/lib/deck/schema";
 import { envSource, serverKeyAllowed, type AiResolution } from "./auth";
-import { AI_MODEL as CLAUDE_MODEL, claudeGenerate, claudeOutline, claudeRevise, claudeSuggest, type AiCallOptions } from "./claude";
+import type { SmartPage, SmartPageRequest } from "@/lib/import/smart-schema";
+import { AI_MODEL as CLAUDE_MODEL, claudeGenerate, claudeOutline, claudeRevise, claudeSmartPage, claudeSuggest, type AiCallOptions } from "./claude";
+import { AiError } from "./errors";
 import { mockGenerate, mockOutline, mockRevise, mockSuggest } from "./mock";
-import { openAiGenerate, openAiModel, openAiOutline, openAiRevise, openAiSuggest } from "./openai";
+import { openAiGenerate, openAiModel, openAiOutline, openAiRevise, openAiSmartPage, openAiSuggest } from "./openai";
 import { withPoolKey } from "./presenta";
 
 export type { AiCallOptions };
@@ -56,6 +58,17 @@ export function reviseDeck(req: ReviseRequest, opts: AiRunOptions = {}): Promise
 /** Answer options for the current intake question. */
 export function suggestAnswers(req: SuggestRequest, opts: AiRunOptions = {}): Promise<SuggestResponse> {
   return pick(opts, { claude: (o) => claudeSuggest(req, o), openai: (o) => openAiSuggest(req, o), mock: () => mockSuggest(req) });
+}
+
+/** Smart convert of one PDF page. There is no offline version: without AI the import uses the standard converter. */
+export function smartPageLayout(req: SmartPageRequest, opts: AiRunOptions = {}): Promise<SmartPage> {
+  return pick(opts, {
+    claude: (o) => claudeSmartPage(req, o),
+    openai: (o) => openAiSmartPage(req, o),
+    mock: () => {
+      throw new AiError("auth", "Smart convert needs AI. Add your API key in Settings, or ask an admin to turn on Presenta Studio.");
+    },
+  });
 }
 
 /** Slide-by-slide outline from the brief or pasted material, for review before generation. */

@@ -14,6 +14,7 @@ import {
   type SuggestResponse,
 } from "@/lib/deck/schema";
 import { AI_TIMEOUT_MS, dropBooleanItems, type AiCallOptions } from "./claude";
+import { SMART_PAGE_SYSTEM, SmartPageSchema, buildSmartPageUserText, type SmartPage, type SmartPageRequest } from "@/lib/import/smart-schema";
 import type { AiAuth } from "./auth";
 import { AiError, AiParseError, AiRefusedError } from "./errors";
 import {
@@ -48,6 +49,8 @@ export function hasOpenAiKey(): boolean {
   return Boolean(process.env.OPENAI_API_KEY?.trim());
 }
 
+type MessageContent = ({ type: "text"; text: string } | { type: "image_url"; image_url: { url: string; detail?: "low" | "high" | "auto" } })[];
+
 type ChatResponse = {
   choices?: { finish_reason?: string; message?: { content?: string | null; refusal?: string | null } }[];
 };
@@ -63,7 +66,8 @@ async function parseWithOpenAi<S extends z.ZodType>(call: {
   schema: S;
   name: string;
   system: string;
-  user: string;
+  /** Plain text, or content parts when the message carries a picture. */
+  user: string | MessageContent;
   refusedMessage?: string;
   parseMessage?: string;
   signal?: AbortSignal;
@@ -82,7 +86,7 @@ async function parseWithOpenAi<S extends z.ZodType>(call: {
     pooled,
   };
 
-  const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+  const messages: { role: "system" | "user" | "assistant"; content: string | MessageContent }[] = [
     { role: "system", content: call.system },
     { role: "user", content: call.user },
   ];
@@ -106,7 +110,7 @@ async function requestOnce<S extends z.ZodType>(
   call: { schema: S; name: string; refusedMessage?: string; parseMessage?: string; signal?: AbortSignal },
   apiKey: string,
   target: Target,
-  messages: { role: string; content: string }[],
+  messages: { role: string; content: string | MessageContent }[],
 ): Promise<Outcome<z.output<S>>> {
   const deadline = AbortSignal.timeout(AI_TIMEOUT_MS);
   const signal = call.signal ? AbortSignal.any([call.signal, deadline]) : deadline;
@@ -192,6 +196,23 @@ export function openAiSuggest(req: SuggestRequest, opts: AiCallOptions = {}): Pr
     user: buildSuggestUserMessage(req),
     refusedMessage: `${brandOf(opts.auth)} declined to suggest answers for this question. Type your own answer instead.`,
     parseMessage: `${brandOf(opts.auth)} returned suggestions that could not be parsed. Please try again.`,
+    signal: opts.signal,
+    auth: opts.auth,
+  });
+}
+
+/** Smart convert: lay one PDF page out as editable elements from its picture and text lines. */
+export function openAiSmartPage(req: SmartPageRequest, opts: AiCallOptions = {}): Promise<SmartPage> {
+  return parseWithOpenAi({
+    schema: SmartPageSchema,
+    name: "page_layout",
+    system: SMART_PAGE_SYSTEM,
+    user: [
+      { type: "text", text: buildSmartPageUserText(req) },
+      { type: "image_url", image_url: { url: req.image, detail: "high" } },
+    ],
+    refusedMessage: `${brandOf(opts.auth)} declined to convert this page.`,
+    parseMessage: `${brandOf(opts.auth)} returned a page layout that could not be read.`,
     signal: opts.signal,
     auth: opts.auth,
   });

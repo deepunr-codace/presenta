@@ -1,5 +1,6 @@
 "use client";
 
+import { askPdfMode } from "@/lib/pdf-mode";
 import { useEffect, useState, type FormEvent } from "react";
 import { Check, FileArrowUp, UploadSimple, UsersThree } from "@phosphor-icons/react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -82,7 +83,12 @@ export function UploadTemplateDialog({ onClose, onCreated }: Props) {
     setFileDeck(null);
     setFileName(file.name);
     try {
-      const deck = await runTask(`Reading ${file.name}`, (report) => importDeckFile(file, report), "Ready to publish");
+      const mode = await askPdfMode(file);
+      if (!mode) {
+        setFileName("");
+        return;
+      }
+      const deck = await runTask(`Reading ${file.name}`, (report) => importDeckFile(file, report, { smart: mode === "smart" }), "Ready to publish");
       setFileDeck(deck);
       setTitle((t) => (t.trim() ? t : deck.title));
     } catch (err) {
@@ -163,12 +169,12 @@ export function UploadTemplateDialog({ onClose, onCreated }: Props) {
               <label className="ps-upload-drop" data-filled={fileDeck ? "true" : undefined}>
                 {fileDeck ? <FileArrowUp size={18} /> : <UploadSimple size={18} />}
                 <span className="min-w-0 flex-1 truncate">
-                  {fileDeck ? `${fileName} · ${fileDeck.slides.length} ${fileDeck.slides.length === 1 ? "slide" : "slides"}` : "Choose a deck JSON or PDF file"}
+                  {fileDeck ? `${fileName} · ${fileDeck.slides.length} ${fileDeck.slides.length === 1 ? "slide" : "slides"}` : "Choose a PowerPoint, PDF or deck JSON file"}
                 </span>
                 <span className="ps-btn ps-btn-xs">Browse</span>
-                <input type="file" className="sr-only" accept=".json,application/json,.pdf,application/pdf" onChange={(e) => void pickFile(e.target.files?.[0])} aria-label="Deck file" />
+                <input type="file" className="sr-only" accept=".json,application/json,.pdf,application/pdf,.pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" onChange={(e) => void pickFile(e.target.files?.[0])} aria-label="Deck file" />
               </label>
-              <p className="ps-caption mt-1">Pick an exported deck (JSON) or a PDF. PDF pages become slides.</p>
+              <p className="ps-caption mt-1">PowerPoint (.pptx), PDF or an exported deck (JSON). Each page or slide becomes an editable slide.</p>
             </div>
           )}
 

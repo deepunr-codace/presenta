@@ -4,6 +4,7 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { X } from "@phosphor-icons/react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ApiKeyDialog } from "./ApiKeyDialog";
+import { PdfModeHost } from "./PdfModeHost";
 import { TaskProgressHost } from "./TaskProgressHost";
 import { CommandPalette } from "./CommandPalette";
 import { KeyBanner } from "./KeyBanner";
@@ -58,6 +59,7 @@ export function AppShell({ children, breadcrumbs, actions, active, banner = fals
       </div>
 
       <TaskProgressHost />
+      <PdfModeHost />
       <ApiKeyDialog />
       <CommandPalette />
       <ShortcutsDialog />

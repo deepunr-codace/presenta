@@ -16,6 +16,7 @@ import {
   type SuggestRequest,
   type SuggestResponse,
 } from "@/lib/deck/schema";
+import { SMART_PAGE_SYSTEM, SmartPageSchema, buildSmartPageUserText, type SmartPage, type SmartPageRequest } from "@/lib/import/smart-schema";
 import type { AiAuth } from "./auth";
 import { AiError, AiParseError, AiRefusedError } from "./errors";
 import {
@@ -137,7 +138,8 @@ export function toAiError(err: unknown, parseMessage?: string): AiError {
 type StructuredCall<S extends z.ZodType> = {
   schema: S;
   system: string;
-  user: string;
+  /** Plain text, or content blocks when the message carries a picture. */
+  user: string | Anthropic.Messages.ContentBlockParam[];
   effort: "low" | "medium";
   refusedMessage?: string;
   parseMessage?: string;
@@ -202,6 +204,25 @@ export function claudeSuggest(req: SuggestRequest, opts: AiCallOptions = {}): Pr
     effort: "low",
     refusedMessage: "Claude declined to suggest answers for this question. Type your own answer instead.",
     parseMessage: "Claude returned suggestions that could not be parsed. Please try again.",
+    signal: opts.signal,
+    auth: opts.auth,
+  });
+}
+
+/** Smart convert: lay one PDF page out as editable elements from its picture and text lines. */
+export function claudeSmartPage(req: SmartPageRequest, opts: AiCallOptions = {}): Promise<SmartPage> {
+  const m = /^data:(image\/(?:jpeg|png|webp));base64,(.*)$/.exec(req.image);
+  if (!m) throw new AiError("api", "The page picture could not be read.");
+  return parseWithClaude({
+    schema: SmartPageSchema,
+    system: SMART_PAGE_SYSTEM,
+    user: [
+      { type: "image", source: { type: "base64", media_type: m[1] as "image/jpeg" | "image/png" | "image/webp", data: m[2] } },
+      { type: "text", text: buildSmartPageUserText(req) },
+    ],
+    effort: "low",
+    refusedMessage: "Claude declined to convert this page.",
+    parseMessage: "Claude returned a page layout that could not be read.",
     signal: opts.signal,
     auth: opts.auth,
   });
