@@ -23,6 +23,7 @@ const ALL_TEMPLATES = [...TEMPLATE_DECKS, ...STUDIO_PACKS];
 export function StyleSourceTabs() {
   const themeId = useWizardStore((s) => s.themeId);
   const setThemeId = useWizardStore((s) => s.setThemeId);
+  const setStyleSource = useWizardStore((s) => s.setStyleSource);
   const patchBrand = useWizardStore((s) => s.patchBrand);
   const [tab, setTab] = useState<Tab>("theme");
   const [templateId, setTemplateId] = useState<string | null>(null);
@@ -36,6 +37,7 @@ export function StyleSourceTabs() {
     if (!t) return;
     setTemplateId(id);
     setThemeId(t.deck.themeId);
+    setStyleSource({ kind: "template", id });
   };
 
   const pickFile = async (file: File | undefined) => {
@@ -47,6 +49,7 @@ export function StyleSourceTabs() {
       setRef({ ...r, name: file.name });
       setThemeId(r.themeId);
       patchBrand({ accent: r.accent });
+      setStyleSource(r.preview ? { kind: "image", dataUrl: r.preview } : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "That file could not be read.");
     } finally {
@@ -73,6 +76,7 @@ export function StyleSourceTabs() {
           value={themeId}
           onChange={(id) => {
             setTemplateId(null);
+            setStyleSource(null);
             setThemeId(id);
           }}
         />

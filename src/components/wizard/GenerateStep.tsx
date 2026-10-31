@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowsClockwise, Sparkle, WifiSlash } from "@phosphor-icons/react";
 import { postGenerate, sourceLabel, type AiSource } from "@/lib/api-client";
+import { applyStyleSource } from "@/lib/deck/apply-style";
 import { buildDeck } from "@/lib/deck/layouts";
 import type { GenerateRequest } from "@/lib/deck/schema";
 import { saveDeck } from "@/lib/persist";
@@ -71,7 +72,7 @@ export function GenerateStep() {
       try {
         setStatus({ phase: "running", stage: 1, source: res.source });
         await paint();
-        const deck = buildDeck(res.data, req.themeId, {
+        const built = buildDeck(res.data, req.themeId, {
           source: req.mode,
           prompt: input,
           audience: req.audience,
@@ -80,6 +81,7 @@ export function GenerateStep() {
           outline: state.outline ?? undefined,
           brand,
         });
+        const deck = applyStyleSource(built, state.styleSource);
         setStatus({ phase: "running", stage: 2, source: res.source });
         await paint();
         setStatus({ phase: "running", stage: 3, source: res.source });

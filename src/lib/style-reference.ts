@@ -4,7 +4,22 @@ import { getPdfJs } from "@/lib/import/source-files";
 
 const MAX_BYTES = 25 * 1024 * 1024;
 
-export type StyleReference = { palette: string[]; accent: string; themeId: ThemeId; dark: boolean };
+export type StyleReference = { palette: string[]; accent: string; themeId: ThemeId; dark: boolean; /** JPEG data URL of the image or first PDF page, about 1280 px wide. */ preview: string };
+
+let lastPreview = "";
+
+function makePreview(source: CanvasImageSource, w: number, h: number): string {
+  const scale = Math.min(1, 1280 / w);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(w * scale));
+  canvas.height = Math.max(1, Math.round(h * scale));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.72);
+}
 
 type Rgb = [number, number, number];
 
@@ -27,6 +42,7 @@ const sat = ([r, g, b]: Rgb) => {
 const dist = (a: Rgb, b: Rgb) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
 function sample(source: CanvasImageSource, w: number, h: number): ImageData {
+  lastPreview = makePreview(source, w, h);
   const scale = Math.min(1, 160 / Math.max(w, h));
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(w * scale));
@@ -46,7 +62,7 @@ async function fileToImageData(file: File): Promise<ImageData> {
     try {
       const page = await pdf.getPage(1);
       const base = page.getViewport({ scale: 1 });
-      const viewport = page.getViewport({ scale: Math.min(2, 480 / base.width) });
+      const viewport = page.getViewport({ scale: Math.min(2.5, 1280 / base.width) });
       const canvas = document.createElement("canvas");
       canvas.width = Math.ceil(viewport.width);
       canvas.height = Math.ceil(viewport.height);
@@ -113,5 +129,5 @@ export async function readStyleReference(file: File): Promise<StyleReference> {
       best = t.id;
     }
   }
-  return { palette: palette.map(hex), accent: hex(accentRgb), themeId: best, dark };
+  return { palette: palette.map(hex), accent: hex(accentRgb), themeId: best, dark, preview: lastPreview };
 }

@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { Brand, Brief, BriefStage, Outline, ThemeId } from "@/lib/deck/schema";
+import type { StyleSource } from "@/lib/deck/apply-style";
 
 /**
  * Wizard state for /new. Persisted to sessionStorage under "presenta:wizard"
@@ -70,6 +71,8 @@ export type WizardData = {
   settings: WizardSettings;
   outline: Outline | null;
   themeId: ThemeId;
+  /** A template or image chosen as the look of the deck, on top of the theme. */
+  styleSource: StyleSource | null;
   brand: Brand;
   deckId: string | null;
 };
@@ -91,6 +94,7 @@ type WizardActions = {
   patchSettings: (patch: Partial<WizardSettings>) => void;
   setOutline: (outline: Outline | null) => void;
   setThemeId: (themeId: ThemeId) => void;
+  setStyleSource: (source: StyleSource | null) => void;
   patchBrand: (patch: Partial<Brand>) => void;
   setDeckId: (id: string | null) => void;
   setHydrated: (hydrated: boolean) => void;
@@ -110,6 +114,7 @@ const EMPTY_DATA: WizardData = {
   settings: { slideCount: DEFAULT_SLIDE_COUNT, tone: "confident and clear", language: "English" },
   outline: null,
   themeId: DEFAULT_THEME_ID,
+  styleSource: null,
   brand: {},
   deckId: null,
 };
@@ -143,6 +148,7 @@ export const useWizardStore = create<WizardStore>()(
       patchSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
       setOutline: (outline) => set({ outline }),
       setThemeId: (themeId) => set({ themeId }),
+      setStyleSource: (styleSource) => set({ styleSource }),
       patchBrand: (patch) =>
         set((s) => {
           const next: Brand = { ...s.brand, ...patch };
