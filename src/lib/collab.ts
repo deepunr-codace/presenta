@@ -40,7 +40,8 @@ function withShareAuthorization(url: string, init?: RequestInit): RequestInit {
 export async function call<T>(url: string, init: RequestInit | undefined, fallback: string): Promise<T> {
   const res = await fetch(url, { cache: "no-store", ...withShareAuthorization(url, init) });
   const body = (await res.json().catch(() => null)) as ({ error?: string } & T) | null;
-  if (!res.ok) throw new ApiError(body?.error ?? fallback, res.status);
+  // The host rejects bodies over its upload cap before our code runs, so that answer has no message of ours.
+  if (!res.ok) throw new ApiError(body?.error ?? (res.status === 413 ? `${fallback} It is too large to upload in one go.` : fallback), res.status);
   return body as T;
 }
 
