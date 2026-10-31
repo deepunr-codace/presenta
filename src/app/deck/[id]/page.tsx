@@ -13,7 +13,7 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
   const { id: idOrSlug } = await params;
   const id = await resolveDeckRouteId(idOrSlug);
   return (
-    <DeckShell id={id}>
+    <DeckShell id={id} crumbs={false}>
       <ReviewScreen id={id} />
     </DeckShell>
   );

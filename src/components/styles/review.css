@@ -138,3 +138,34 @@
   .ps-stat-caption { width: 100%; }
   .ps-stat-value { font-size: 28px; }
 }
+
+/* ---- Slim top bar, matching the editor: one 44 px row with the title, meta and compact pill actions ---- */
+@media (min-width: 768px) {
+  .ps-review-main { padding-top: 0; }
+  .ps-review-head {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    flex-wrap: nowrap;
+    height: 44px;
+    margin: 0 -24px 20px;
+    padding: 0 10px 0 24px;
+    border-bottom: 1px solid color-mix(in srgb, var(--ps-line) 70%, transparent);
+    background: color-mix(in srgb, var(--ps-canvas) 88%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+  .ps-review-head > div:first-child { display: flex; align-items: center; gap: 12px; flex-basis: auto; }
+  .ps-review-title { font-size: 13.5px; line-height: 30px; font-weight: 600; letter-spacing: -0.01em; }
+  .ps-review-meta { flex-wrap: nowrap; margin-top: 0; font-size: 12px; white-space: nowrap; overflow: hidden; }
+  .ps-review-actions { gap: 2px; }
+  .ps-review-actions .ps-btn { height: 30px; padding: 0 11px; border-radius: 9999px; font-size: 13px; gap: 6px; }
+  .ps-review-actions .ps-btn.ps-btn-ghost { color: var(--ps-smoke); }
+  .ps-review-actions .ps-btn.ps-btn-ghost:hover { color: var(--ps-ink); background: var(--ps-plate); }
+  .ps-review-actions .ps-btn.ps-btn-primary { padding: 0 14px; }
+  .ps-review-actions .ps-btn svg { width: 14px; height: 14px; }
+  .ps-review-actions .ps-toolbar-sep { height: 14px; margin: 0 6px; }
+}
+@media (min-width: 768px) and (max-width: 1100px) {
+  .ps-review-meta { display: none; }
+}
