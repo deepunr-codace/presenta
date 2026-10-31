@@ -78,10 +78,17 @@
   color: var(--ps-smoke);
   white-space: nowrap;
 }
-.ps-save-dot { width: 6px; height: 6px; border-radius: var(--ps-r-pill); background: var(--ps-success); }
-.ps-save[data-dirty="true"] .ps-save-dot { background: var(--ps-warning); }
-.ps-save[data-error="true"] .ps-save-dot { background: var(--ps-danger); }
-.ps-save[data-error="true"] { color: var(--ps-danger); }
+.ps-save { border: 1px solid transparent; cursor: pointer; transition: background-color 140ms ease-out, border-color 140ms ease-out, color 140ms ease-out; }
+.ps-save:disabled { cursor: default; }
+.ps-save[data-state="saved"] svg { color: var(--ps-success); }
+.ps-save-dot { width: 6px; height: 6px; border-radius: var(--ps-r-pill); background: var(--ps-warning); animation: ps-save-pulse 900ms ease-in-out infinite alternate; }
+@keyframes ps-save-pulse { from { opacity: 0.35; } to { opacity: 1; } }
+.ps-save[data-state="dirty"] { background: var(--ps-ink); color: var(--ps-on-ink); }
+.ps-save[data-state="dirty"]:hover { opacity: 0.88; }
+.ps-save[data-state="error"] { border-color: var(--ps-danger); background: transparent; color: var(--ps-danger); }
+.ps-save[data-state="error"]:hover { background: color-mix(in srgb, var(--ps-danger) 12%, transparent); }
+.ps-save:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .ps-save-dot { animation: none; } }
 
 /* ---------- Filmstrip: 200 px taupe column ---------- */
 

@@ -45,6 +45,8 @@ type DeckState = {
   dirty: boolean;
   /** Message of the last autosave failure (after its retry), or null once a save succeeds. */
   saveError: string | null;
+  /** A save request is on its way. */
+  saving: boolean;
 };
 
 type DeckActions = {
@@ -97,6 +99,15 @@ function errorMessage(err: unknown): string {
  * a second failure is surfaced through `saveError` for the UI to show.
  */
 async function persistNow(deck: Deck): Promise<void> {
+  useDeckStore.setState({ saving: true });
+  try {
+    await persistAttempts(deck);
+  } finally {
+    useDeckStore.setState({ saving: false });
+  }
+}
+
+async function persistAttempts(deck: Deck): Promise<void> {
   let lastError: unknown;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     if (attempt > 0) await wait(SAVE_RETRY_MS);
@@ -140,6 +151,14 @@ export async function flushSave(): Promise<void> {
   pendingDeck = null;
   if (d) inflight = persistNow(d);
   if (inflight) await inflight;
+}
+
+/** The Save button and Ctrl+S: write the current deck now, also to retry after a failed autosave. */
+export async function saveNow(): Promise<void> {
+  const { deck, dirty, saveError } = useDeckStore.getState();
+  if (deck && (dirty || saveError) && !pendingDeck) pendingDeck = deck;
+  if (inflight) await inflight;
+  await flushSave();
 }
 
 /* ---------- helpers ---------- */
@@ -201,6 +220,7 @@ const initialState: DeckState = {
   zoom: "fit",
   dirty: false,
   saveError: null,
+  saving: false,
 };
 
 /** The previous commit's coalesce key and time; cleared by load, undo and redo. */

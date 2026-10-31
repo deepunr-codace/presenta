@@ -112,7 +112,10 @@ export function rememberDeckBase(deck: Deck): void {
 /** Save a deck to the account and adopt the server's merged version as the new base. */
 export async function saveDeck(deck: Deck): Promise<Deck> {
   const body = await fitForSave(deck);
-  const base = deckBases.get(deck.id) ?? null;
+  let base = deckBases.get(deck.id) ?? null;
+  // The merge base is a second copy of the deck. When both would not fit in one request (a deck that still carries
+  // embedded pictures), save without it: this write replaces the deck, and later saves are small and merge again.
+  if (base && JSON.stringify(body).length + JSON.stringify(base).length > SAVE_BODY_SOFT_LIMIT) base = null;
   const res = await request(`/api/decks/${encodeURIComponent(deck.id)}`, json("PUT", { deck: body, base }), "The deck could not be saved.");
   const response = (await res.json().catch(() => null)) as { deck?: unknown } | null;
   const parsed = DeckSchema.safeParse(response?.deck);

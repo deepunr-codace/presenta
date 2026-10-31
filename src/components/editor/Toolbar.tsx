@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowClockwise, ArrowCounterClockwise, SidebarSimple } from "@phosphor-icons/react";
-import { useDeckStore } from "@/store/deck-store";
+import { useEffect } from "react";
+import { ArrowClockwise, ArrowCounterClockwise, Check, FloppyDisk, SidebarSimple, WarningCircle } from "@phosphor-icons/react";
+import { saveNow, useDeckStore } from "@/store/deck-store";
 import { useSidebarStore } from "@/components/sidebar/sidebar-store";
 import { AddMenu } from "./AddMenu";
 import { DeckActions } from "./DeckActions";
@@ -15,12 +16,27 @@ export function Toolbar() {
   const canRedo = useDeckStore((s) => s.future.length > 0);
   const dirty = useDeckStore((s) => s.dirty);
   const saveError = useDeckStore((s) => s.saveError);
+  const saving = useDeckStore((s) => s.saving);
   const undo = useDeckStore((s) => s.undo);
   const redo = useDeckStore((s) => s.redo);
   const sidebarOpen = useSidebarStore((s) => s.open);
   const setSidebarOpen = useSidebarStore((s) => s.setOpen);
 
+  // Ctrl+S / ⌘S saves now instead of opening the browser's "Save page" dialog.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        void saveNow();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   if (!deck) return null;
+
+  const state = saving ? "saving" : saveError ? "error" : dirty ? "dirty" : "saved";
 
   return (
     <div className="ps-toolbar" role="toolbar" aria-label="Deck tools">
@@ -41,10 +57,19 @@ export function Toolbar() {
         <AddMenu />
         <ThemePicker />
 
-        <span className="ps-save" data-dirty={dirty} data-error={saveError ? "true" : undefined} aria-live="polite" title={saveError ?? undefined}>
-          <span className="ps-save-dot" aria-hidden />
-          {saveError ? "Not saved" : dirty ? "Saving…" : "Saved"}
-        </span>
+        {/* Autosave status and a Save button in one: it saves on its own, and you can save now any time. */}
+        <button
+          type="button"
+          className="ps-save"
+          data-state={state}
+          onClick={() => void saveNow()}
+          disabled={state === "saved" || state === "saving"}
+          aria-live="polite"
+          title={saveError ? `Not saved: ${saveError} Click to try again.` : state === "saved" ? "All changes saved" : "Save now (Ctrl+S)"}
+        >
+          {state === "saved" ? <Check size={12} weight="bold" aria-hidden /> : state === "error" ? <WarningCircle size={12} weight="bold" aria-hidden /> : state === "saving" ? <span className="ps-save-dot" aria-hidden /> : <FloppyDisk size={12} aria-hidden />}
+          {state === "saved" ? "Saved" : state === "saving" ? "Saving…" : state === "error" ? "Not saved · Retry" : "Save"}
+        </button>
       </div>
 
       <div className="flex-1" />
