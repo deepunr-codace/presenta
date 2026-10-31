@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { ArrowCounterClockwise, ArrowUp, Check, Lightbulb, Sparkle } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, ArrowRight, ArrowUp, Check, Plus, Sparkle } from "@phosphor-icons/react";
 import { postSuggest } from "@/lib/api-client";
 import type { Brief, SuggestRequest, SuggestResponse } from "@/lib/deck/schema";
 import { GHOST_BTN } from "@/lib/styles";
@@ -196,34 +196,30 @@ export function ChatIntake({ onBuildOutline }: Props) {
                 or type your answer below.
               </p>
             ) : (
-              <div className="space-y-2">
-                <p className="ps-caption">{meta.multi ? "Tap any that apply, then send. Or type your own." : "Tap a reply to send it, or type your own."}</p>
-                <div className="flex flex-wrap gap-2">
-                  {current.data.suggestions.map((s) => {
-                    const on = picked.includes(s);
-                    return (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => tapReply(s)}
-                        aria-pressed={meta.multi ? on : undefined}
-                        className="ps-chip h-auto min-h-8 max-w-full rounded-2xl py-1.5 text-left whitespace-normal"
-                      >
-                        {on ? <Check size={12} weight="bold" className="shrink-0" /> : null}
-                        <span className="min-w-0">{s}</span>
-                      </button>
-                    );
-                  })}
-                  {meta.optional ? (
-                    <button type="button" onClick={skip} className="ps-chip h-auto min-h-8 rounded-2xl border-dashed py-1.5 text-[var(--ps-smoke)]">
-                      Skip this question
+              <div className="ps-replies" role="group" aria-label={meta.multi ? "Suggested items, choose any" : "Suggested replies"}>
+                {current.data.suggestions.map((s, i) => {
+                  const on = picked.includes(s);
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => tapReply(s)}
+                      aria-pressed={meta.multi ? on : undefined}
+                      className="ps-reply"
+                      style={{ animationDelay: `${i * 60}ms` }}
+                    >
+                      <span className="ps-reply-icon" aria-hidden>
+                        {meta.multi ? on ? <Check size={12} weight="bold" /> : <Plus size={12} weight="bold" /> : <Sparkle size={12} weight="fill" />}
+                      </span>
+                      <span className="min-w-0">{s}</span>
+                      {meta.multi ? null : <ArrowRight size={13} weight="bold" className="ps-reply-go" aria-hidden />}
                     </button>
-                  ) : null}
-                </div>
-                {current.data.hint ? (
-                  <p className="ps-caption flex items-start gap-1.5">
-                    <Lightbulb size={13} className="mt-0.5 shrink-0" /> {current.data.hint}
-                  </p>
+                  );
+                })}
+                {meta.optional ? (
+                  <button type="button" onClick={skip} className="ps-reply ps-reply-skip" style={{ animationDelay: `${current.data.suggestions.length * 60}ms` }}>
+                    Skip
+                  </button>
                 ) : null}
               </div>
             )}
@@ -251,7 +247,6 @@ export function ChatIntake({ onBuildOutline }: Props) {
               <ArrowUp size={14} weight="bold" />
             </button>
           </div>
-          <p className="ps-caption mt-1.5">Enter to send · Shift+Enter for a new line</p>
         </div>
       ) : null}
     </section>

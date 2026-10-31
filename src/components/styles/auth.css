@@ -899,3 +899,9 @@
 
 /* Black overlay over the login background image. */
 .ps-auth-veil { background: rgba(0, 0, 0, 0.5) !important; }
+
+/* Phones: the card sits in the middle of the screen, top to bottom. */
+@media (max-width: 1023px) {
+  .ps-auth-shell { display: flex; min-height: 100dvh; flex-direction: column; align-items: center; justify-content: center; }
+  .ps-auth-main { margin: 0 auto; padding: 24px 16px; }
+}

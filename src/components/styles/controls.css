@@ -277,3 +277,14 @@ input[type="color"].ps-swatch-native::-webkit-color-swatch { border: 0; border-r
 }
 .ps-stage-mark[data-state="done"] { border-color: var(--ps-ink); background: var(--ps-ink); color: var(--ps-on-ink); }
 .ps-stage-mark[data-state="active"] { border-color: var(--ps-ink); color: var(--ps-ink); }
+
+/* A row of form controls (field, choice, action) that all share one height, radius rhythm and column widths. */
+.ps-control-row { display: grid; grid-template-columns: minmax(0, 1fr) 128px 96px; gap: 8px; align-items: center; }
+.ps-control-row > .ps-input, .ps-control-row > .ps-btn { width: 100%; height: 40px; min-width: 0; }
+.ps-control-row > .ps-btn { justify-content: center; padding: 0 14px; }
+@media (max-width: 520px) {
+  .ps-control-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .ps-control-row > :first-child { grid-column: 1 / -1; }
+}
+/* Radios and checkboxes follow the ink colour of the rest of the controls. */
+input[type="radio"], input[type="checkbox"] { accent-color: var(--ps-ink); }

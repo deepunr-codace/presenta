@@ -428,3 +428,49 @@ textarea.ps-chat-input { min-height: 40px; height: 40px; resize: none; }
 .ps-tpl-menu { transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1); }
 .ps-tpl-item:hover .ps-tpl-menu { transform: translateY(-4px); }
 @media (prefers-reduced-motion: reduce) { .ps-tpl-item:hover .ps-tpl-menu { transform: none; } }
+
+/* ---- Brief chat: suggested replies as small glowing cards that rise in one after another ---- */
+.ps-replies { display: flex; flex-wrap: wrap; gap: 8px; }
+.ps-reply {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 8px;
+  border: 1px solid var(--ps-line-2);
+  border-radius: 14px;
+  background: linear-gradient(var(--ps-canvas), var(--ps-canvas)) padding-box,
+    linear-gradient(135deg, color-mix(in srgb, #7c6bff 45%, var(--ps-line-2)), var(--ps-line-2) 45%, color-mix(in srgb, #ff7a33 40%, var(--ps-line-2))) border-box;
+  border-color: transparent;
+  color: var(--ps-ink);
+  font-size: 13px;
+  line-height: 18px;
+  text-align: left;
+  cursor: pointer;
+  animation: ps-reply-in 420ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 180ms ease-out, background-color 160ms ease-out;
+}
+.ps-reply:hover { transform: translateY(-2px); box-shadow: 0 8px 24px -12px rgba(124, 107, 255, 0.55); }
+.ps-reply:active { transform: translateY(0) scale(0.98); }
+.ps-reply:focus-visible { outline: 2px solid var(--ps-ink-ring); outline-offset: 2px; }
+.ps-reply-icon {
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #7c6bff, #c026d3 55%, #ff7a33);
+  color: #fff;
+}
+.ps-reply-go { flex-shrink: 0; margin-left: 2px; opacity: 0; transform: translateX(-4px); transition: opacity 160ms ease-out, transform 200ms ease-out; }
+.ps-reply:hover .ps-reply-go, .ps-reply:focus-visible .ps-reply-go { opacity: 0.7; transform: none; }
+.ps-reply[aria-pressed="true"] { background: linear-gradient(var(--ps-ink), var(--ps-ink)) padding-box, linear-gradient(135deg, #7c6bff, #ff7a33) border-box; color: var(--ps-on-ink); }
+.ps-reply-skip { padding: 8px 14px; background: transparent; border: 1px dashed var(--ps-line-2); color: var(--ps-smoke); }
+.ps-reply-skip:hover { box-shadow: none; color: var(--ps-ink); }
+@keyframes ps-reply-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } }
+@media (prefers-reduced-motion: reduce) {
+  .ps-reply { animation: none; transition: none; }
+  .ps-reply:hover { transform: none; }
+}

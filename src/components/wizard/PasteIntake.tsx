@@ -10,8 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useWizardStore } from "./wizard-state";
 import { extractOfficeText, extractPdfText, PDF_OCR_LANGUAGES, type PdfOcrLanguage } from "@/lib/import/source-files";
-import { NotionImportDialog } from "./NotionImportDialog";
-import { GoogleSlidesImportButton } from "./GoogleSlidesImportButton";
 
 const ACCEPT = ".txt,.md,.markdown,.docx,.pptx,.pdf,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation";
 const MAX_CHARS = 40000;
@@ -38,7 +36,6 @@ export function PasteIntake({ onBuildOutline }: Props) {
   const paste = useWizardStore((s) => s.paste);
   const patchPaste = useWizardStore((s) => s.patchPaste);
   const [dragging, setDragging] = useState(false);
-  const [notionOpen, setNotionOpen] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [fileStatus, setFileStatus] = useState<string | null>(null);
   const [ocrLanguage, setOcrLanguage] = useState<PdfOcrLanguage>("eng");
@@ -118,10 +115,6 @@ export function PasteIntake({ onBuildOutline }: Props) {
               <FileText size={12} /> or drop a file here
             </span>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" className={cn(SECONDARY_BTN, "h-8 px-3.5")} onClick={() => setNotionOpen(true)}>Import from Notion</Button>
-            <GoogleSlidesImportButton />
-          </div>
           <div className="flex items-center gap-3">
             <span className={cn("tabular-nums", chars >= MAX_CHARS && "text-[var(--ps-danger)]")}>
               {chars.toLocaleString()} / {MAX_CHARS.toLocaleString()} characters · {words.toLocaleString()} words
@@ -138,8 +131,6 @@ export function PasteIntake({ onBuildOutline }: Props) {
           </p>
         ) : null}
       </div>
-
-      <NotionImportDialog open={notionOpen} onOpenChange={setNotionOpen} />
 
       <div className="grid gap-5 border-t border-[var(--ps-line)] p-6 sm:grid-cols-2">
         <div className="grid gap-1.5">

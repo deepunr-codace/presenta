@@ -29,7 +29,7 @@ const ROLE_LABEL: Record<ShareRole, string> = { editor: "Can edit", viewer: "Can
 
 function RoleSelect({ value, onChange, label }: { value: ShareRole; onChange: (r: ShareRole) => void; label: string }) {
   return (
-    <select className="ps-input !w-auto" value={value} onChange={(e) => onChange(e.target.value as ShareRole)} aria-label={label}>
+    <select className="ps-input" value={value} onChange={(e) => onChange(e.target.value as ShareRole)} aria-label={label}>
       <option value="viewer">{ROLE_LABEL.viewer}</option>
       <option value="editor">{ROLE_LABEL.editor}</option>
     </select>
@@ -142,23 +142,23 @@ export function ShareDialog({ id, open, onOpenChange }: Props) {
 
         {shares && link ? (
           <div className="flex flex-col gap-5">
-            <form className="flex flex-wrap items-center gap-2" onSubmit={addPerson}>
-              <input className="ps-input min-w-0 flex-1" type="email" placeholder="Add a person by email" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email of the person to share with" />
+            <form className="ps-control-row" onSubmit={addPerson}>
+              <input className="ps-input" type="email" placeholder="Add a person by email" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email of the person to share with" />
               <RoleSelect value={emailRole} onChange={setEmailRole} label="Their access" />
-              <button type="submit" className="ps-btn ps-btn-primary ps-btn-xs" disabled={busy || !email.trim()}>
+              <button type="submit" className="ps-btn ps-btn-primary" disabled={busy || !email.trim()}>
                 Share
               </button>
             </form>
 
             {teams.length ? (
               <form
-                className="flex flex-wrap items-center gap-2"
+                className="ps-control-row"
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (teamId) void run(() => shareWithTeam(id, teamId, teamRole), "Shared with the team.");
                 }}
               >
-                <select className="ps-input min-w-0 flex-1" value={teamId} onChange={(e) => setTeamId(e.target.value)} aria-label="Team to share with">
+                <select className="ps-input" value={teamId} onChange={(e) => setTeamId(e.target.value)} aria-label="Team to share with">
                   {teams.map((t) => (
                     <option key={t.id} value={t.id}>
                       Team: {t.name}
@@ -166,8 +166,8 @@ export function ShareDialog({ id, open, onOpenChange }: Props) {
                   ))}
                 </select>
                 <RoleSelect value={teamRole} onChange={setTeamRole} label="The team's access" />
-                <button type="submit" className="ps-btn ps-btn-xs" disabled={busy || !teamId}>
-                  Share with team
+                <button type="submit" className="ps-btn ps-btn-primary" disabled={busy || !teamId}>
+                  Share
                 </button>
               </form>
             ) : null}
