@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Presentation, Stack } from "@phosphor-icons/react";
 import { SAMPLE_DECK } from "@/lib/deck/sample";
+import { runTask } from "@/lib/tasks";
 import { trashDeck, downloadBlob, exportDeckJson, importDeckFile, listDecks, loadDeckById, saveDeck, type DeckSummary } from "@/lib/persist";
 import { deckSlug } from "@/components/editor/deck-slug";
 import { deckSegment } from "@/lib/deck/links";
@@ -93,8 +94,12 @@ export default function HomePage() {
   const onImportFile = (file: File | undefined) => {
     if (!file) return;
     void run("Importing…", async () => {
-      const deck = await importDeckFile(file);
-      await saveDeck(deck);
+      const deck = await runTask(`Importing ${file.name}`, async (report) => {
+        const d = await importDeckFile(file, report);
+        report(99, "Saving to your account…");
+        await saveDeck(d);
+        return d;
+      }, "Imported. Opening your deck…");
       openDeck(deck.id, deckUrlSlug(deck.title, deck.id));
     });
   };

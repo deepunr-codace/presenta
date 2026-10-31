@@ -199,16 +199,18 @@ function sanitizeDeckText(deck: Deck): Deck {
  * sanitised where applicable; duplicate ids are re-issued. If the imported id
  * already exists, a fresh id is assigned. Does not save; callers decide.
  */
-export async function importDeckFile(file: File): Promise<Deck> {
+export async function importDeckFile(file: File, report?: (pct: number | null, label?: string) => void): Promise<Deck> {
   if (file.size > IMPORT_MAX_BYTES) {
     throw new DeckImportError(`That file is ${(file.size / 1024 / 1024).toFixed(1)} MB; the import limit is ${IMPORT_MAX_BYTES / 1024 / 1024} MB.`);
   }
   let deck: Deck;
   if (/\.pptx$/i.test(file.name)) {
+    report?.(10, "Reading the PowerPoint…");
     deck = await importPptx(file);
   } else if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") {
-    deck = await importPdfDeck(file);
+    deck = await importPdfDeck(file, (pct, label) => report?.(pct, label));
   } else {
+    report?.(10, "Reading the file…");
     const text = await file.text();
     let parsedJson: unknown;
     try {
@@ -220,6 +222,7 @@ export async function importDeckFile(file: File): Promise<Deck> {
     // A Presenta deck is used as is; any other JSON is converted into an editable deck.
     deck = parsed.success ? sanitizeDeckText(reIdDuplicates(parsed.data)) : sanitizeDeckText(jsonToDeck(parsedJson, file.name));
   }
+  report?.(98, "Checking your saved decks…");
   const idsRes = await request("/api/decks?ids=1", { cache: "no-store" }, "Could not check your saved decks.");
   const { ids } = (await idsRes.json()) as { ids?: string[] };
   if ((ids ?? []).includes(deck.id)) {

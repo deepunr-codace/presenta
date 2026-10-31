@@ -4,6 +4,7 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { X } from "@phosphor-icons/react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ApiKeyDialog } from "./ApiKeyDialog";
+import { TaskProgressHost } from "./TaskProgressHost";
 import { CommandPalette } from "./CommandPalette";
 import { KeyBanner } from "./KeyBanner";
 import { ShortcutsDialog } from "./ShortcutsDialog";
@@ -56,6 +57,7 @@ export function AppShell({ children, breadcrumbs, actions, active, banner = fals
         <div className="ps-content-body">{children}</div>
       </div>
 
+      <TaskProgressHost />
       <ApiKeyDialog />
       <CommandPalette />
       <ShortcutsDialog />

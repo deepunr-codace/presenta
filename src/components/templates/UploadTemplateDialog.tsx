@@ -5,6 +5,7 @@ import { Check, FileArrowUp, UploadSimple, UsersThree } from "@phosphor-icons/re
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Deck } from "@/lib/deck/schema";
 import { fetchTeams, type TeamSummary } from "@/lib/collab";
+import { runTask } from "@/lib/tasks";
 import { importDeckFile, listDecks, type DeckSummary } from "@/lib/persist";
 import {
   TEMPLATE_CATEGORIES,
@@ -81,7 +82,7 @@ export function UploadTemplateDialog({ onClose, onCreated }: Props) {
     setFileDeck(null);
     setFileName(file.name);
     try {
-      const deck = await importDeckFile(file);
+      const deck = await runTask(`Reading ${file.name}`, (report) => importDeckFile(file, report), "Ready to publish");
       setFileDeck(deck);
       setTitle((t) => (t.trim() ? t : deck.title));
     } catch (err) {
@@ -109,7 +110,10 @@ export function UploadTemplateDialog({ onClose, onCreated }: Props) {
         ...(scope === "team" ? { teamIds } : {}),
         ...(source === "deck" ? { deckId } : { deck: fileDeck }),
       };
-      onCreated(await createTemplate(input));
+      onCreated(await runTask("Publishing template", async (report) => {
+        report(null, "Uploading your template…");
+        return createTemplate(input);
+      }, "Template published"));
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "The template could not be published.");

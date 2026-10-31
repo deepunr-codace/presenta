@@ -10,25 +10,27 @@ const MAX_RENDERED_BYTES = 24 * 1024 * 1024;
 type Run = { str: string; x: number; y: number; w: number; size: number; bold: boolean };
 type Line = { runs: Run[]; x: number; y: number; right: number; size: number; bold: boolean };
 
-/** A 2D context whose text calls draw nothing, so the page renders as artwork only and the text can be rebuilt as real, editable text. */
-function withoutText(ctx: CanvasRenderingContext2D): CanvasRenderingContext2D {
-  return new Proxy(ctx, {
-    get(target, prop) {
-      if (prop === "fillText" || prop === "strokeText") return () => undefined;
-      const value = Reflect.get(target, prop, target) as unknown;
-      return typeof value === "function" ? (value as (...a: unknown[]) => unknown).bind(target) : value;
-    },
-    set(target, prop, value) {
-      return Reflect.set(target, prop, value, target);
-    },
-  });
+/** Draws nothing for text while the page renders, so the page becomes artwork only; the text is rebuilt as real text boxes. */
+async function renderWithoutText<T>(draw: () => Promise<T>): Promise<T> {
+  const proto = CanvasRenderingContext2D.prototype;
+  const { fillText, strokeText } = proto;
+  proto.fillText = function noText() {};
+  proto.strokeText = function noText() {};
+  try {
+    return await draw();
+  } finally {
+    proto.fillText = fillText;
+    proto.strokeText = strokeText;
+  }
 }
 
 function toLines(runs: Run[]): Line[] {
   const sorted = [...runs].sort((a, b) => a.y - b.y || a.x - b.x);
   const lines: Line[] = [];
   for (const r of sorted) {
-    const line = lines.find((l) => Math.abs(l.y - r.y) < Math.max(2, r.size * 0.45) && Math.abs(l.size - r.size) < r.size * 0.35);
+    const line = lines.find(
+      (l) => Math.abs(l.y - r.y) < Math.max(2, r.size * 0.45) && Math.abs(l.size - r.size) < r.size * 0.35 && r.x - l.right < r.size * 1.1 && r.x - l.right > -r.size * 0.6,
+    );
     if (line) {
       line.runs.push(r);
       line.right = Math.max(line.right, r.x + r.w);
@@ -59,7 +61,9 @@ function toBlocks(lines: Line[]): Line[][] {
     if (!lineText(l)) continue;
     const block = blocks.find((b) => {
       const last = b[b.length - 1];
-      return Math.abs(last.size - l.size) < l.size * 0.2 && l.y - last.y > 0 && l.y - last.y < l.size * 1.9 && Math.abs(last.x - l.x) < l.size * 1.2;
+      const overlap = Math.min(last.right, l.right) - Math.max(last.x, l.x);
+      const sameColumn = overlap > Math.min(last.right - last.x, l.right - l.x) * 0.4;
+      return Math.abs(last.size - l.size) < l.size * 0.2 && l.y - last.y > 0 && l.y - last.y < l.size * 1.9 && sameColumn;
     });
     if (block) block.push(l);
     else blocks.push([l]);
@@ -86,8 +90,9 @@ function luminanceAt(data: Uint8ClampedArray, w: number, h: number, x: number, y
  * Imports a PDF as an editable deck: each page becomes a slide whose artwork is a background picture and whose text is
  * rebuilt as real text boxes (position, size and weight are kept), so every line can be edited, moved or restyled.
  */
-export async function importPdfDeck(file: File): Promise<Deck> {
+export async function importPdfDeck(file: File, report?: (pct: number, label: string) => void): Promise<Deck> {
   if (file.size > MAX_FILE_BYTES) throw new Error("PDF files must be smaller than 50 MB.");
+  report?.(4, "Opening the PDF…");
   const lib = await getPdfJs();
   const task = lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), useSystemFonts: true });
   const pdf = await task.promise;
@@ -96,6 +101,7 @@ export async function importPdfDeck(file: File): Promise<Deck> {
     const slides: Slide[] = [];
     let renderedBytes = 0;
     for (let n = 1; n <= pdf.numPages; n += 1) {
+      report?.(8 + Math.round(((n - 1) / pdf.numPages) * 88), `Converting page ${n} of ${pdf.numPages} into editable slides…`);
       const page = await pdf.getPage(n);
       const base = page.getViewport({ scale: 1 });
       const scale = Math.min(STAGE_W / base.width, STAGE_H / base.height);
@@ -107,7 +113,7 @@ export async function importPdfDeck(file: File): Promise<Deck> {
       if (!context) throw new Error("This browser could not prepare the PDF pages for import.");
       context.fillStyle = "#ffffff";
       context.fillRect(0, 0, canvas.width, canvas.height);
-      await page.render({ canvas, canvasContext: withoutText(context), viewport, background: "#ffffff" }).promise;
+      await renderWithoutText(() => page.render({ canvas, canvasContext: context, viewport, background: "#ffffff" }).promise);
       const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
       const data = canvas.toDataURL("image/jpeg", 0.84);
       renderedBytes += Math.floor(data.length * 0.75);
@@ -135,9 +141,12 @@ export async function importPdfDeck(file: File): Promise<Deck> {
         const size = block[0].size;
         const x = Math.min(...block.map((l) => l.x));
         const y = block[0].y;
-        const w = Math.max(...block.map((l) => l.right)) - x;
+        const right = Math.max(...block.map((l) => l.right));
+        const w = right - x;
         const lastLine = block[block.length - 1];
         const h = lastLine.y - y + lastLine.size * 1.35;
+        const mid = (x + right) / 2;
+        const centred = block.length > 0 && block.every((l) => Math.abs((l.x + l.right) / 2 - mid) < size * 0.6) && block.some((l) => Math.abs(l.x - x) > size * 0.8 || block.length === 1);
         const bgLum = luminanceAt(pixels.data, canvas.width, canvas.height, x - offX, y - offY, w, h);
         const bold = block[0].bold;
         const isTitle = size >= maxSize * 0.85 && size > 30;
@@ -146,17 +155,17 @@ export async function importPdfDeck(file: File): Promise<Deck> {
           type: "text",
           role: isTitle ? "title" : "body",
           html: block.map((l) => escapeHtml(lineText(l))).join("<br>"),
-          x: Math.max(0, x - 4),
-          y: Math.max(0, y - 2),
-          w: Math.min(STAGE_W, w + 24),
-          h: Math.max(size * 1.4, h + 4),
+          x: Math.max(0, centred && w > size * 2 ? mid - (w * 1.12 + 16) / 2 : x - 8),
+          y: Math.max(0, y - 4),
+          w: Math.min(STAGE_W, w * 1.12 + 16),
+          h: Math.max(size * 1.5, h + 8),
           rotation: 0,
           z: k + 1,
           locked: false,
           opacity: 1,
-          align: "left",
+          align: centred && w > size * 2 ? "center" : "left",
           valign: "top",
-          autoFit: false,
+          autoFit: true,
           style: { fontSize: Math.round(size), fontWeight: bold ? 700 : 400, color: bgLum < 0.5 ? "#ffffff" : "#111111", lineHeight: block.length > 1 ? Math.max(1.1, (block[1].y - block[0].y) / size) : 1.2, fontFamily: isTitle ? "display" : "body" },
         });
       });
@@ -165,6 +174,7 @@ export async function importPdfDeck(file: File): Promise<Deck> {
       canvas.width = 0;
       canvas.height = 0;
     }
+    report?.(97, "Finishing the deck…");
     const now = new Date().toISOString();
     return { id: newId("deck"), title: file.name.replace(/\.pdf$/i, "").replace(/[_-]+/g, " ") || "Imported PDF", themeId: "paper", slides, createdAt: now, updatedAt: now, meta: { source: "import" }, version: 1 };
   } finally {

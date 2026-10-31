@@ -5,6 +5,7 @@ import { Check, FileArrowUp, Image as ImageIcon } from "@phosphor-icons/react";
 import { THEMES } from "@/lib/deck/themes";
 import { TEMPLATE_DECKS } from "@/lib/deck/template-decks";
 import { STUDIO_PACKS } from "@/lib/deck/studio-packs";
+import { runTask } from "@/lib/tasks";
 import { readStyleReference, type StyleReference } from "@/lib/style-reference";
 import { FitSlide } from "@/components/canvas/FitSlide";
 import { cn } from "@/lib/utils";
@@ -45,7 +46,12 @@ export function StyleSourceTabs() {
     setBusy(true);
     setError(null);
     try {
-      const r = await readStyleReference(file);
+      const r = await runTask(`Reading ${file.name}`, async (report) => {
+        report(20, "Reading colours and style…");
+        const out = await readStyleReference(file);
+        report(90, "Matching the closest theme…");
+        return out;
+      }, "Style matched");
       setRef({ ...r, name: file.name });
       setThemeId(r.themeId);
       patchBrand({ accent: r.accent });
