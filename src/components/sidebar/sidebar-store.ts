@@ -14,7 +14,7 @@ type SidebarState = {
 };
 
 export const useSidebarStore = create<SidebarState>()((set, get) => ({
-  open: false,
+  open: true,
   tab: "assistant",
   setOpen: (open) => set({ open }),
   setTab: (tab) => set({ tab, open: true }),

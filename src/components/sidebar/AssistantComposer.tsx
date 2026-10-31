@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type KeyboardEvent } from "react";
-import { CircleNotch, PaperPlaneRight } from "@phosphor-icons/react";
+import { ArrowUp, CircleNotch } from "@phosphor-icons/react";
 import { scopePlaceholder, type Scope } from "@/lib/assistant/scope";
 
 type Props = {
@@ -11,8 +11,13 @@ type Props = {
   onSend: (text: string) => void;
 };
 
-/** Composer card: borderless textarea with a scope-aware placeholder; Cmd/Ctrl+Enter or the primary Send button submits. */
-export function AssistantComposer({ scope, disabled = false, busy = false, onSend }: Props) {
+/** Chat message box: Enter sends, Shift+Enter adds a line; the box grows with the message. */
+export function AssistantComposer({
+  scope,
+  disabled = false,
+  busy = false,
+  onSend,
+}: Props) {
   const [draft, setDraft] = useState("");
 
   const submit = () => {
@@ -24,7 +29,7 @@ export function AssistantComposer({ scope, disabled = false, busy = false, onSen
 
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     e.stopPropagation();
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       submit();
     }
@@ -32,21 +37,38 @@ export function AssistantComposer({ scope, disabled = false, busy = false, onSen
 
   return (
     <div className="ps-composer">
-      <div className="ps-sb-prompt">
-        <textarea value={draft} rows={2} placeholder={scopePlaceholder(scope)} aria-label="Instruction for the assistant" disabled={disabled} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} />
-        <div className="ps-sb-prompt-footer">
-          <span className="ps-sb-prompt-scope" title={scope.label}>
-            {scope.label}
-          </span>
-          <span className="ps-sb-prompt-kbd" aria-hidden>
-            ⌘↵
-          </span>
-          <button type="button" className="ps-sb-send" onClick={submit} disabled={!draft.trim() || busy || disabled} aria-label="Send">
-            {busy ? <CircleNotch size={14} weight="bold" className="animate-spin" /> : <PaperPlaneRight size={14} weight="fill" />}
-            Send
-          </button>
-        </div>
+      <div className="ps-chat-input">
+        <textarea
+          value={draft}
+          rows={1}
+          placeholder={scopePlaceholder(scope)}
+          aria-label="Message the assistant"
+          disabled={disabled}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            e.currentTarget.style.height = "auto";
+            e.currentTarget.style.height = `${Math.min(160, e.currentTarget.scrollHeight)}px`;
+          }}
+          onKeyDown={onKey}
+        />
+        <button
+          type="button"
+          className="ps-chat-send"
+          onClick={submit}
+          disabled={!draft.trim() || busy || disabled}
+          aria-label="Send"
+        >
+          {busy ? (
+            <CircleNotch size={14} weight="bold" className="animate-spin" />
+          ) : (
+            <ArrowUp size={14} weight="bold" />
+          )}
+        </button>
       </div>
+      <p className="ps-chat-hint">
+        Working on <strong title={scope.label}>{scope.label}</strong> · Enter to
+        send
+      </p>
     </div>
   );
 }

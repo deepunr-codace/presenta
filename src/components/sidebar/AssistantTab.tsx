@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowsClockwise } from "@phosphor-icons/react";
-import { selectMessages, useAssistantHistory, type AssistantMessage } from "@/lib/assistant/history";
+import {
+  selectMessages,
+  useAssistantHistory,
+  type AssistantMessage,
+} from "@/lib/assistant/history";
 import { getScope } from "@/lib/assistant/scope";
 import { useDeckStore } from "@/store/deck-store";
 import { AssistantComposer } from "./AssistantComposer";
@@ -20,8 +24,12 @@ export type AssistantTabProps = {
 };
 
 /** The user turn that produced an error bubble, for the retry link. */
-function previousUserText(messages: AssistantMessage[], index: number): string | null {
-  for (let i = index - 1; i >= 0; i--) if (messages[i].role === "user") return messages[i].text;
+function previousUserText(
+  messages: AssistantMessage[],
+  index: number,
+): string | null {
+  for (let i = index - 1; i >= 0; i--)
+    if (messages[i].role === "user") return messages[i].text;
   return null;
 }
 
@@ -39,7 +47,9 @@ export function AssistantTab({ defaultScope = "element" }: AssistantTabProps) {
   const messages = useAssistantHistory(selectMessages(deck?.id ?? null));
   const updateMessage = useAssistantHistory((s) => s.update);
 
-  const [widen, setWiden] = useState<Widen>(defaultScope === "element" ? null : defaultScope);
+  const [widen, setWiden] = useState<Widen>(
+    defaultScope === "element" ? null : defaultScope,
+  );
   const listRef = useRef<HTMLDivElement>(null);
 
   // A new selection on the canvas narrows the scope back to what is selected.
@@ -50,16 +60,23 @@ export function AssistantTab({ defaultScope = "element" }: AssistantTabProps) {
     setSeenKey(selectionKey);
   }
 
-  const state = useMemo(() => ({ deck, selectedSlideId, selectedElementIds }), [deck, selectedSlideId, selectedElementIds]);
+  const state = useMemo(
+    () => ({ deck, selectedSlideId, selectedElementIds }),
+    [deck, selectedSlideId, selectedElementIds],
+  );
   const narrowest = useMemo(() => getScope(state), [state]);
-  const scope = useMemo(() => getScope(state, widen ?? undefined), [state, widen]);
+  const scope = useMemo(
+    () => getScope(state, widen ?? undefined),
+    [state, widen],
+  );
 
   useEffect(() => {
     const el = listRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length, sending]);
 
-  const pick = (kind: "deck" | "slide" | "element") => setWiden(kind === "element" ? null : kind);
+  const pick = (kind: "deck" | "slide" | "element") =>
+    setWiden(kind === "element" ? null : kind);
 
   const show = (m: AssistantMessage) => {
     const t = m.target;
@@ -68,7 +85,8 @@ export function AssistantTab({ defaultScope = "element" }: AssistantTabProps) {
     const slide = d.slides.find((s) => s.id === t.slideId);
     if (!slide) return;
     selectSlide(slide.id);
-    if (t.elementId && slide.elements.some((e) => e.id === t.elementId)) selectElements([t.elementId]);
+    if (t.elementId && slide.elements.some((e) => e.id === t.elementId))
+      selectElements([t.elementId]);
     else selectElements([]);
   };
 
@@ -85,29 +103,55 @@ export function AssistantTab({ defaultScope = "element" }: AssistantTabProps) {
       <div ref={listRef} className="ps-messages" aria-live="polite">
         {messages.length === 0 ? <AssistantEmpty scope={scope} /> : null}
         {messages.map((m, i) => {
-          const retryText = m.role === "error" ? previousUserText(messages, i) : null;
+          const retryText =
+            m.role === "error" ? previousUserText(messages, i) : null;
           return (
             <MessageBubble
               key={m.id}
               message={m}
-              canUndo={Boolean(m.appliedAt) && m.appliedAt === deckUpdatedAt && !m.undone}
+              canUndo={
+                Boolean(m.appliedAt) &&
+                m.appliedAt === deckUpdatedAt &&
+                !m.undone
+              }
               onUndo={() => undoMessage(m)}
               onShow={() => show(m)}
-              onRetry={retryText ? () => void send(retryText, scope) : undefined}
+              onRetry={
+                retryText ? () => void send(retryText, scope) : undefined
+              }
               disabled={sending || !deck}
             />
           );
         })}
         {sending ? (
-          <div className="ps-bubble-busy" aria-busy="true">
-            <ArrowsClockwise size={12} className="animate-spin" /> Working on it…
+          <div className="ps-chat-row" aria-busy="true">
+            <span className="ps-chat-avatar" aria-hidden>
+              <ArrowsClockwise size={12} className="animate-spin" />
+            </span>
+            <div
+              className="ps-chat-bubble ps-chat-typing"
+              aria-label="Working on it"
+            >
+              <i />
+              <i />
+              <i />
+            </div>
           </div>
         ) : null}
       </div>
 
       <div className="ps-sb-divider" />
-      <QuickActions scope={scope} disabled={sending || !deck} onSend={(instruction) => void send(instruction, scope)} />
-      <AssistantComposer scope={scope} disabled={!deck} busy={sending} onSend={(text) => void send(text, scope)} />
+      <QuickActions
+        scope={scope}
+        disabled={sending || !deck}
+        onSend={(instruction) => void send(instruction, scope)}
+      />
+      <AssistantComposer
+        scope={scope}
+        disabled={!deck}
+        busy={sending}
+        onSend={(text) => void send(text, scope)}
+      />
     </div>
   );
 }
