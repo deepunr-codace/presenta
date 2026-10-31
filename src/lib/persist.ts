@@ -6,6 +6,7 @@ import { uploadDataUrl } from "@/lib/media";
 import { sanitizeHtml, stripTags } from "@/lib/text";
 import { importPptx } from "@/lib/import/pptx";
 import { importPdfDeck } from "@/lib/import/pdf-deck";
+import { jsonToDeck } from "@/lib/import/json-deck";
 
 /**
  * Deck persistence. Decks live in the signed-in user's account (Postgres, through /api/decks), so they follow the
@@ -216,12 +217,8 @@ export async function importDeckFile(file: File): Promise<Deck> {
       throw new DeckImportError("Choose a Presenta JSON backup, PowerPoint .pptx, or PDF file.");
     }
     const parsed = DeckImportSchema.safeParse(parsedJson);
-    if (!parsed.success) {
-      const first = parsed.error.issues[0];
-      const where = first?.path.length ? ` at ${first.path.join(".")}` : "";
-      throw new DeckImportError(`That file is not a Presenta deck${where}: ${first?.message ?? "invalid"}.`);
-    }
-    deck = sanitizeDeckText(reIdDuplicates(parsed.data));
+    // A Presenta deck is used as is; any other JSON is converted into an editable deck.
+    deck = parsed.success ? sanitizeDeckText(reIdDuplicates(parsed.data)) : sanitizeDeckText(jsonToDeck(parsedJson, file.name));
   }
   const idsRes = await request("/api/decks?ids=1", { cache: "no-store" }, "Could not check your saved decks.");
   const { ids } = (await idsRes.json()) as { ids?: string[] };
